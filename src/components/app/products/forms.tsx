@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { categories, suppliers } from "@/lib/data";
+import { useToast } from "@/hooks/use-toast";
 
 const baseSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -34,9 +35,14 @@ const productSchema = z.object({
   buyPrice: z.coerce.number().positive(),
 });
 
-function GenericForm({ schema, defaultValues, buttonText }: { schema: any, defaultValues: any, buttonText: string }) {
+function GenericForm({ schema, defaultValues, buttonText, entityName }: { schema: any, defaultValues: any, buttonText: string, entityName: string }) {
   const form = useForm({ resolver: zodResolver(schema), defaultValues });
-  function onSubmit(data: any) { console.log(data); }
+  const { toast } = useToast();
+  function onSubmit(data: any) { 
+    console.log(data);
+    toast({ title: `${entityName} Added`, description: `${data.name} has been successfully added.` });
+    form.reset();
+  }
 
   return (
     <Form {...form}>
@@ -58,12 +64,17 @@ function GenericForm({ schema, defaultValues, buttonText }: { schema: any, defau
   );
 }
 
-export const AddCategoryForm = () => <GenericForm schema={baseSchema} defaultValues={{ name: "" }} buttonText="Add Category" />;
-export const AddSupplierForm = () => <GenericForm schema={baseSchema} defaultValues={{ name: "" }} buttonText="Add Supplier" />;
+export const AddCategoryForm = () => <GenericForm schema={baseSchema} defaultValues={{ name: "" }} buttonText="Add Category" entityName="Category" />;
+export const AddSupplierForm = () => <GenericForm schema={baseSchema} defaultValues={{ name: "" }} buttonText="Add Supplier" entityName="Supplier" />;
 export function AddStoreForm() {
     const storeSchema = baseSchema.extend({ location: z.string().min(5) });
     const form = useForm({ resolver: zodResolver(storeSchema), defaultValues: {name: "", location: ""} });
-    function onSubmit(data: any) { console.log(data); }
+    const { toast } = useToast();
+    function onSubmit(data: any) { 
+        console.log(data); 
+        toast({ title: "Store Added", description: `${data.name} has been successfully added.` });
+        form.reset();
+    }
 
     return (
     <Form {...form}>
@@ -83,9 +94,15 @@ export function AddStoreForm() {
 export function AddProductForm() {
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: "", sku: "", sellPrice: 0, buyPrice: 0 },
+    defaultValues: { name: "", sku: "", categoryId: "", supplierId: "", sellPrice: 0, buyPrice: 0 },
   });
-  function onSubmit(data: z.infer<typeof productSchema>) { console.log(data); }
+  const { toast } = useToast();
+
+  function onSubmit(data: z.infer<typeof productSchema>) { 
+      console.log(data);
+      toast({ title: "Product Added", description: `${data.name} has been successfully added.` });
+      form.reset();
+  }
 
   return (
     <Form {...form}>
