@@ -46,21 +46,21 @@ export const productColumns: ColumnDef<Product>[] = [
   { accessorKey: "name", header: "Name" },
   { accessorKey: "sellPrice", header: "Sell Price", cell: ({ row }) => `$${row.original.sellPrice.toFixed(2)}` },
   { accessorKey: "buyPrice", header: "Buy Price", cell: ({ row }) => `$${row.original.buyPrice.toFixed(2)}` },
-  { id: "actions", cell: createActionsCell("Copy product ID") },
+  { id: "actions", cell: createActionsCell<Product>("Copy product ID") },
 ];
 
 export const categoryColumns: ColumnDef<Category>[] = [
   { accessorKey: "name", header: "Name" },
-  { id: "actions", cell: createActionsCell("Copy category ID") },
+  { id: "actions", cell: createActionsCell<Category>("Copy category ID") },
 ];
 
 export const supplierColumns: ColumnDef<Supplier>[] = [
   { accessorKey: "name", header: "Name" },
-  { id: "actions", cell: createActionsCell("Copy supplier ID") },
+  { id: "actions", cell: createActionsCell<Supplier>("Copy supplier ID") },
 ];
 
 export const storeColumns: ColumnDef<Store>[] = [
   { accessorKey: "name", header: "Name" },
   { accessorKey: "location", header: "Location" },
-  { id: "actions", cell: createActionsCell("Copy store ID") },
+  { id: "actions", cell: createActionsCell<Store>("Copy store ID") },
 ];
