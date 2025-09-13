@@ -40,17 +40,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [sales, setSales] = useState<SaleTransaction[]>(initialSales);
     const [purchases, setPurchases] = useState<PurchaseTransaction[]>([]);
 
-    // Update state when initial data is loaded
-    useState(() => {
-        setProducts(initialProducts);
-        setCategories(initialCategories);
-        setSuppliers(initialSuppliers);
-        setStores(initialStores);
-        setInventory(initialInventory);
-        setSales(initialSales);
-    });
-
-
     const addProduct = (newProduct: Omit<Product, 'id'>) => {
         const product = { ...newProduct, id: `prod-${Date.now()}` };
         setProducts(prev => [...prev, product ]);

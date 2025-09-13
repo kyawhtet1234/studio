@@ -66,7 +66,7 @@ interface PurchaseFormProps {
 }
 
 export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
-  const { products } = useData();
+  const { products, suppliers } = useData();
   const [autofillState, setAutofillState] = useState({ message: "", data: null });
   const [isAutofillPending, startAutofillTransition] = useTransition();
   const { toast } = useToast();
@@ -140,11 +140,11 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
         toast({ variant: 'destructive', title: 'Empty Cart', description: 'Please add items to the cart before saving.' });
         return;
     }
-    const supplier = useData.getState().suppliers.find(s => s.name === data.cart[0].name);
+    const supplier = suppliers.find(s => s.name === data.cart[0].name);
 
     const purchaseData = {
       storeId: data.storeId,
-      supplierId: 'sup-1', // Mocking supplierId as it's not in the form yet.
+      supplierId: supplier?.id || 'sup-unknown',
       items: data.cart.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
