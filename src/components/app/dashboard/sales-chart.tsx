@@ -3,14 +3,14 @@
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { useMemo } from "react";
 import type { SaleTransaction } from "@/lib/types";
 
 const chartConfig = {
   sales: {
     label: "Sales",
-    color: "hsl(var(--primary))",
+    color: "hsl(var(--chart-1))",
   },
 };
 
@@ -45,7 +45,7 @@ export function SalesChart({ sales }: { sales: SaleTransaction[]}) {
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={monthlySales} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+            <BarChart data={monthlySales} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis 
                 dataKey="date" 
@@ -69,14 +69,12 @@ export function SalesChart({ sales }: { sales: SaleTransaction[]}) {
                   indicator="dot"
                 />}
               />
-              <Line 
-                type="monotone" 
+              <Bar 
                 dataKey="sales" 
-                stroke={chartConfig.sales.color} 
-                strokeWidth={2} 
-                dot={false}
+                fill={chartConfig.sales.color} 
+                radius={4}
               />
-            </LineChart>
+            </BarChart>
           </ResponsiveContainer>
         </ChartContainer>
       </CardContent>
