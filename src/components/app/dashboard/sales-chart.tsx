@@ -3,9 +3,9 @@
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Line, LineChart } from "recharts";
-import { sales } from "@/lib/data";
+import { Line, LineChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { useMemo } from "react";
+import type { SaleTransaction } from "@/lib/types";
 
 const chartConfig = {
   sales: {
@@ -14,7 +14,7 @@ const chartConfig = {
   },
 };
 
-export function SalesChart() {
+export function SalesChart({ sales }: { sales: SaleTransaction[]}) {
   const monthlySales = useMemo(() => {
     const data = new Array(30).fill(0).map((_, i) => {
       const date = new Date();
@@ -34,7 +34,7 @@ export function SalesChart() {
     });
 
     return data;
-  }, []);
+  }, [sales]);
 
   return (
     <Card>

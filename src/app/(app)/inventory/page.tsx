@@ -18,11 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { inventory as initialInventory, products, stores, categories } from "@/lib/data";
+import { useData } from "@/lib/data-context";
 import type { InventoryItem } from "@/lib/types";
 
 export default function InventoryPage() {
-  const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
+  const { inventory, products, stores, categories } = useData();
   const [selectedStore, setSelectedStore] = useState<string>("all");
 
   const inventoryData = useMemo(() => {
@@ -40,7 +40,7 @@ export default function InventoryPage() {
                 storeName: store?.name,
             };
     });
-  }, [inventory, selectedStore]);
+  }, [inventory, selectedStore, products, stores, categories]);
 
 
   return (
@@ -70,7 +70,7 @@ export default function InventoryPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {inventoryData.map((item, index) => (
+            {inventoryData.map((item) => (
                 <TableRow key={`${item.productId}-${item.storeId}`}>
                     <TableCell>{item.sku}</TableCell>
                     <TableCell className="font-medium">{item.productName}</TableCell>

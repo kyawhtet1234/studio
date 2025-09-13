@@ -1,9 +1,9 @@
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { sales, products } from "@/lib/data";
+import type { SaleTransaction, Product } from "@/lib/types";
 
-export function BestSellers() {
+export function BestSellers({ sales, products }: { sales: SaleTransaction[], products: Product[] }) {
   const bestSellingItems = (() => {
     const itemSales: { [key: string]: { name: string, quantity: number, total: number } } = {};
 

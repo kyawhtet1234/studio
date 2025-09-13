@@ -1,9 +1,11 @@
 import { AppSidebar } from '@/components/app/app-sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { DataProvider } from '@/lib/data-context';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
+      <DataProvider>
         <div className="flex min-h-screen bg-background">
             <AppSidebar />
             <SidebarInset>
@@ -12,6 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
             </SidebarInset>
         </div>
+      </DataProvider>
     </SidebarProvider>
   );
 }

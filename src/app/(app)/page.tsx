@@ -1,38 +1,40 @@
-
+'use client';
+import { useData } from '@/lib/data-context';
 import { PageHeader } from "@/components/app/page-header";
 import { StatCard } from "@/components/app/dashboard/stat-card";
 import { SalesChart } from "@/components/app/dashboard/sales-chart";
 import { BestSellers } from "@/components/app/dashboard/best-sellers";
-import { DollarSign, TrendingUp, Package } from "lucide-react";
-import { sales, products } from "@/lib/data";
-
-function getTodayMetrics() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  let todaySales = 0;
-  let todayCogs = 0;
-
-  sales.forEach(sale => {
-    const saleDate = new Date(sale.date);
-    saleDate.setHours(0, 0, 0, 0);
-
-    if (saleDate.getTime() === today.getTime()) {
-      todaySales += sale.total;
-      sale.items.forEach(item => {
-        const product = products.find(p => p.id === item.productId);
-        if (product) {
-          todayCogs += product.buyPrice * item.quantity;
-        }
-      });
-    }
-  });
-
-  const todayProfit = todaySales - todayCogs;
-  return { todaySales, todayProfit };
-}
+import { DollarSign, TrendingUp } from "lucide-react";
 
 export default function DashboardPage() {
+  const { sales, products } = useData();
+
+  const getTodayMetrics = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+  
+    let todaySales = 0;
+    let todayCogs = 0;
+  
+    sales.forEach(sale => {
+      const saleDate = new Date(sale.date);
+      saleDate.setHours(0, 0, 0, 0);
+  
+      if (saleDate.getTime() === today.getTime()) {
+        todaySales += sale.total;
+        sale.items.forEach(item => {
+          const product = products.find(p => p.id === item.productId);
+          if (product) {
+            todayCogs += product.buyPrice * item.quantity;
+          }
+        });
+      }
+    });
+  
+    const todayProfit = todaySales - todayCogs;
+    return { todaySales, todayProfit };
+  }
+
   const { todaySales, todayProfit } = getTodayMetrics();
 
   return (
@@ -53,8 +55,8 @@ export default function DashboardPage() {
         />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-        <SalesChart />
-        <BestSellers />
+        <SalesChart sales={sales} />
+        <BestSellers sales={sales} products={products} />
       </div>
     </div>
   );

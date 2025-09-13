@@ -22,10 +22,10 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { stores, products, inventory as initialInventory } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { PlusCircle, Trash2 } from "lucide-react";
 import type { InventoryItem } from "@/lib/types";
+import { useData } from "@/lib/data-context";
 
 interface TransferItem {
     sku: string;
@@ -36,12 +36,12 @@ interface TransferItem {
 
 export default function TransferPage() {
     const { toast } = useToast();
+    const { stores, products, inventory, updateInventory } = useData();
     const [fromStoreId, setFromStoreId] = useState<string>('');
     const [toStoreId, setToStoreId] = useState<string>('');
     const [itemSku, setItemSku] = useState('');
     const [itemQuantity, setItemQuantity] = useState(1);
     const [transferItems, setTransferItems] = useState<TransferItem[]>([]);
-    const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
 
     const handleAddItem = () => {
         if (!fromStoreId || !toStoreId) {
@@ -93,7 +93,7 @@ export default function TransferPage() {
             if (fromInventoryIndex > -1) {
                 newInventory[fromInventoryIndex] = {
                     ...newInventory[fromInventoryIndex],
-                    stock: newInventory[fromInventory_index].stock - item.quantity
+                    stock: newInventory[fromInventoryIndex].stock - item.quantity
                 }
             }
 
@@ -102,16 +102,14 @@ export default function TransferPage() {
             if (toInventoryIndex > -1) {
                  newInventory[toInventoryIndex] = {
                     ...newInventory[toInventoryIndex],
-                    stock: newInventory[toInventory_index].stock + item.quantity
+                    stock: newInventory[toInventoryIndex].stock + item.quantity
                 }
             } else {
                 newInventory.push({ productId: item.productId, storeId: toStoreId, stock: item.quantity });
             }
         });
 
-        setInventory(newInventory);
-        // In a real app, you would now send this `newInventory` state to your backend/database.
-        // For this prototype, we just update the local state.
+        updateInventory(newInventory);
         
         toast({ title: 'Success', description: "Stock transfer completed successfully."});
         setTransferItems([]);

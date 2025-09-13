@@ -1,14 +1,13 @@
 
 'use client';
 
-import { useState } from 'react';
 import { PageHeader } from "@/components/app/page-header";
 import { SalesForm } from "@/components/app/sales/sales-form";
-import { sales as initialSales } from '@/lib/data';
 import type { SaleTransaction } from '@/lib/types';
+import { useData } from "@/lib/data-context";
 
 export default function SalesPage() {
-  const [sales, setSales] = useState<SaleTransaction[]>(initialSales);
+  const { addSale } = useData();
 
   const handleSaveSale = (newSale: Omit<SaleTransaction, 'id' | 'date' | 'storeId'>) => {
     const sale: SaleTransaction = {
@@ -17,7 +16,7 @@ export default function SalesPage() {
       date: new Date(),
       storeId: 'store-1', // Mock storeId
     };
-    setSales(prev => [sale, ...prev]);
+    addSale(sale);
   };
 
   return (

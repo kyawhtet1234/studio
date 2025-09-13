@@ -1,12 +1,48 @@
+'use client';
 
+import { useData } from "@/lib/data-context";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { sales, products, stores } from "@/lib/data";
 import { FileDown } from "lucide-react";
+import { useMemo } from "react";
 
-const getReportData = (period: 'daily' | 'monthly') => {
+const ReportTable = ({ data, periodLabel }: { data: any[], periodLabel: string }) => (
+    <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{periodLabel}</TableHead>
+              <TableHead className="text-right">Sales</TableHead>
+              <TableHead className="text-right">Profit (Sales - COGS)</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((report) => (
+                <TableRow key={report.date}>
+                    <TableCell className="font-medium">{report.date}</TableCell>
+                    <TableCell className="text-right">MMK {report.sales.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">MMK {report.profit.toFixed(2)}</TableCell>
+                </TableRow>
+            ))}
+             {data.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={3} className="text-center h-24">
+                        No reports found.
+                    </TableCell>
+                </TableRow>
+            )}
+          </TableBody>
+        </Table>
+    </div>
+);
+
+
+export default function ReportsPage() {
+  const { sales, products } = useData();
+
+  const getReportData = (period: 'daily' | 'monthly') => {
     const reports: { [key: string]: { date: string, sales: number, cogs: number, profit: number } } = {};
     
     sales.forEach(sale => {
@@ -30,36 +66,12 @@ const getReportData = (period: 'daily' | 'monthly') => {
     });
 
     return Object.values(reports).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-};
+  };
 
-const dailyReports = getReportData('daily');
-const monthlyReports = getReportData('monthly');
-
-const ReportTable = ({ data, periodLabel }: { data: any[], periodLabel: string }) => (
-    <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{periodLabel}</TableHead>
-              <TableHead className="text-right">Sales</TableHead>
-              <TableHead className="text-right">Profit (Sales - COGS)</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.map((report) => (
-                <TableRow key={report.date}>
-                    <TableCell className="font-medium">{report.date}</TableCell>
-                    <TableCell className="text-right">MMK {report.sales.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">MMK {report.profit.toFixed(2)}</TableCell>
-                </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-    </div>
-);
+  const dailyReports = useMemo(() => getReportData('daily'), [sales, products]);
+  const monthlyReports = useMemo(() => getReportData('monthly'), [sales, products]);
 
 
-export default function ReportsPage() {
   return (
     <div>
       <PageHeader title="Reports">
