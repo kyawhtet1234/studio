@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { products, suppliers } from '@/lib/data';
+import { productsData, suppliersData } from '@/lib/data';
 
 const AutofillPurchaseDetailsInputSchema = z.object({
   sku: z.string().describe('The Stock Keeping Unit (SKU) of the item.'),
@@ -35,8 +35,8 @@ const prompt = ai.definePrompt({
   prompt: `You are a helpful assistant that retrieves item details for a purchase order based on the provided SKU.
   You have access to a list of products and suppliers.
 
-  Product Data: ${JSON.stringify(products)}
-  Supplier Data: ${JSON.stringify(suppliers)}
+  Product Data: ${JSON.stringify(productsData)}
+  Supplier Data: ${JSON.stringify(suppliersData)}
 
   Given the following SKU, please provide the item name, the supplier's name, and the buy price.
 
@@ -60,11 +60,11 @@ const autofillPurchaseDetailsFlow = ai.defineFlow(
   },
   async input => {
     // In a real app, you'd fetch this from a database.
-    const product = products.find(p => p.sku === input.sku);
+    const product = productsData.find(p => p.sku === input.sku);
     if (!product) {
       throw new Error('Product not found for the given SKU.');
     }
-    const supplier = suppliers.find(s => s.id === product.supplierId);
+    const supplier = suppliersData.find(s => s.id === product.supplierId);
     if (!supplier) {
         throw new Error('Supplier not found for the given product.');
     }

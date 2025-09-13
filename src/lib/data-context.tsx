@@ -1,13 +1,6 @@
 'use client';
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { 
-    products as initialProducts,
-    categories as initialCategories,
-    suppliers as initialSuppliers,
-    stores as initialStores,
-    inventory as initialInventory,
-    sales as initialSales
-} from '@/lib/data';
+import { useMockData } from '@/hooks/use-mock-data';
 import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction } from '@/lib/types';
 
 interface DataContextProps {
@@ -28,6 +21,15 @@ interface DataContextProps {
 const DataContext = createContext<DataContextProps | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
+    const { 
+        products: initialProducts,
+        categories: initialCategories,
+        suppliers: initialSuppliers,
+        stores: initialStores,
+        inventory: initialInventory,
+        sales: initialSales
+    } = useMockData();
+
     const [products, setProducts] = useState<Product[]>(initialProducts);
     const [categories, setCategories] = useState<Category[]>(initialCategories);
     const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
@@ -35,8 +37,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
     const [sales, setSales] = useState<SaleTransaction[]>(initialSales);
 
+    // Update state when initial data is loaded
+    useState(() => {
+        setProducts(initialProducts);
+        setCategories(initialCategories);
+        setSuppliers(initialSuppliers);
+        setStores(initialStores);
+        setInventory(initialInventory);
+        setSales(initialSales);
+    });
+
+
     const addProduct = (newProduct: Omit<Product, 'id'>) => {
-        setProducts(prev => [...prev, { ...newProduct, id: `prod-${Date.now()}` }]);
+        const product = { ...newProduct, id: `prod-${Date.now()}` };
+        setProducts(prev => [...prev, product ]);
+        // Also add some initial inventory for the new product in the first store
+        setInventory(prev => [...prev, { productId: product.id, storeId: stores[0].id, stock: Math.floor(Math.random() * 50) + 10}]);
     };
     
     const addCategory = (newCategory: Omit<Category, 'id'>) => {

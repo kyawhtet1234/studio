@@ -1,8 +1,12 @@
+
+'use client';
+
 import { PageHeader } from "@/components/app/page-header";
 import { PurchaseForm } from "@/components/app/purchase/purchase-form";
-import { suppliers } from "@/lib/data";
+import { useData } from "@/lib/data-context";
 
 export default function PurchasePage() {
+  const { suppliers } = useData();
   return (
     <div>
       <PageHeader title="New Purchase" />
