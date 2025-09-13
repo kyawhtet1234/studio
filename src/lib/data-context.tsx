@@ -11,6 +11,7 @@ interface DataContextProps {
     stores: Store[];
     inventory: InventoryItem[];
     sales: SaleTransaction[];
+    purchases: PurchaseTransaction[];
     addProduct: (product: Omit<Product, 'id'>) => void;
     addCategory: (category: Omit<Category, 'id'>) => void;
     addSupplier: (supplier: Omit<Supplier, 'id'>) => void;
@@ -62,7 +63,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setIsDataLoaded(true);
         };
         loadData();
-    }, []);
+    }, [initialProducts, initialCategories, initialSuppliers, initialStores, initialInventory, initialSales]);
 
     useEffect(() => {
         if (isDataLoaded) {
@@ -145,6 +146,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             stores, addStore,
             inventory, updateInventory,
             sales, addSale,
+            purchases,
             addPurchase
         }}>
             {children}
