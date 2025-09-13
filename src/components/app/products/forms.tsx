@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { categories, suppliers } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import type { Product, Category, Supplier, Store } from "@/lib/types";
 
@@ -31,8 +30,8 @@ const baseSchema = z.object({
 const productSchema = z.object({
   name: z.string().min(2),
   sku: z.string().min(2),
-  categoryId: z.string(),
-  supplierId: z.string(),
+  categoryId: z.string().min(1, "Please select a category."),
+  supplierId: z.string().min(1, "Please select a supplier."),
   sellPrice: z.coerce.number().positive(),
   buyPrice: z.coerce.number().positive(),
 });
@@ -119,7 +118,13 @@ export function AddStoreForm({ onAddStore }: { onAddStore: (data: Omit<Store, 'i
     );
 }
 
-export function AddProductForm({ onAddProduct }: { onAddProduct: (data: Omit<Product, 'id'>) => void }) {
+interface AddProductFormProps {
+  onAddProduct: (data: Omit<Product, 'id'>) => void;
+  categories: Category[];
+  suppliers: Supplier[];
+}
+
+export function AddProductForm({ onAddProduct, categories, suppliers }: AddProductFormProps) {
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
     defaultValues: { name: "", sku: "", categoryId: "", supplierId: "", sellPrice: 0, buyPrice: 0 },

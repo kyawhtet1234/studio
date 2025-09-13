@@ -39,7 +39,7 @@ export default function ProductsPage() {
       case "items":
         return (
           <AddEntitySheet buttonText="Add Item" title="Add a new item" description="Fill in the details for the new product.">
-            <AddProductForm onAddProduct={handleAddProduct} />
+            <AddProductForm onAddProduct={handleAddProduct} categories={categories} suppliers={suppliers} />
           </AddEntitySheet>
         );
       case "categories":
