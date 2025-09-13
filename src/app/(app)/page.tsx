@@ -1,3 +1,4 @@
+
 import { PageHeader } from "@/components/app/page-header";
 import { StatCard } from "@/components/app/dashboard/stat-card";
 import { SalesChart } from "@/components/app/dashboard/sales-chart";
@@ -40,13 +41,13 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
           title="Today's Sales"
-          value={`$${todaySales.toFixed(2)}`}
+          value={`MMK ${todaySales.toFixed(2)}`}
           icon={DollarSign}
           description="Total sales recorded today."
         />
         <StatCard 
           title="Today's Profit"
-          value={`$${todayProfit.toFixed(2)}`}
+          value={`MMK ${todayProfit.toFixed(2)}`}
           icon={TrendingUp}
           description="Gross profit (Sales - COGS)."
         />

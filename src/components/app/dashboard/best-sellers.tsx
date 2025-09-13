@@ -1,3 +1,4 @@
+
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { sales, products } from "@/lib/data";
@@ -48,7 +49,7 @@ export function BestSellers() {
               <TableRow key={index}>
                 <TableCell className="font-medium">{item.name}</TableCell>
                 <TableCell className="text-right">{item.quantity}</TableCell>
-                <TableCell className="text-right">${item.total.toFixed(2)}</TableCell>
+                <TableCell className="text-right">MMK {item.total.toFixed(2)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
@@ -44,8 +45,8 @@ const createActionsCell = <TData extends { id: string }>(
 export const productColumns: ColumnDef<Product>[] = [
   { accessorKey: "sku", header: "SKU" },
   { accessorKey: "name", header: "Name" },
-  { accessorKey: "sellPrice", header: "Sell Price", cell: ({ row }) => `$${row.original.sellPrice.toFixed(2)}` },
-  { accessorKey: "buyPrice", header: "Buy Price", cell: ({ row }) => `$${row.original.buyPrice.toFixed(2)}` },
+  { accessorKey: "sellPrice", header: "Sell Price", cell: ({ row }) => `MMK ${row.original.sellPrice.toFixed(2)}` },
+  { accessorKey: "buyPrice", header: "Buy Price", cell: ({ row }) => `MMK ${row.original.buyPrice.toFixed(2)}` },
   { id: "actions", cell: createActionsCell<Product>("Copy product ID") },
 ];
 

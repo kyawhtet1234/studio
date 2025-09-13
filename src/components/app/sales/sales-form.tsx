@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
@@ -126,7 +127,7 @@ export function SalesForm() {
         subtotal,
         total,
     });
-    toast({ title: 'Sale Saved!', description: `Total: $${total.toFixed(2)}` });
+    toast({ title: 'Sale Saved!', description: `Total: MMK ${total.toFixed(2)}` });
     form.reset();
   }
 
@@ -225,9 +226,9 @@ export function SalesForm() {
                         <TableRow key={item.id}>
                             <TableCell>{item.sku}</TableCell>
                             <TableCell>{item.name}</TableCell>
-                            <TableCell className="text-right">${item.sellPrice.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">MMK {item.sellPrice.toFixed(2)}</TableCell>
                             <TableCell className="text-right">{item.quantity}</TableCell>
-                            <TableCell className="text-right">${item.total.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">MMK {item.total.toFixed(2)}</TableCell>
                             <TableCell>
                                 <Button variant="ghost" size="icon" onClick={() => remove(index)}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
@@ -246,7 +247,7 @@ export function SalesForm() {
           <CardFooter className="p-6 bg-muted/50 flex flex-col items-end space-y-4">
             <div className="flex justify-between w-full max-w-sm">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-medium">${subtotal.toFixed(2)}</span>
+                <span className="font-medium">MMK {subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center w-full max-w-sm">
                 <FormLabel htmlFor="discount">Discount</FormLabel>
@@ -264,7 +265,7 @@ export function SalesForm() {
             </div>
             <div className="flex justify-between w-full max-w-sm border-t pt-4">
                 <span className="text-lg font-bold">Total</span>
-                <span className="text-lg font-bold text-primary">${total.toFixed(2)}</span>
+                <span className="text-lg font-bold text-primary">MMK {total.toFixed(2)}</span>
             </div>
           </CardFooter>
         </Card>

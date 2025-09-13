@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -54,7 +55,7 @@ export function SalesChart() {
                 tick={{ fontSize: 12 }}
               />
               <YAxis 
-                tickFormatter={(value) => `$${Number(value).toLocaleString()}`}
+                tickFormatter={(value) => `MMK ${Number(value).toLocaleString()}`}
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
@@ -64,7 +65,7 @@ export function SalesChart() {
               <ChartTooltip
                 cursor={false}
                 content={<ChartTooltipContent
-                  formatter={(value) => `$${Number(value).toFixed(2)}`}
+                  formatter={(value) => `MMK ${Number(value).toFixed(2)}`}
                   indicator="dot"
                 />}
               />

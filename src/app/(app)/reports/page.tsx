@@ -1,3 +1,4 @@
+
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,8 +49,8 @@ const ReportTable = ({ data, periodLabel }: { data: any[], periodLabel: string }
             {data.map((report) => (
                 <TableRow key={report.date}>
                     <TableCell className="font-medium">{report.date}</TableCell>
-                    <TableCell className="text-right">${report.sales.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">${report.profit.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">MMK {report.sales.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">MMK {report.profit.toFixed(2)}</TableCell>
                 </TableRow>
             ))}
           </TableBody>

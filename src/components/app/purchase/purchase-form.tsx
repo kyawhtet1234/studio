@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
@@ -129,7 +130,7 @@ export function PurchaseForm({ suppliers }: PurchaseFormProps) {
         ...data,
         total,
     });
-    toast({ title: 'Purchase Saved!', description: `Total: $${total.toFixed(2)}` });
+    toast({ title: 'Purchase Saved!', description: `Total: MMK ${total.toFixed(2)}` });
     form.reset();
   }
 
@@ -243,9 +244,9 @@ export function PurchaseForm({ suppliers }: PurchaseFormProps) {
                         <TableRow key={item.id}>
                             <TableCell>{item.sku}</TableCell>
                             <TableCell>{item.name}</TableCell>
-                            <TableCell className="text-right">${item.buyPrice.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">MMK {item.buyPrice.toFixed(2)}</TableCell>
                             <TableCell className="text-right">{item.quantity}</TableCell>
-                            <TableCell className="text-right">${item.total.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">MMK {item.total.toFixed(2)}</TableCell>
                             <TableCell>
                                 <Button variant="ghost" size="icon" onClick={() => remove(index)}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
@@ -264,7 +265,7 @@ export function PurchaseForm({ suppliers }: PurchaseFormProps) {
           <CardFooter className="p-6 bg-muted/50 flex flex-col items-end space-y-4">
             <div className="flex justify-between w-full max-w-sm border-t pt-4">
                 <span className="text-lg font-bold">Total</span>
-                <span className="text-lg font-bold text-primary">${total.toFixed(2)}</span>
+                <span className="text-lg font-bold text-primary">MMK {total.toFixed(2)}</span>
             </div>
           </CardFooter>
         </Card>
