@@ -1,6 +1,6 @@
 
 'use client';
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { useMockData } from '@/hooks/use-mock-data';
 import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction } from '@/lib/types';
 
@@ -32,19 +32,57 @@ export function DataProvider({ children }: { children: ReactNode }) {
         sales: initialSales
     } = useMockData();
 
-    const [products, setProducts] = useState<Product[]>(initialProducts);
-    const [categories, setCategories] = useState<Category[]>(initialCategories);
-    const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
-    const [stores, setStores] = useState<Store[]>(initialStores);
-    const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
-    const [sales, setSales] = useState<SaleTransaction[]>(initialSales);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const [stores, setStores] = useState<Store[]>([]);
+    const [inventory, setInventory] = useState<InventoryItem[]>([]);
+    const [sales, setSales] = useState<SaleTransaction[]>([]);
     const [purchases, setPurchases] = useState<PurchaseTransaction[]>([]);
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+    useEffect(() => {
+        const loadData = () => {
+            const storedProducts = localStorage.getItem('products');
+            const storedCategories = localStorage.getItem('categories');
+            const storedSuppliers = localStorage.getItem('suppliers');
+            const storedStores = localStorage.getItem('stores');
+            const storedInventory = localStorage.getItem('inventory');
+            const storedSales = localStorage.getItem('sales');
+            const storedPurchases = localStorage.getItem('purchases');
+
+            setProducts(storedProducts ? JSON.parse(storedProducts) : initialProducts);
+            setCategories(storedCategories ? JSON.parse(storedCategories) : initialCategories);
+            setSuppliers(storedSuppliers ? JSON.parse(storedSuppliers) : initialSuppliers);
+            setStores(storedStores ? JSON.parse(storedStores) : initialStores);
+            setInventory(storedInventory ? JSON.parse(storedInventory) : initialInventory);
+            setSales(storedSales ? JSON.parse(storedSales).map((s: SaleTransaction) => ({...s, date: new Date(s.date)})) : initialSales);
+            setPurchases(storedPurchases ? JSON.parse(storedPurchases).map((p: PurchaseTransaction) => ({...p, date: new Date(p.date)})) : []);
+            
+            setIsDataLoaded(true);
+        };
+        loadData();
+    }, []);
+
+    useEffect(() => {
+        if (isDataLoaded) {
+            localStorage.setItem('products', JSON.stringify(products));
+            localStorage.setItem('categories', JSON.stringify(categories));
+            localStorage.setItem('suppliers', JSON.stringify(suppliers));
+            localStorage.setItem('stores', JSON.stringify(stores));
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+            localStorage.setItem('sales', JSON.stringify(sales));
+            localStorage.setItem('purchases', JSON.stringify(purchases));
+        }
+    }, [products, categories, suppliers, stores, inventory, sales, purchases, isDataLoaded]);
 
     const addProduct = (newProduct: Omit<Product, 'id'>) => {
         const product = { ...newProduct, id: `prod-${Date.now()}` };
         setProducts(prev => [...prev, product ]);
-        // Also add some initial inventory for the new product in the first store
-        setInventory(prev => [...prev, { productId: product.id, storeId: stores[0].id, stock: Math.floor(Math.random() * 50) + 10}]);
+        const currentStores = stores.length > 0 ? stores : initialStores;
+        if(currentStores.length > 0) {
+            setInventory(prev => [...prev, { productId: product.id, storeId: currentStores[0].id, stock: Math.floor(Math.random() * 50) + 10}]);
+        }
     };
     
     const addCategory = (newCategory: Omit<Category, 'id'>) => {
@@ -62,7 +100,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const addSale = (newSale: SaleTransaction) => {
         setSales(prev => [newSale, ...prev]);
 
-        // Also update inventory
         let newInventory = [...inventory];
         newSale.items.forEach(item => {
             const inventoryIndex = newInventory.findIndex(i => i.productId === item.productId && i.storeId === newSale.storeId);
@@ -94,6 +131,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const updateInventory = (newInventory: InventoryItem[]) => {
         setInventory(newInventory);
+    }
+
+    if (!isDataLoaded) {
+        return null; // Or a loading spinner
     }
 
     return (
