@@ -144,7 +144,7 @@ export function SalesForm({ onSave }: SalesFormProps) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
               <div className="md:col-span-3 relative">
                 <FormField
@@ -218,42 +218,44 @@ export function SalesForm({ onSave }: SalesFormProps) {
 
         <Card>
           <CardContent className="p-0">
-             <Table>
-                <TableHeader>
-                    <TableRow>
-                    <TableHead className="w-[120px]">SKU</TableHead>
-                    <TableHead>Item Name</TableHead>
-                    <TableHead className="text-right">Price</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {fields.length > 0 ? (
-                        fields.map((item, index) => (
-                        <TableRow key={item.id}>
-                            <TableCell>{item.sku}</TableCell>
-                            <TableCell>{item.name}</TableCell>
-                            <TableCell className="text-right">MMK {item.sellPrice.toFixed(2)}</TableCell>
-                            <TableCell className="text-right">{item.quantity}</TableCell>
-                            <TableCell className="text-right">MMK {item.total.toFixed(2)}</TableCell>
-                            <TableCell>
-                                <Button variant="ghost" size="icon" onClick={() => remove(index)}>
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                            </TableCell>
-                        </TableRow>
-                        ))
-                    ) : (
+            <div className="overflow-x-auto">
+                <Table>
+                    <TableHeader>
                         <TableRow>
-                            <TableCell colSpan={6} className="text-center h-24">Cart is empty</TableCell>
+                        <TableHead className="w-[120px]">SKU</TableHead>
+                        <TableHead>Item Name</TableHead>
+                        <TableHead className="text-right">Price</TableHead>
+                        <TableHead className="text-right">Qty</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
-                    )}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                        {fields.length > 0 ? (
+                            fields.map((item, index) => (
+                            <TableRow key={item.id}>
+                                <TableCell>{item.sku}</TableCell>
+                                <TableCell>{item.name}</TableCell>
+                                <TableCell className="text-right">MMK {item.sellPrice.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">{item.quantity}</TableCell>
+                                <TableCell className="text-right">MMK {item.total.toFixed(2)}</TableCell>
+                                <TableCell>
+                                    <Button variant="ghost" size="icon" onClick={() => remove(index)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={6} className="text-center h-24">Cart is empty</TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
           </CardContent>
-          <CardFooter className="p-6 bg-muted/50 flex flex-col items-end space-y-4">
+          <CardFooter className="p-4 sm:p-6 bg-muted/50 flex flex-col items-end space-y-4">
             <div className="flex justify-between w-full max-w-sm">
                 <span className="text-muted-foreground">Subtotal</span>
                 <span className="font-medium">MMK {subtotal.toFixed(2)}</span>

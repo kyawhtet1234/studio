@@ -138,7 +138,7 @@ export function PurchaseForm({ suppliers }: PurchaseFormProps) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
               <div className="md:col-span-2 relative">
                 <FormField
@@ -227,6 +227,7 @@ export function PurchaseForm({ suppliers }: PurchaseFormProps) {
 
         <Card>
           <CardContent className="p-0">
+            <div className="overflow-x-auto">
              <Table>
                 <TableHeader>
                     <TableRow>
@@ -261,8 +262,9 @@ export function PurchaseForm({ suppliers }: PurchaseFormProps) {
                     )}
                 </TableBody>
             </Table>
+            </div>
           </CardContent>
-          <CardFooter className="p-6 bg-muted/50 flex flex-col items-end space-y-4">
+          <CardFooter className="p-4 sm:p-6 bg-muted/50 flex flex-col items-end space-y-4">
             <div className="flex justify-between w-full max-w-sm border-t pt-4">
                 <span className="text-lg font-bold">Total</span>
                 <span className="text-lg font-bold text-primary">MMK {total.toFixed(2)}</span>
