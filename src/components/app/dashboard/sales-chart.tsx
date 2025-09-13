@@ -10,7 +10,7 @@ import type { SaleTransaction } from "@/lib/types";
 const chartConfig = {
   sales: {
     label: "Sales",
-    color: "hsl(var(--chart-1))",
+    color: "hsl(var(--primary))",
   },
 };
 
