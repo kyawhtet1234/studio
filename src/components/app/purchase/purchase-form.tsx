@@ -10,6 +10,13 @@ import { autofillPurchaseAction } from "@/app/(app)/purchase/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -17,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -28,9 +35,12 @@ import {
 } from "@/components/ui/form";
 import { Loader2, Trash2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Supplier } from "@/lib/types";
+import type { Store, PurchaseTransaction, Product } from "@/lib/types";
+import { useData } from "@/lib/data-context";
+
 
 const formSchema = z.object({
+  storeId: z.string().min(1, "Please select a store."),
   sku: z.string(),
   itemName: z.string(),
   supplierName: z.string(),
@@ -51,10 +61,12 @@ const formSchema = z.object({
 type PurchaseFormValues = z.infer<typeof formSchema>;
 
 interface PurchaseFormProps {
-    suppliers: Supplier[];
+    stores: Store[];
+    onSavePurchase: (purchase: Omit<PurchaseTransaction, 'id' | 'date'>) => void;
 }
 
-export function PurchaseForm({ suppliers }: PurchaseFormProps) {
+export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
+  const { products } = useData();
   const [autofillState, setAutofillState] = useState({ message: "", data: null });
   const [isAutofillPending, startAutofillTransition] = useTransition();
   const { toast } = useToast();
@@ -62,6 +74,7 @@ export function PurchaseForm({ suppliers }: PurchaseFormProps) {
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      storeId: "",
       sku: "",
       itemName: "",
       supplierName: "",
@@ -97,10 +110,12 @@ export function PurchaseForm({ suppliers }: PurchaseFormProps) {
   }, [watchSku, form, toast]);
 
   function addToCart() {
-    const { sku, itemName, buyPrice, quantity, supplierName } = form.getValues();
-    if (sku && itemName && buyPrice > 0 && quantity > 0 && supplierName) {
+    const { sku, itemName, buyPrice, quantity } = form.getValues();
+    const product = products.find(p => p.sku === sku);
+
+    if (product && itemName && buyPrice > 0 && quantity > 0) {
       const newItem = {
-        productId: `prod-${Math.random().toString(36).substr(2, 9)}`, // Mock product ID
+        productId: product.id,
         sku,
         name: itemName,
         buyPrice,
@@ -112,7 +127,6 @@ export function PurchaseForm({ suppliers }: PurchaseFormProps) {
       form.resetField("itemName");
       form.resetField("supplierName");
       form.resetField("buyPrice");
-      form.resetField("quantity");
       form.setValue("quantity", 1);
     } else {
         toast({ variant: 'destructive', title: 'Invalid Item', description: 'Please fill all item details before adding to cart.' });
@@ -126,10 +140,21 @@ export function PurchaseForm({ suppliers }: PurchaseFormProps) {
         toast({ variant: 'destructive', title: 'Empty Cart', description: 'Please add items to the cart before saving.' });
         return;
     }
-    console.log({
-        ...data,
-        total,
-    });
+    const supplier = useData.getState().suppliers.find(s => s.name === data.cart[0].name);
+
+    const purchaseData = {
+      storeId: data.storeId,
+      supplierId: 'sup-1', // Mocking supplierId as it's not in the form yet.
+      items: data.cart.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        buyPrice: item.buyPrice,
+      })),
+      total: total
+    }
+    
+    onSavePurchase(purchaseData);
+
     toast({ title: 'Purchase Saved!', description: `Total: MMK ${total.toFixed(2)}` });
     form.reset();
   }
@@ -138,7 +163,32 @@ export function PurchaseForm({ suppliers }: PurchaseFormProps) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card>
-          <CardContent className="p-4 sm:p-6">
+          <CardHeader>
+             <CardTitle>Purchase Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+             <FormField
+                control={form.control}
+                name="storeId"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Store</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Select the store receiving stock" />
+                        </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        {stores.map(store => (
+                        <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
               <div className="md:col-span-2 relative">
                 <FormField

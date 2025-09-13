@@ -1,7 +1,8 @@
+
 'use client';
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { useMockData } from '@/hooks/use-mock-data';
-import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction } from '@/lib/types';
+import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction } from '@/lib/types';
 
 interface DataContextProps {
     products: Product[];
@@ -15,6 +16,7 @@ interface DataContextProps {
     addSupplier: (supplier: Omit<Supplier, 'id'>) => void;
     addStore: (store: Omit<Store, 'id'>) => void;
     addSale: (sale: SaleTransaction) => void;
+    addPurchase: (purchase: PurchaseTransaction) => void;
     updateInventory: (newInventory: InventoryItem[]) => void;
 }
 
@@ -36,6 +38,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [stores, setStores] = useState<Store[]>(initialStores);
     const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
     const [sales, setSales] = useState<SaleTransaction[]>(initialSales);
+    const [purchases, setPurchases] = useState<PurchaseTransaction[]>([]);
 
     // Update state when initial data is loaded
     useState(() => {
@@ -81,6 +84,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setInventory(newInventory);
     };
 
+    const addPurchase = (newPurchase: PurchaseTransaction) => {
+        setPurchases(prev => [newPurchase, ...prev]);
+
+        let newInventory = [...inventory];
+        newPurchase.items.forEach(item => {
+            const inventoryIndex = newInventory.findIndex(i => i.productId === item.productId && i.storeId === newPurchase.storeId);
+            if (inventoryIndex > -1) {
+                newInventory[inventoryIndex].stock += item.quantity;
+            } else {
+                newInventory.push({
+                    productId: item.productId,
+                    storeId: newPurchase.storeId,
+                    stock: item.quantity,
+                });
+            }
+        });
+        setInventory(newInventory);
+    };
+
     const updateInventory = (newInventory: InventoryItem[]) => {
         setInventory(newInventory);
     }
@@ -92,7 +114,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
             suppliers, addSupplier,
             stores, addStore,
             inventory, updateInventory,
-            sales, addSale
+            sales, addSale,
+            addPurchase
         }}>
             {children}
         </DataContext.Provider>
