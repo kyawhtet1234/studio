@@ -1,3 +1,7 @@
+
+'use client';
+
+import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import {
   Table,
@@ -14,26 +18,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { inventory, products, stores, categories } from "@/lib/data";
-
-const inventoryData = inventory.map(item => {
-    const product = products.find(p => p.id === item.productId);
-    const store = stores.find(s => s.id === item.storeId);
-    const category = categories.find(c => c.id === product?.categoryId);
-    return {
-        ...item,
-        productName: product?.name,
-        sku: product?.sku,
-        categoryName: category?.name,
-        storeName: store?.name,
-    };
-});
+import { inventory as initialInventory, products, stores, categories } from "@/lib/data";
+import type { InventoryItem } from "@/lib/types";
 
 export default function InventoryPage() {
+  const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
+  const [selectedStore, setSelectedStore] = useState<string>("all");
+
+  const inventoryData = useMemo(() => {
+    return inventory
+        .filter(item => selectedStore === 'all' || item.storeId === selectedStore)
+        .map(item => {
+            const product = products.find(p => p.id === item.productId);
+            const store = stores.find(s => s.id === item.storeId);
+            const category = categories.find(c => c.id === product?.categoryId);
+            return {
+                ...item,
+                productName: product?.name,
+                sku: product?.sku,
+                categoryName: category?.name,
+                storeName: store?.name,
+            };
+    });
+  }, [inventory, selectedStore]);
+
+
   return (
     <div>
       <PageHeader title="Inventory">
-        <Select>
+        <Select onValueChange={setSelectedStore} value={selectedStore}>
             <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filter by store" />
             </SelectTrigger>
@@ -58,7 +71,7 @@ export default function InventoryPage() {
           </TableHeader>
           <TableBody>
             {inventoryData.map((item, index) => (
-                <TableRow key={index}>
+                <TableRow key={`${item.productId}-${item.storeId}`}>
                     <TableCell>{item.sku}</TableCell>
                     <TableCell className="font-medium">{item.productName}</TableCell>
                     <TableCell>{item.categoryName}</TableCell>
@@ -66,6 +79,13 @@ export default function InventoryPage() {
                     <TableCell className="text-right">{item.stock}</TableCell>
                 </TableRow>
             ))}
+             {inventoryData.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={5} className="text-center h-24">
+                        No inventory for this store.
+                    </TableCell>
+                </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>
