@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/form";
 import { Sparkles, Trash2, Loader2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { CartItem } from "@/lib/types";
+import type { CartItem, SaleTransaction } from "@/lib/types";
 
 const formSchema = z.object({
   sku: z.string(),
@@ -50,7 +50,11 @@ const formSchema = z.object({
 
 type SalesFormValues = z.infer<typeof formSchema>;
 
-export function SalesForm() {
+interface SalesFormProps {
+    onSave: (sale: Omit<SaleTransaction, 'id' | 'date' | 'storeId'>) => void;
+}
+
+export function SalesForm({ onSave }: SalesFormProps) {
   const [autofillState, setAutofillState] = useState({ message: "", data: null });
   const [isAutofillPending, startAutofillTransition] = useTransition();
   const { toast } = useToast();
@@ -122,11 +126,16 @@ export function SalesForm() {
         toast({ variant: 'destructive', title: 'Empty Cart', description: 'Please add items to the cart before saving.' });
         return;
     }
-    console.log({
-        ...data,
-        subtotal,
-        total,
-    });
+    
+    const saleData = {
+        items: data.cart,
+        subtotal: subtotal,
+        discount: data.discount || 0,
+        total: total,
+    };
+    
+    onSave(saleData);
+
     toast({ title: 'Sale Saved!', description: `Total: MMK ${total.toFixed(2)}` });
     form.reset();
   }
