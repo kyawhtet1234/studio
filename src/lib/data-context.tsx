@@ -1,5 +1,4 @@
 
-
 'use client';
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { useMockData } from '@/hooks/use-mock-data';
@@ -16,8 +15,11 @@ interface DataContextProps {
     addProduct: (product: Omit<Product, 'id'>) => void;
     deleteProduct: (productId: string) => void;
     addCategory: (category: Omit<Category, 'id'>) => void;
+    deleteCategory: (categoryId: string) => void;
     addSupplier: (supplier: Omit<Supplier, 'id'>) => void;
+    deleteSupplier: (supplierId: string) => void;
     addStore: (store: Omit<Store, 'id'>) => void;
+    deleteStore: (storeId: string) => void;
     addSale: (sale: SaleTransaction) => void;
     addPurchase: (purchase: PurchaseTransaction) => void;
     updateInventory: (newInventory: InventoryItem[]) => void;
@@ -97,12 +99,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setCategories(prev => [...prev, { ...newCategory, id: `cat-${Date.now()}` }]);
     };
 
+    const deleteCategory = (categoryId: string) => {
+        setCategories(prev => prev.filter(c => c.id !== categoryId));
+    };
+
     const addSupplier = (newSupplier: Omit<Supplier, 'id'>) => {
         setSuppliers(prev => [...prev, { ...newSupplier, id: `sup-${Date.now()}` }]);
     };
 
+    const deleteSupplier = (supplierId: string) => {
+        setSuppliers(prev => prev.filter(s => s.id !== supplierId));
+    };
+
     const addStore = (newStore: Omit<Store, 'id'>) => {
         setStores(prev => [...prev, { ...newStore, id: `store-${Date.now()}` }]);
+    };
+
+    const deleteStore = (storeId: string) => {
+        setStores(prev => prev.filter(s => s.id !== storeId));
+        setInventory(prev => prev.filter(i => i.storeId !== storeId));
     };
 
     const addSale = (newSale: SaleTransaction) => {
@@ -148,9 +163,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return (
         <DataContext.Provider value={{ 
             products, addProduct, deleteProduct,
-            categories, addCategory,
-            suppliers, addSupplier,
-            stores, addStore,
+            categories, addCategory, deleteCategory,
+            suppliers, addSupplier, deleteSupplier,
+            stores, addStore, deleteStore,
             inventory, updateInventory,
             sales, addSale,
             purchases,

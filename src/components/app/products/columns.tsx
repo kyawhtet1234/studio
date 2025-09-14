@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState } from "react";
@@ -89,7 +88,7 @@ const ActionsCell = <TData extends DeletableRow>({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteConfirmationText || `This action cannot be undone. This will permanently delete the item.`}
+              {deleteConfirmationText || `This action cannot be undone. This will permanently delete the item '${item.name}'.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -122,27 +121,42 @@ export const productColumns = ({ onDelete }: { onDelete: (id: string) => void })
   },
 ];
 
-export const categoryColumns: ColumnDef<Category>[] = [
+export const categoryColumns = ({ onDelete }: { onDelete: (id: string) => void }): ColumnDef<Category>[] => [
   { accessorKey: "name", header: "Name" },
   { 
     id: "actions",
-    cell: ({ row }) => <ActionsCell row={row} copyLabel="Copy category ID" />
+    cell: ({ row }) => <ActionsCell 
+      row={row} 
+      copyLabel="Copy category ID" 
+      onDelete={onDelete}
+      deleteConfirmationText={`This will permanently delete the category "${row.original.name}". Products in this category will not be deleted.`}
+    />
   },
 ];
 
-export const supplierColumns: ColumnDef<Supplier>[] = [
+export const supplierColumns = ({ onDelete }: { onDelete: (id: string) => void }): ColumnDef<Supplier>[] => [
   { accessorKey: "name", header: "Name" },
   { 
     id: "actions",
-    cell: ({ row }) => <ActionsCell row={row} copyLabel="Copy supplier ID" />
+    cell: ({ row }) => <ActionsCell 
+      row={row} 
+      copyLabel="Copy supplier ID" 
+      onDelete={onDelete}
+      deleteConfirmationText={`This will permanently delete the supplier "${row.original.name}". Products from this supplier will not be deleted.`}
+    />
   },
 ];
 
-export const storeColumns: ColumnDef<Store>[] = [
+export const storeColumns = ({ onDelete }: { onDelete: (id: string) => void }): ColumnDef<Store>[] => [
   { accessorKey: "name", header: "Name" },
   { accessorKey: "location", header: "Location" },
   { 
     id: "actions",
-    cell: ({ row }) => <ActionsCell row={row} copyLabel="Copy store ID" />
+    cell: ({ row }) => <ActionsCell 
+      row={row} 
+      copyLabel="Copy store ID" 
+      onDelete={onDelete}
+      deleteConfirmationText={`This will permanently delete the store "${row.original.name}" and all associated inventory.`}
+    />
   },
 ];

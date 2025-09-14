@@ -13,9 +13,9 @@ export default function ProductsPage() {
   const [activeTab, setActiveTab] = useState("items");
   const { 
     products, addProduct, deleteProduct,
-    categories, addCategory,
-    suppliers, addSupplier,
-    stores, addStore
+    categories, addCategory, deleteCategory,
+    suppliers, addSupplier, deleteSupplier,
+    stores, addStore, deleteStore
   } = useData();
 
   const renderAddButton = () => {
@@ -50,6 +50,9 @@ export default function ProductsPage() {
   };
 
   const getProductColumns = productColumns({ onDelete: deleteProduct });
+  const getCategoryColumns = categoryColumns({ onDelete: deleteCategory });
+  const getSupplierColumns = supplierColumns({ onDelete: deleteSupplier });
+  const getStoreColumns = storeColumns({ onDelete: deleteStore });
 
   return (
     <div>
@@ -71,13 +74,13 @@ export default function ProductsPage() {
           <DataTable columns={getProductColumns} data={products} filterColumnId="name" filterPlaceholder="Filter items by name..."/>
         </TabsContent>
         <TabsContent value="categories">
-          <DataTable columns={categoryColumns} data={categories} filterColumnId="name" filterPlaceholder="Filter categories by name..."/>
+          <DataTable columns={getCategoryColumns} data={categories} filterColumnId="name" filterPlaceholder="Filter categories by name..."/>
         </TabsContent>
         <TabsContent value="suppliers">
-          <DataTable columns={supplierColumns} data={suppliers} filterColumnId="name" filterPlaceholder="Filter suppliers by name..."/>
+          <DataTable columns={getSupplierColumns} data={suppliers} filterColumnId="name" filterPlaceholder="Filter suppliers by name..."/>
         </TabsContent>
         <TabsContent value="stores">
-          <DataTable columns={storeColumns} data={stores} filterColumnId="name" filterPlaceholder="Filter stores by name..."/>
+          <DataTable columns={getStoreColumns} data={stores} filterColumnId="name" filterPlaceholder="Filter stores by name..."/>
         </TabsContent>
       </Tabs>
     </div>
