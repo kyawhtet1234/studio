@@ -146,20 +146,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const addPurchase = (newPurchase: PurchaseTransaction) => {
         setPurchases(prev => [newPurchase, ...prev]);
 
-        let newInventory = [...inventory];
-        newPurchase.items.forEach(item => {
-            const inventoryIndex = newInventory.findIndex(i => i.productId === item.productId && i.storeId === newPurchase.storeId);
-            if (inventoryIndex > -1) {
-                newInventory[inventoryIndex].stock += item.quantity;
-            } else {
-                newInventory.push({
-                    productId: item.productId,
-                    storeId: newPurchase.storeId,
-                    stock: item.quantity,
-                });
-            }
+        setInventory(prevInventory => {
+            const newInventory = [...prevInventory];
+            newPurchase.items.forEach(item => {
+                const inventoryIndex = newInventory.findIndex(i => i.productId === item.productId && i.storeId === newPurchase.storeId);
+                if (inventoryIndex > -1) {
+                    newInventory[inventoryIndex] = {
+                        ...newInventory[inventoryIndex],
+                        stock: newInventory[inventoryIndex].stock + item.quantity
+                    };
+                } else {
+                    newInventory.push({
+                        productId: item.productId,
+                        storeId: newPurchase.storeId,
+                        stock: item.quantity,
+                    });
+                }
+            });
+            return newInventory;
         });
-        setInventory(newInventory);
     };
 
     const updateInventory = (newInventory: InventoryItem[]) => {
