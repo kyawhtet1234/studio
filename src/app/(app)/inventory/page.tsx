@@ -155,7 +155,7 @@ export default function InventoryPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
                 <Label htmlFor="current-stock">Current Stock</Label>
-                <Input id="current-stock" value={adjustmentItem?.currentStock} readOnly />
+                <Input id="current-stock" value={adjustmentItem?.currentStock ?? ''} readOnly />
             </div>
             <div className="space-y-2">
                 <Label htmlFor="new-stock">New Stock Quantity</Label>
