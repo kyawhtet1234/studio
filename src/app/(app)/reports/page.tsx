@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileDown } from "lucide-react";
 import { useMemo } from "react";
-import type { PurchaseTransaction } from "@/lib/types";
+import type { PurchaseTransaction, SaleTransaction } from "@/lib/types";
 
 const ReportTable = ({ data, periodLabel }: { data: any[], periodLabel: string }) => (
     <div className="rounded-md border">
@@ -72,6 +72,40 @@ const PurchaseHistoryTable = ({ data, stores, suppliers }: { data: PurchaseTrans
     </div>
 );
 
+const SalesHistoryTable = ({ data, stores }: { data: SaleTransaction[], stores: any[] }) => (
+    <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Store</TableHead>
+              <TableHead className="text-right">Subtotal</TableHead>
+              <TableHead className="text-right">Discount</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((sale) => (
+                <TableRow key={sale.id}>
+                    <TableCell className="font-medium">{new Date(sale.date).toLocaleDateString()}</TableCell>
+                    <TableCell>{stores.find(s => s.id === sale.storeId)?.name || 'N/A'}</TableCell>
+                    <TableCell className="text-right">MMK {sale.subtotal.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">MMK {sale.discount.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">MMK {sale.total.toFixed(2)}</TableCell>
+                </TableRow>
+            ))}
+             {data.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={5} className="text-center h-24">
+                        No sales history found.
+                    </TableCell>
+                </TableRow>
+            )}
+          </TableBody>
+        </Table>
+    </div>
+);
+
 
 export default function ReportsPage() {
   const { sales, products, purchases, stores, suppliers } = useData();
@@ -105,7 +139,7 @@ export default function ReportsPage() {
   const dailyReports = useMemo(() => getReportData('daily'), [sales, products]);
   const monthlyReports = useMemo(() => getReportData('monthly'), [sales, products]);
   const purchaseHistory = useMemo(() => [...purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [purchases]);
-
+  const salesHistory = useMemo(() => [...sales].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [sales]);
 
   return (
     <div>
@@ -119,6 +153,7 @@ export default function ReportsPage() {
         <TabsList>
             <TabsTrigger value="daily">Daily</TabsTrigger>
             <TabsTrigger value="monthly">Monthly</TabsTrigger>
+            <TabsTrigger value="sales">Sales History</TabsTrigger>
             <TabsTrigger value="purchase">Purchase History</TabsTrigger>
         </TabsList>
         <TabsContent value="daily">
@@ -126,6 +161,9 @@ export default function ReportsPage() {
         </TabsContent>
         <TabsContent value="monthly">
             <ReportTable data={monthlyReports} periodLabel="Month" />
+        </TabsContent>
+         <TabsContent value="sales">
+            <SalesHistoryTable data={salesHistory} stores={stores} />
         </TabsContent>
         <TabsContent value="purchase">
             <PurchaseHistoryTable data={purchaseHistory} stores={stores} suppliers={suppliers} />
