@@ -133,37 +133,44 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const addSale = (newSale: SaleTransaction) => {
         setSales(prev => [newSale, ...prev]);
 
-        let newInventory = [...inventory];
-        newSale.items.forEach(item => {
-            const inventoryIndex = newInventory.findIndex(i => i.productId === item.productId && i.storeId === newSale.storeId);
-            if(inventoryIndex > -1) {
-                newInventory[inventoryIndex].stock -= item.quantity;
-            }
+        setInventory(prevInventory => {
+            const newInventory = prevInventory.map(invItem => {
+                const saleItem = newSale.items.find(
+                    saleItm => saleItm.productId === invItem.productId && newSale.storeId === invItem.storeId
+                );
+                if (saleItem) {
+                    return { ...invItem, stock: invItem.stock - saleItem.quantity };
+                }
+                return invItem;
+            });
+            return newInventory;
         });
-        setInventory(newInventory);
     };
 
     const addPurchase = (newPurchase: PurchaseTransaction) => {
         setPurchases(prev => [newPurchase, ...prev]);
 
         setInventory(prevInventory => {
-            const newInventory = [...prevInventory];
+            const updatedInventory = [...prevInventory];
             newPurchase.items.forEach(item => {
-                const inventoryIndex = newInventory.findIndex(i => i.productId === item.productId && i.storeId === newPurchase.storeId);
+                const inventoryIndex = updatedInventory.findIndex(
+                    i => i.productId === item.productId && i.storeId === newPurchase.storeId
+                );
+
                 if (inventoryIndex > -1) {
-                    newInventory[inventoryIndex] = {
-                        ...newInventory[inventoryIndex],
-                        stock: newInventory[inventoryIndex].stock + item.quantity
+                    updatedInventory[inventoryIndex] = {
+                        ...updatedInventory[inventoryIndex],
+                        stock: updatedInventory[inventoryIndex].stock + item.quantity,
                     };
                 } else {
-                    newInventory.push({
+                    updatedInventory.push({
                         productId: item.productId,
                         storeId: newPurchase.storeId,
                         stock: item.quantity,
                     });
                 }
             });
-            return newInventory;
+            return updatedInventory;
         });
     };
 
