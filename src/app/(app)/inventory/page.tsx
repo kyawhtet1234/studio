@@ -18,12 +18,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { useData } from "@/lib/data-context";
 import type { InventoryItem } from "@/lib/types";
 
+interface AdjustmentItem {
+  productId: string;
+  storeId: string;
+  productName?: string;
+  storeName?: string;
+  currentStock: number;
+}
+
 export default function InventoryPage() {
-  const { inventory, products, stores, categories } = useData();
+  const { inventory, products, stores, categories, updateInventory } = useData();
+  const { toast } = useToast();
   const [selectedStore, setSelectedStore] = useState<string>("all");
+  const [adjustmentItem, setAdjustmentItem] = useState<AdjustmentItem | null>(null);
+  const [newStock, setNewStock] = useState<number>(0);
 
   const inventoryData = useMemo(() => {
     return inventory
@@ -42,6 +66,31 @@ export default function InventoryPage() {
     });
   }, [inventory, selectedStore, products, stores, categories]);
 
+  const handleOpenAdjustDialog = (item: { productId: string; storeId: string; productName?: string; storeName?: string, stock: number }) => {
+    setAdjustmentItem({
+        productId: item.productId,
+        storeId: item.storeId,
+        productName: item.productName,
+        storeName: item.storeName,
+        currentStock: item.stock
+    });
+    setNewStock(item.stock);
+  };
+
+  const handleStockAdjustment = () => {
+    if (!adjustmentItem) return;
+
+    const newInventory = inventory.map(item => {
+      if (item.productId === adjustmentItem.productId && item.storeId === adjustmentItem.storeId) {
+        return { ...item, stock: newStock };
+      }
+      return item;
+    });
+
+    updateInventory(newInventory);
+    toast({ title: 'Success', description: `Stock for ${adjustmentItem.productName} updated to ${newStock}.`});
+    setAdjustmentItem(null);
+  };
 
   return (
     <div>
@@ -67,6 +116,7 @@ export default function InventoryPage() {
               <TableHead>Category</TableHead>
               <TableHead>Store</TableHead>
               <TableHead className="text-right">Stock</TableHead>
+              <TableHead className="w-[100px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -77,11 +127,16 @@ export default function InventoryPage() {
                     <TableCell>{item.categoryName}</TableCell>
                     <TableCell>{item.storeName}</TableCell>
                     <TableCell className="text-right">{item.stock}</TableCell>
+                    <TableCell className="text-right">
+                        <Button variant="outline" size="sm" onClick={() => handleOpenAdjustDialog(item)}>
+                            Adjust
+                        </Button>
+                    </TableCell>
                 </TableRow>
             ))}
              {inventoryData.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={5} className="text-center h-24">
+                    <TableCell colSpan={6} className="text-center h-24">
                         No inventory for this store.
                     </TableCell>
                 </TableRow>
@@ -89,6 +144,32 @@ export default function InventoryPage() {
           </TableBody>
         </Table>
       </div>
+      <Dialog open={!!adjustmentItem} onOpenChange={() => setAdjustmentItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adjust Stock</DialogTitle>
+            <DialogDescription>
+              Update the stock quantity for <span className="font-semibold">{adjustmentItem?.productName}</span> at <span className="font-semibold">{adjustmentItem?.storeName}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+                <Label htmlFor="current-stock">Current Stock</Label>
+                <Input id="current-stock" value={adjustmentItem?.currentStock} readOnly />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="new-stock">New Stock Quantity</Label>
+                <Input id="new-stock" type="number" value={newStock} onChange={(e) => setNewStock(Number(e.target.value))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleStockAdjustment}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
