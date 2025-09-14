@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { productsData } from '@/lib/data';
 
 const AutofillItemDetailsInputSchema = z.object({
   sku: z.string().describe('The Stock Keeping Unit (SKU) of the item.'),
@@ -27,33 +28,25 @@ export async function autofillItemDetails(input: AutofillItemDetailsInput): Prom
   return autofillItemDetailsFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'autofillItemDetailsPrompt',
-  input: {schema: AutofillItemDetailsInputSchema},
-  output: {schema: AutofillItemDetailsOutputSchema},
-  prompt: `You are a helpful assistant that retrieves item details based on the provided SKU.
-
-  Given the following SKU, please provide the item name and sell price.
-
-  SKU: {{{sku}}}
-
-  Please respond with the item name and sell price in JSON format.
-  Make sure the sellPrice is a number.
-  Example:
-  {
-    "itemName": "Example Item Name",
-    "sellPrice": 9.99
-  }`,
-});
-
 const autofillItemDetailsFlow = ai.defineFlow(
   {
     name: 'autofillItemDetailsFlow',
     inputSchema: AutofillItemDetailsInputSchema,
     outputSchema: AutofillItemDetailsOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async ({ sku }) => {
+    // In a real app, you'd fetch this from a database.
+    // For the prototype, we use the static data files.
+    // This is more robust than passing all data from the client.
+    const product = productsData.find(p => p.sku === sku);
+    
+    if (!product) {
+      throw new Error('Product not found for the given SKU.');
+    }
+
+    return {
+      itemName: product.name,
+      sellPrice: product.sellPrice,
+    };
   }
 );
