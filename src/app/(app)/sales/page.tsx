@@ -7,14 +7,13 @@ import type { SaleTransaction } from '@/lib/types';
 import { useData } from "@/lib/data-context";
 
 export default function SalesPage() {
-  const { addSale } = useData();
+  const { addSale, stores } = useData();
 
-  const handleSaveSale = (newSale: Omit<SaleTransaction, 'id' | 'date' | 'storeId'>) => {
+  const handleSaveSale = (newSale: Omit<SaleTransaction, 'id' | 'date'>) => {
     const sale: SaleTransaction = {
       ...newSale,
       id: `sale-${Date.now()}`,
       date: new Date(),
-      storeId: 'store-1', // Mock storeId
     };
     addSale(sale);
   };
@@ -22,7 +21,7 @@ export default function SalesPage() {
   return (
     <div>
       <PageHeader title="New Sale" />
-      <SalesForm onSave={handleSaveSale} />
+      <SalesForm stores={stores} onSave={handleSaveSale} />
     </div>
   );
 }

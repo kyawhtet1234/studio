@@ -10,6 +10,13 @@ import { autofillAction } from "@/app/(app)/sales/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -17,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -26,11 +33,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Sparkles, Trash2, Loader2, PlusCircle } from "lucide-react";
+import { Trash2, Loader2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { CartItem, SaleTransaction } from "@/lib/types";
+import type { CartItem, SaleTransaction, Store } from "@/lib/types";
 
 const formSchema = z.object({
+  storeId: z.string().min(1, "Please select a store."),
   sku: z.string(),
   itemName: z.string(),
   sellPrice: z.coerce.number(),
@@ -51,10 +59,11 @@ const formSchema = z.object({
 type SalesFormValues = z.infer<typeof formSchema>;
 
 interface SalesFormProps {
-    onSave: (sale: Omit<SaleTransaction, 'id' | 'date' | 'storeId'>) => void;
+    stores: Store[];
+    onSave: (sale: Omit<SaleTransaction, 'id' | 'date'>) => void;
 }
 
-export function SalesForm({ onSave }: SalesFormProps) {
+export function SalesForm({ stores, onSave }: SalesFormProps) {
   const [autofillState, setAutofillState] = useState({ message: "", data: null });
   const [isAutofillPending, startAutofillTransition] = useTransition();
   const { toast } = useToast();
@@ -62,6 +71,7 @@ export function SalesForm({ onSave }: SalesFormProps) {
   const form = useForm<SalesFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      storeId: "",
       sku: "",
       itemName: "",
       sellPrice: 0,
@@ -128,6 +138,7 @@ export function SalesForm({ onSave }: SalesFormProps) {
     }
     
     const saleData = {
+        storeId: data.storeId,
         items: data.cart,
         subtotal: subtotal,
         discount: data.discount || 0,
@@ -144,8 +155,33 @@ export function SalesForm({ onSave }: SalesFormProps) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+          <CardHeader>
+             <CardTitle>Sale Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField
+                control={form.control}
+                name="storeId"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Store</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Select the store for this sale" />
+                        </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        {stores.map(store => (
+                        <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end pt-4 border-t">
               <div className="md:col-span-3 relative">
                 <FormField
                   control={form.control}
