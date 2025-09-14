@@ -134,14 +134,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setSales(prev => [newSale, ...prev]);
 
         setInventory(prevInventory => {
-            const newInventory = prevInventory.map(invItem => {
-                const saleItem = newSale.items.find(
-                    saleItm => saleItm.productId === invItem.productId && newSale.storeId === invItem.storeId
+            const newInventory = [...prevInventory];
+            newSale.items.forEach(saleItem => {
+                const inventoryIndex = newInventory.findIndex(
+                    invItem => invItem.productId === saleItem.productId && invItem.storeId === newSale.storeId
                 );
-                if (saleItem) {
-                    return { ...invItem, stock: invItem.stock - saleItem.quantity };
+                if (inventoryIndex !== -1) {
+                    newInventory[inventoryIndex] = {
+                        ...newInventory[inventoryIndex],
+                        stock: newInventory[inventoryIndex].stock - saleItem.quantity,
+                    };
                 }
-                return invItem;
             });
             return newInventory;
         });
