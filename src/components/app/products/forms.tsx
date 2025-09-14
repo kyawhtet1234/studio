@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import type { Product, Category, Supplier, Store } from "@/lib/types";
+import { SheetClose } from "@/components/ui/sheet";
 
 const baseSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -60,7 +61,9 @@ export function AddCategoryForm({ onAddCategory }: { onAddCategory: (data: Omit<
             </FormItem>
           )}
         />
-        <Button type="submit">Add Category</Button>
+        <SheetClose asChild>
+          <Button type="submit">Add Category</Button>
+        </SheetClose>
       </form>
     </Form>
   );
@@ -88,7 +91,9 @@ export function AddSupplierForm({ onAddSupplier }: { onAddSupplier: (data: Omit<
                 </FormItem>
             )}
             />
-            <Button type="submit">Add Supplier</Button>
+            <SheetClose asChild>
+              <Button type="submit">Add Supplier</Button>
+            </SheetClose>
         </form>
         </Form>
     );
@@ -112,7 +117,9 @@ export function AddStoreForm({ onAddStore }: { onAddStore: (data: Omit<Store, 'i
         <FormField control={form.control} name="location" render={({ field }) => (
             <FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
         )}/>
-        <Button type="submit">Add Store</Button>
+        <SheetClose asChild>
+          <Button type="submit">Add Store</Button>
+        </SheetClose>
       </form>
     </Form>
     );
@@ -172,7 +179,9 @@ export function AddProductForm({ onAddProduct, categories, suppliers }: AddProdu
         <FormField control={form.control} name="buyPrice" render={({ field }) => (
             <FormItem><FormLabel>Buy Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
         )}/>
-        <Button type="submit">Add Product</Button>
+        <SheetClose asChild>
+          <Button type="submit">Add Product</Button>
+        </SheetClose>
       </form>
     </Form>
   );

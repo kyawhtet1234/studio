@@ -86,7 +86,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setProducts(prev => [...prev, product ]);
         const currentStores = stores.length > 0 ? stores : initialStores;
         if(currentStores.length > 0) {
-            setInventory(prev => [...prev, { productId: product.id, storeId: currentStores[0].id, stock: Math.floor(Math.random() * 50) + 10}]);
+            // Initialize stock in all stores for the new product
+            const newInventoryEntries = currentStores.map(store => ({
+                 productId: product.id, storeId: store.id, stock: 0 
+            }));
+            setInventory(prev => [...prev, ...newInventoryEntries]);
         }
     };
     
@@ -112,7 +116,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     const addStore = (newStore: Omit<Store, 'id'>) => {
-        setStores(prev => [...prev, { ...newStore, id: `store-${Date.now()}` }]);
+        const store = { ...newStore, id: `store-${Date.now()}` };
+        setStores(prev => [...prev, store]);
+        // Initialize inventory for all existing products in the new store
+        const newInventoryEntries = products.map(product => ({
+            productId: product.id, storeId: store.id, stock: 0
+        }));
+        setInventory(prev => [...prev, ...newInventoryEntries]);
     };
 
     const deleteStore = (storeId: string) => {
