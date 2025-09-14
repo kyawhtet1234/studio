@@ -66,7 +66,7 @@ interface PurchaseFormProps {
 }
 
 export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
-  const { products, suppliers } = useData();
+  const { products } = useData();
   const [autofillState, setAutofillState] = useState({ message: "", data: null });
   const [isAutofillPending, startAutofillTransition] = useTransition();
   const { toast } = useToast();
@@ -97,7 +97,6 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
     if (watchSku.length > 3) {
       const formData = new FormData();
       formData.append("sku", watchSku);
-      // No longer need to pass products/suppliers from client
       startAutofillTransition(async () => {
         const result = await autofillPurchaseAction(autofillState, formData);
         if (result.data) {
@@ -198,7 +197,7 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
                 </FormItem>
                 )}
             />
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end pt-4 border-t">
               <div className="md:col-span-2 relative">
                 <FormField
                   control={form.control}
@@ -277,7 +276,7 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
               </div>
               <div className="md:col-span-2">
                 <Button type="button" className="w-full" onClick={addToCart}>
-                  <PlusCircle className="mr-2" /> Add to Cart
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add to Cart
                 </Button>
               </div>
             </div>
