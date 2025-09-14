@@ -14,6 +14,8 @@ import { productsData, suppliersData } from '@/lib/data';
 
 const AutofillPurchaseDetailsInputSchema = z.object({
   sku: z.string().describe('The Stock Keeping Unit (SKU) of the item.'),
+  products: z.any().describe('The list of all products in inventory'),
+  suppliers: z.any().describe('The list of all suppliers'),
 });
 export type AutofillPurchaseDetailsInput = z.infer<typeof AutofillPurchaseDetailsInputSchema>;
 
@@ -35,8 +37,8 @@ const prompt = ai.definePrompt({
   prompt: `You are a helpful assistant that retrieves item details for a purchase order based on the provided SKU.
   You have access to a list of products and suppliers.
 
-  Product Data: ${JSON.stringify(productsData)}
-  Supplier Data: ${JSON.stringify(suppliersData)}
+  Product Data: {{{json products}}}
+  Supplier Data: {{{json suppliers}}}
 
   Given the following SKU, please provide the item name, the supplier's name, and the buy price.
 
@@ -59,12 +61,13 @@ const autofillPurchaseDetailsFlow = ai.defineFlow(
     outputSchema: AutofillPurchaseDetailsOutputSchema,
   },
   async input => {
+    const {products, suppliers, sku} = input;
     // In a real app, you'd fetch this from a database.
-    const product = productsData.find(p => p.sku === input.sku);
+    const product = products.find(p => p.sku === sku);
     if (!product) {
       throw new Error('Product not found for the given SKU.');
     }
-    const supplier = suppliersData.find(s => s.id === product.supplierId);
+    const supplier = suppliers.find(s => s.id === product.supplierId);
     if (!supplier) {
         throw new Error('Supplier not found for the given product.');
     }

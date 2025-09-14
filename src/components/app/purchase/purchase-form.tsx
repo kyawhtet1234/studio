@@ -96,6 +96,8 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
     if (watchSku.length > 3) {
       const formData = new FormData();
       formData.append("sku", watchSku);
+      formData.append("products", JSON.stringify(products));
+      formData.append("suppliers", JSON.stringify(suppliers));
       startAutofillTransition(async () => {
         const result = await autofillPurchaseAction(autofillState, formData);
         if (result.data) {
@@ -107,7 +109,7 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
         }
       });
     }
-  }, [watchSku, form, toast]);
+  }, [watchSku, form, toast, products, suppliers]);
 
   function addToCart() {
     const { sku, itemName, buyPrice, quantity } = form.getValues();
@@ -140,11 +142,13 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
         toast({ variant: 'destructive', title: 'Empty Cart', description: 'Please add items to the cart before saving.' });
         return;
     }
-    const supplier = suppliers.find(s => s.name === data.cart[0].name);
+    const firstCartItem = data.cart[0];
+    const product = products.find(p => p.sku === firstCartItem.sku);
+    const supplierId = product?.supplierId || 'sup-unknown';
 
     const purchaseData = {
       storeId: data.storeId,
-      supplierId: supplier?.id || 'sup-unknown',
+      supplierId: supplierId,
       items: data.cart.map(item => ({
         productId: item.productId,
         quantity: item.quantity,

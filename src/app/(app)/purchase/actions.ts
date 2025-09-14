@@ -2,6 +2,7 @@
 
 import { autofillPurchaseDetails } from "@/ai/flows/autofill-purchase-details";
 import { z } from "zod";
+import type { Product, Supplier } from "@/lib/types";
 
 const AutofillSchema = z.object({
     sku: z.string().min(1, 'SKU is required'),
@@ -20,8 +21,15 @@ export async function autofillPurchaseAction(prevState: any, formData: FormData)
         };
     }
 
+    const products: Product[] = JSON.parse(formData.get('products') as string);
+    const suppliers: Supplier[] = JSON.parse(formData.get('suppliers') as string);
+
     try {
-        const result = await autofillPurchaseDetails({ sku: validatedFields.data.sku });
+        const result = await autofillPurchaseDetails({ 
+            sku: validatedFields.data.sku,
+            products,
+            suppliers
+        });
         return {
             ...prevState,
             message: 'Success',
