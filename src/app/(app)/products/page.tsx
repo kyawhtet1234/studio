@@ -12,7 +12,7 @@ import { useData } from "@/lib/data-context";
 export default function ProductsPage() {
   const [activeTab, setActiveTab] = useState("items");
   const { 
-    products, addProduct,
+    products, addProduct, deleteProduct,
     categories, addCategory,
     suppliers, addSupplier,
     stores, addStore
@@ -49,6 +49,8 @@ export default function ProductsPage() {
     }
   };
 
+  const getProductColumns = productColumns({ onDelete: deleteProduct });
+
   return (
     <div>
       <PageHeader title="Products" />
@@ -66,7 +68,7 @@ export default function ProductsPage() {
         </div>
 
         <TabsContent value="items">
-          <DataTable columns={productColumns} data={products} filterColumnId="name" filterPlaceholder="Filter items by name..."/>
+          <DataTable columns={getProductColumns} data={products} filterColumnId="name" filterPlaceholder="Filter items by name..."/>
         </TabsContent>
         <TabsContent value="categories">
           <DataTable columns={categoryColumns} data={categories} filterColumnId="name" filterPlaceholder="Filter categories by name..."/>

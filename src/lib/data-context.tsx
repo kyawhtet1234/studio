@@ -1,4 +1,5 @@
 
+
 'use client';
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { useMockData } from '@/hooks/use-mock-data';
@@ -13,6 +14,7 @@ interface DataContextProps {
     sales: SaleTransaction[];
     purchases: PurchaseTransaction[];
     addProduct: (product: Omit<Product, 'id'>) => void;
+    deleteProduct: (productId: string) => void;
     addCategory: (category: Omit<Category, 'id'>) => void;
     addSupplier: (supplier: Omit<Supplier, 'id'>) => void;
     addStore: (store: Omit<Store, 'id'>) => void;
@@ -86,6 +88,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
     };
     
+    const deleteProduct = (productId: string) => {
+        setProducts(prev => prev.filter(p => p.id !== productId));
+        setInventory(prev => prev.filter(i => i.productId !== productId));
+    };
+
     const addCategory = (newCategory: Omit<Category, 'id'>) => {
         setCategories(prev => [...prev, { ...newCategory, id: `cat-${Date.now()}` }]);
     };
@@ -140,7 +147,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     return (
         <DataContext.Provider value={{ 
-            products, addProduct,
+            products, addProduct, deleteProduct,
             categories, addCategory,
             suppliers, addSupplier,
             stores, addStore,
