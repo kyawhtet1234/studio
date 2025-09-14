@@ -10,12 +10,11 @@ export default function PurchasePage() {
   const { stores, addPurchase } = useData();
 
   const handleSavePurchase = (newPurchase: Omit<PurchaseTransaction, 'id' | 'date'>) => {
-    const purchase: PurchaseTransaction = {
+    addPurchase({
       ...newPurchase,
       id: `pur-${Date.now()}`,
       date: new Date(),
-    };
-    addPurchase(purchase);
+    });
   };
   
   return (
@@ -25,3 +24,4 @@ export default function PurchasePage() {
     </div>
   );
 }
+

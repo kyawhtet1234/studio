@@ -93,11 +93,11 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
   const watchCart = form.watch("cart");
 
   useEffect(() => {
+    // Using a debounce effect is better, but for simplicity, we trigger on length.
     if (watchSku.length > 3) {
       const formData = new FormData();
       formData.append("sku", watchSku);
-      formData.append("products", JSON.stringify(products));
-      formData.append("suppliers", JSON.stringify(suppliers));
+      // No longer need to pass products/suppliers from client
       startAutofillTransition(async () => {
         const result = await autofillPurchaseAction(autofillState, formData);
         if (result.data) {
@@ -105,11 +105,15 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
           form.setValue("supplierName", result.data.supplierName, { shouldValidate: true });
           form.setValue("buyPrice", result.data.buyPrice, { shouldValidate: true });
         } else if (result.message && result.message !== 'Success') {
-          toast({ variant: 'destructive', title: 'Autofill Error', description: result.message });
+          // Do not toast here as it can be annoying if the user is still typing.
+          // The form should just not autofill.
+          form.resetField("itemName");
+          form.resetField("supplierName");
+          form.resetField("buyPrice");
         }
       });
     }
-  }, [watchSku, form, toast, products, suppliers]);
+  }, [watchSku, form]);
 
   function addToCart() {
     const { sku, itemName, buyPrice, quantity } = form.getValues();
@@ -144,6 +148,7 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
     }
     const firstCartItem = data.cart[0];
     const product = products.find(p => p.sku === firstCartItem.sku);
+    // All items in a purchase should ideally be from the same supplier, this is a simplification.
     const supplierId = product?.supplierId || 'sup-unknown';
 
     const purchaseData = {
@@ -177,7 +182,7 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
                 render={({ field }) => (
                 <FormItem>
                     <FormLabel>Store</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                         <SelectTrigger>
                         <SelectValue placeholder="Select the store receiving stock" />
@@ -218,7 +223,7 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
                     <FormItem>
                       <FormLabel>Item Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Item name" {...field} readOnly />
+                        <Input placeholder="Item name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file defines a Genkit flow that automatically fills item details (name, supplier, and buy price)
@@ -14,8 +15,6 @@ import { productsData, suppliersData } from '@/lib/data';
 
 const AutofillPurchaseDetailsInputSchema = z.object({
   sku: z.string().describe('The Stock Keeping Unit (SKU) of the item.'),
-  products: z.any().describe('The list of all products in inventory'),
-  suppliers: z.any().describe('The list of all suppliers'),
 });
 export type AutofillPurchaseDetailsInput = z.infer<typeof AutofillPurchaseDetailsInputSchema>;
 
@@ -30,41 +29,23 @@ export async function autofillPurchaseDetails(input: AutofillPurchaseDetailsInpu
   return autofillPurchaseDetailsFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'autofillPurchaseDetailsPrompt',
-  input: {schema: AutofillPurchaseDetailsInputSchema},
-  output: {schema: AutofillPurchaseDetailsOutputSchema},
-  prompt: `You are a helpful assistant that retrieves item details for a purchase order based on the provided SKU.
-  You have access to a list of products and suppliers.
-
-  Product Data: {{{json products}}}
-  Supplier Data: {{{json suppliers}}}
-
-  Given the following SKU, please provide the item name, the supplier's name, and the buy price.
-
-  SKU: {{{sku}}}
-
-  Please respond with the item name, supplier name, and buy price in JSON format.
-  Make sure the buyPrice is a number.
-  Example:
-  {
-    "itemName": "Example Item Name",
-    "supplierName": "Example Supplier",
-    "buyPrice": 9.99
-  }`,
-});
-
 const autofillPurchaseDetailsFlow = ai.defineFlow(
   {
     name: 'autofillPurchaseDetailsFlow',
     inputSchema: AutofillPurchaseDetailsInputSchema,
     outputSchema: AutofillPurchaseDetailsOutputSchema,
   },
-  async input => {
-    const {products, suppliers, sku} = input;
+  async ({ sku }) => {
     // In a real app, you'd fetch this from a database.
+    // For the prototype, we use the static data files.
+    // This is more robust than passing all data from the client.
+    const products = productsData;
+    const suppliers = suppliersData;
+
     const product = products.find(p => p.sku === sku);
     if (!product) {
+      // Try finding in localStorage if a real app was built this way
+      // But for this prototype, we will assume productsData is the source of truth on the server
       throw new Error('Product not found for the given SKU.');
     }
     const supplier = suppliers.find(s => s.id === product.supplierId);
@@ -72,18 +53,12 @@ const autofillPurchaseDetailsFlow = ai.defineFlow(
         throw new Error('Supplier not found for the given product.');
     }
     
-    // For this prototype, we'll just return the mock data directly.
-    // In a real scenario, you might still use an LLM for more complex matching or data augmentation.
-    const mockOutput: AutofillPurchaseDetailsOutput = {
+    const output: AutofillPurchaseDetailsOutput = {
         itemName: product.name,
         supplierName: supplier.name,
         buyPrice: product.buyPrice
     }
 
-    return mockOutput;
-
-    // The LLM-based approach would be:
-    // const {output} = await prompt(input);
-    // return output!;
+    return output;
   }
 );
