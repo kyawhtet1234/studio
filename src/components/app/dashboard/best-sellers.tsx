@@ -49,7 +49,7 @@ export function BestSellers({ sales, products }: { sales: SaleTransaction[], pro
               <TableRow key={index}>
                 <TableCell className="font-medium">{item.name}</TableCell>
                 <TableCell className="text-right">{item.quantity}</TableCell>
-                <TableCell className="text-right">MMK {item.total.toFixed(2)}</TableCell>
+                <TableCell className="text-right">MMK {item.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
               </TableRow>
             ))}
           </TableBody>

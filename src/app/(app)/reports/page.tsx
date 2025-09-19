@@ -24,8 +24,8 @@ const ReportTable = ({ data, periodLabel }: { data: any[], periodLabel: string }
             {data.map((report) => (
                 <TableRow key={report.date}>
                     <TableCell className="font-medium">{report.date}</TableCell>
-                    <TableCell className="text-right">MMK {report.sales.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">MMK {report.profit.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">MMK {report.sales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-right">MMK {report.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 </TableRow>
             ))}
              {data.length === 0 && (
@@ -57,7 +57,7 @@ const PurchaseHistoryTable = ({ data, stores, suppliers }: { data: PurchaseTrans
                     <TableCell className="font-medium">{new Date(purchase.date).toLocaleDateString()}</TableCell>
                     <TableCell>{stores.find(s => s.id === purchase.storeId)?.name || 'N/A'}</TableCell>
                     <TableCell>{suppliers.find(s => s.id === purchase.supplierId)?.name || 'N/A'}</TableCell>
-                    <TableCell className="text-right">MMK {purchase.total.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">MMK {purchase.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 </TableRow>
             ))}
              {data.length === 0 && (
@@ -89,9 +89,9 @@ const SalesHistoryTable = ({ data, stores }: { data: SaleTransaction[], stores: 
                 <TableRow key={sale.id}>
                     <TableCell className="font-medium">{new Date(sale.date).toLocaleDateString()}</TableCell>
                     <TableCell>{stores.find(s => s.id === sale.storeId)?.name || 'N/A'}</TableCell>
-                    <TableCell className="text-right">MMK {sale.subtotal.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">MMK {sale.discount.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">MMK {sale.total.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">MMK {sale.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-right">MMK {sale.discount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-right">MMK {sale.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 </TableRow>
             ))}
              {data.length === 0 && (

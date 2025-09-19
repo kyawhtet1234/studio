@@ -151,31 +151,33 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
   
   function onSubmit(data: PurchaseFormValues) {
     if (data.cart.length === 0) {
-        toast({ variant: 'destructive', title: 'Empty Cart', description: 'Please add items to the cart before saving.' });
-        return;
+      toast({ variant: "destructive", title: "Empty Cart", description: "Please add items to the cart before saving." });
+      return;
     }
-
-    const firstValidProductInCart = data.cart.map(item => products.find(p => p.id === item.productId)).find(p => p !== undefined);
-    
+  
+    const firstValidProductInCart = data.cart
+      .map(item => products.find(p => p.id === item.productId))
+      .find(p => p !== undefined);
+  
     if (!firstValidProductInCart) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not find product information for items in cart.' });
-        return;
+      toast({ variant: "destructive", title: "Error", description: "Could not find product information for items in cart." });
+      return;
     }
-
+    
     const purchaseData = {
       storeId: data.storeId,
-      supplierId: firstValidProductInCart.supplierId,
+      supplierId: firstValidProductInCart.supplierId, 
       items: data.cart.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
         buyPrice: item.buyPrice,
       })),
-      total: total
-    }
-    
+      total: total,
+    };
+  
     onSavePurchase(purchaseData);
-
-    toast({ title: 'Purchase Saved!', description: `Total: MMK ${total.toFixed(2)}` });
+  
+    toast({ title: "Purchase Saved!", description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
     form.reset();
   }
 
@@ -315,9 +317,9 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
                         <TableRow key={item.id}>
                             <TableCell>{item.sku}</TableCell>
                             <TableCell>{item.name}</TableCell>
-                            <TableCell className="text-right">MMK {item.buyPrice.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">MMK {item.buyPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                             <TableCell className="text-right">{item.quantity}</TableCell>
-                            <TableCell className="text-right">MMK {item.total.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">MMK {item.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                             <TableCell>
                                 <Button variant="ghost" size="icon" onClick={() => remove(index)}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
@@ -337,7 +339,7 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
           <CardFooter className="p-4 sm:p-6 bg-muted/50 flex flex-col items-end space-y-4">
             <div className="flex justify-between w-full max-w-sm border-t pt-4">
                 <span className="text-lg font-bold">Total</span>
-                <span className="text-lg font-bold text-primary">MMK {total.toFixed(2)}</span>
+                <span className="text-lg font-bold text-primary">MMK {total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           </CardFooter>
         </Card>

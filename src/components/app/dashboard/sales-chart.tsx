@@ -65,7 +65,7 @@ export function SalesChart({ sales }: { sales: SaleTransaction[]}) {
               <ChartTooltip
                 cursor={false}
                 content={<ChartTooltipContent
-                  formatter={(value) => `MMK ${Number(value).toFixed(2)}`}
+                  formatter={(value) => `MMK ${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                   indicator="dot"
                 />}
               />

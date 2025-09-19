@@ -43,13 +43,13 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
           title="Today's Sales"
-          value={`MMK ${todaySales.toFixed(2)}`}
+          value={`MMK ${todaySales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={DollarSign}
           description="Total sales recorded today."
         />
         <StatCard 
           title="Today's Profit"
-          value={`MMK ${todayProfit.toFixed(2)}`}
+          value={`MMK ${todayProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={TrendingUp}
           description="Gross profit (Sales - COGS)."
         />

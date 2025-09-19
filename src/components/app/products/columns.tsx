@@ -106,8 +106,8 @@ const ActionsCell = <TData extends DeletableRow>({
 export const productColumns = ({ onDelete }: { onDelete: (id: string) => void }): ColumnDef<Product>[] => [
   { accessorKey: "sku", header: "SKU" },
   { accessorKey: "name", header: "Name" },
-  { accessorKey: "sellPrice", header: "Sell Price", cell: ({ row }) => `MMK ${row.original.sellPrice.toFixed(2)}` },
-  { accessorKey: "buyPrice", header: "Buy Price", cell: ({ row }) => `MMK ${row.original.buyPrice.toFixed(2)}` },
+  { accessorKey: "sellPrice", header: "Sell Price", cell: ({ row }) => `MMK ${row.original.sellPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+  { accessorKey: "buyPrice", header: "Buy Price", cell: ({ row }) => `MMK ${row.original.buyPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
   {
     id: "actions",
     cell: ({ row }) => (
