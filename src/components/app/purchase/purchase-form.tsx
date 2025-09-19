@@ -154,14 +154,17 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
         toast({ variant: 'destructive', title: 'Empty Cart', description: 'Please add items to the cart before saving.' });
         return;
     }
-    const firstCartItem = data.cart[0];
-    const product = products.find(p => p.sku === firstCartItem.sku);
-    // All items in a purchase should ideally be from the same supplier, this is a simplification.
-    const supplierId = product?.supplierId || 'sup-unknown';
+
+    const firstValidProductInCart = data.cart.map(item => products.find(p => p.id === item.productId)).find(p => p !== undefined);
+    
+    if (!firstValidProductInCart) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not find product information for items in cart.' });
+        return;
+    }
 
     const purchaseData = {
       storeId: data.storeId,
-      supplierId: supplierId,
+      supplierId: firstValidProductInCart.supplierId,
       items: data.cart.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
