@@ -34,8 +34,15 @@ export async function autofillPurchaseAction(
     }
 
     try {
-        const products: Product[] = JSON.parse(formData.get('products') as string);
-        const suppliers: Supplier[] = JSON.parse(formData.get('suppliers') as string);
+        const productsStr = formData.get('products');
+        const suppliersStr = formData.get('suppliers');
+        
+        if (!productsStr || !suppliersStr) {
+            throw new Error("Product and supplier data is missing.");
+        }
+
+        const products: Product[] = JSON.parse(productsStr as string);
+        const suppliers: Supplier[] = JSON.parse(suppliersStr as string);
         const { sku } = validatedFields.data;
 
         const product = products.find(p => p.sku === sku);
@@ -65,3 +72,5 @@ export async function autofillPurchaseAction(
         };
     }
 }
+
+    

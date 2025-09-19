@@ -100,23 +100,27 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
     if (watchSku.length > 3) {
       const formData = new FormData();
       formData.append("sku", watchSku);
+      // Pass the current data lists to the server action
+      formData.append("products", JSON.stringify(products));
+      formData.append("suppliers", JSON.stringify(suppliers));
       startAutofillTransition(() => {
         formAction(formData);
       });
     }
-  }, [watchSku, formAction]);
+  }, [watchSku, formAction, products, suppliers]);
 
   useEffect(() => {
     if (autofillState.data) {
         form.setValue("itemName", autofillState.data.itemName, { shouldValidate: true });
         form.setValue("supplierName", autofillState.data.supplierName, { shouldValidate: true });
         form.setValue("buyPrice", autofillState.data.buyPrice, { shouldValidate: true });
-    } else if (autofillState.message && autofillState.message !== 'Success') {
+    } else if (autofillState.message && autofillState.message !== 'Success' && !isAutofillPending) {
         form.resetField("itemName");
         form.resetField("supplierName");
         form.resetField("buyPrice");
+        toast({ variant: 'destructive', title: 'Autofill Error', description: autofillState.message });
     }
-  }, [autofillState, form]);
+  }, [autofillState, form, isAutofillPending, toast]);
 
   function addToCart() {
     const { sku, itemName, buyPrice, quantity } = form.getValues();
@@ -137,6 +141,7 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
       form.resetField("supplierName");
       form.resetField("buyPrice");
       form.setValue("quantity", 1);
+      form.setFocus('sku');
     } else {
         toast({ variant: 'destructive', title: 'Invalid Item', description: 'Please fill all item details before adding to cart.' });
     }
@@ -341,3 +346,5 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
     </Form>
   );
 }
+
+    
