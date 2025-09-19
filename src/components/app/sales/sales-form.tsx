@@ -35,7 +35,8 @@ import {
 } from "@/components/ui/form";
 import { Trash2, Loader2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { CartItem, SaleTransaction, Store } from "@/lib/types";
+import type { CartItem, SaleTransaction, Store, Product } from "@/lib/types";
+import { useData } from "@/lib/data-context";
 
 const formSchema = z.object({
   storeId: z.string().min(1, "Please select a store."),
@@ -64,6 +65,7 @@ interface SalesFormProps {
 }
 
 export function SalesForm({ stores, onSave }: SalesFormProps) {
+  const { products } = useData();
   const [autofillState, setAutofillState] = useState({ message: "", data: null });
   const [isAutofillPending, startAutofillTransition] = useTransition();
   const { toast } = useToast();
@@ -94,6 +96,7 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
     if (watchSku.length > 3) {
       const formData = new FormData();
       formData.append("sku", watchSku);
+      formData.append("products", JSON.stringify(products));
       startAutofillTransition(async () => {
         const result = await autofillAction(autofillState, formData);
         if (result.data) {
@@ -104,13 +107,15 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
         }
       });
     }
-  }, [watchSku, form, toast]);
+  }, [watchSku, form, toast, products, autofillState]);
 
   function addToCart() {
     const { sku, itemName, sellPrice, quantity } = form.getValues();
-    if (sku && itemName && sellPrice > 0 && quantity > 0) {
+    const product = products.find(p => p.sku === sku);
+
+    if (product && itemName && sellPrice > 0 && quantity > 0) {
       const newItem: CartItem = {
-        productId: `prod-${Math.random().toString(36).substr(2, 9)}`, // Mock product ID
+        productId: product.id,
         sku,
         name: itemName,
         sellPrice,
@@ -121,8 +126,8 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
       form.resetField("sku");
       form.resetField("itemName");
       form.resetField("sellPrice");
-      form.resetField("quantity");
       form.setValue("quantity", 1);
+      form.setFocus('sku');
     } else {
         toast({ variant: 'destructive', title: 'Invalid Item', description: 'Please fill all item details before adding to cart.' });
     }
@@ -139,7 +144,14 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
     
     const saleData = {
         storeId: data.storeId,
-        items: data.cart,
+        items: data.cart.map(item => ({
+            productId: item.productId,
+            name: item.name,
+            sku: item.sku,
+            sellPrice: item.sellPrice,
+            quantity: item.quantity,
+            total: item.total
+        })),
         subtotal: subtotal,
         discount: data.discount || 0,
         total: total,
@@ -324,3 +336,5 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
     </Form>
   );
 }
+
+    

@@ -1,13 +1,25 @@
+
 'use server';
 
-import { autofillItemDetails } from "@/ai/flows/autofill-item-details";
 import { z } from "zod";
+import type { Product } from "@/lib/types";
 
 const AutofillSchema = z.object({
     sku: z.string().min(1, 'SKU is required'),
 });
 
-export async function autofillAction(prevState: any, formData: FormData) {
+type AutofillState = {
+    message: string;
+    data: {
+        itemName: string;
+        sellPrice: number;
+    } | null;
+}
+
+export async function autofillAction(
+    prevState: AutofillState, 
+    formData: FormData
+): Promise<AutofillState> {
     const validatedFields = AutofillSchema.safeParse({
         sku: formData.get('sku'),
     });
@@ -21,18 +33,34 @@ export async function autofillAction(prevState: any, formData: FormData) {
     }
 
     try {
-        const result = await autofillItemDetails({ sku: validatedFields.data.sku });
+        const productsStr = formData.get('products');
+        if (!productsStr) {
+            throw new Error("Product data is missing.");
+        }
+
+        const products: Product[] = JSON.parse(productsStr as string);
+        const { sku } = validatedFields.data;
+
+        const product = products.find(p => p.sku === sku);
+        if (!product) {
+            throw new Error('Product not found for the given SKU.');
+        }
+
         return {
-            ...prevState,
             message: 'Success',
-            data: result,
+            data: {
+                itemName: product.name,
+                sellPrice: product.sellPrice,
+            },
         };
     } catch (error) {
-        console.error(error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         return {
             ...prevState,
-            message: 'Failed to fetch item details. Please enter manually.',
+            message: `Failed to fetch item details: ${errorMessage}`,
             data: null,
         };
     }
 }
+
+    
