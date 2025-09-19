@@ -100,13 +100,11 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
     if (watchSku.length > 3) {
       const formData = new FormData();
       formData.append("sku", watchSku);
-      formData.append("products", JSON.stringify(products));
-      formData.append("suppliers", JSON.stringify(suppliers));
       startAutofillTransition(() => {
         formAction(formData);
       });
     }
-  }, [watchSku, form, products, suppliers, formAction]);
+  }, [watchSku, formAction]);
 
   useEffect(() => {
     if (autofillState.data) {
