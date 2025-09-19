@@ -152,7 +152,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const addPurchase = (newPurchase: PurchaseTransaction) => {
         setPurchases(prev => [newPurchase, ...prev]);
-
         setInventory(prevInventory => {
             const updatedInventory = [...prevInventory];
             newPurchase.items.forEach(item => {
@@ -161,9 +160,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 );
 
                 if (inventoryIndex > -1) {
+                    const currentItem = updatedInventory[inventoryIndex];
                     updatedInventory[inventoryIndex] = {
-                        ...updatedInventory[inventoryIndex],
-                        stock: updatedInventory[inventoryIndex].stock + item.quantity,
+                        ...currentItem,
+                        stock: currentItem.stock + item.quantity,
                     };
                 } else {
                     updatedInventory.push({
