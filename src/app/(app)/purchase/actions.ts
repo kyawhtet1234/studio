@@ -1,16 +1,26 @@
 
 'use server';
 
-import { autofillPurchaseDetails } from "@/ai/flows/autofill-purchase-details";
 import { z } from "zod";
-// We no longer need to pass data from the client.
-// import type { Product, Supplier } from "@/lib/types";
+import type { Product, Supplier } from "@/lib/types";
 
 const AutofillSchema = z.object({
     sku: z.string().min(1, 'SKU is required'),
 });
 
-export async function autofillPurchaseAction(prevState: any, formData: FormData) {
+type AutofillState = {
+    message: string;
+    data: {
+        itemName: string;
+        supplierName: string;
+        buyPrice: number;
+    } | null;
+}
+
+export async function autofillPurchaseAction(
+    prevState: AutofillState, 
+    formData: FormData
+): Promise<AutofillState> {
     const validatedFields = AutofillSchema.safeParse({
         sku: formData.get('sku'),
     });
@@ -22,21 +32,31 @@ export async function autofillPurchaseAction(prevState: any, formData: FormData)
             data: null,
         };
     }
-    
-    // The products and suppliers will now be read from the data file directly in the flow.
-    // This is a more robust approach.
 
     try {
-        const result = await autofillPurchaseDetails({ 
-            sku: validatedFields.data.sku,
-        });
+        const products: Product[] = JSON.parse(formData.get('products') as string);
+        const suppliers: Supplier[] = JSON.parse(formData.get('suppliers') as string);
+        const { sku } = validatedFields.data;
+
+        const product = products.find(p => p.sku === sku);
+        if (!product) {
+            throw new Error('Product not found for the given SKU.');
+        }
+
+        const supplier = suppliers.find(s => s.id === product.supplierId);
+        if (!supplier) {
+            throw new Error('Supplier not found for the given product.');
+        }
+
         return {
-            ...prevState,
             message: 'Success',
-            data: result,
+            data: {
+                itemName: product.name,
+                supplierName: supplier.name,
+                buyPrice: product.buyPrice,
+            },
         };
     } catch (error) {
-        console.error(error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         return {
             ...prevState,

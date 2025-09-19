@@ -5,6 +5,7 @@ import { useState, useEffect, useTransition } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useFormState } from "react-dom";
 import { autofillPurchaseAction } from "@/app/(app)/purchase/actions";
 
 import { Button } from "@/components/ui/button";
@@ -65,9 +66,11 @@ interface PurchaseFormProps {
     onSavePurchase: (purchase: Omit<PurchaseTransaction, 'id' | 'date'>) => void;
 }
 
+const initialAutofillState = { message: "", data: null };
+
 export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
-  const { products } = useData();
-  const [autofillState, setAutofillState] = useState({ message: "", data: null });
+  const { products, suppliers } = useData();
+  const [autofillState, formAction] = useFormState(autofillPurchaseAction, initialAutofillState);
   const [isAutofillPending, startAutofillTransition] = useTransition();
   const { toast } = useToast();
 
@@ -97,22 +100,25 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
     if (watchSku.length > 3) {
       const formData = new FormData();
       formData.append("sku", watchSku);
-      startAutofillTransition(async () => {
-        const result = await autofillPurchaseAction(autofillState, formData);
-        if (result.data) {
-          form.setValue("itemName", result.data.itemName, { shouldValidate: true });
-          form.setValue("supplierName", result.data.supplierName, { shouldValidate: true });
-          form.setValue("buyPrice", result.data.buyPrice, { shouldValidate: true });
-        } else if (result.message && result.message !== 'Success') {
-          // Do not toast here as it can be annoying if the user is still typing.
-          // The form should just not autofill.
-          form.resetField("itemName");
-          form.resetField("supplierName");
-          form.resetField("buyPrice");
-        }
+      formData.append("products", JSON.stringify(products));
+      formData.append("suppliers", JSON.stringify(suppliers));
+      startAutofillTransition(() => {
+        formAction(formData);
       });
     }
-  }, [watchSku, form]);
+  }, [watchSku, form, products, suppliers, formAction]);
+
+  useEffect(() => {
+    if (autofillState.data) {
+        form.setValue("itemName", autofillState.data.itemName, { shouldValidate: true });
+        form.setValue("supplierName", autofillState.data.supplierName, { shouldValidate: true });
+        form.setValue("buyPrice", autofillState.data.buyPrice, { shouldValidate: true });
+    } else if (autofillState.message && autofillState.message !== 'Success') {
+        form.resetField("itemName");
+        form.resetField("supplierName");
+        form.resetField("buyPrice");
+    }
+  }, [autofillState, form]);
 
   function addToCart() {
     const { sku, itemName, buyPrice, quantity } = form.getValues();
