@@ -11,6 +11,4 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-console.log("Using Firebase config:", firebaseConfig);
-
 export const firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
