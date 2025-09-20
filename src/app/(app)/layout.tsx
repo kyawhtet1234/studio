@@ -20,7 +20,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
     }
   }, [user, authLoading, router]);
 
-  if (authLoading || dataLoading) {
+  if (authLoading || (user && dataLoading)) {
     return (
         <div className="flex min-h-screen w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin" />
@@ -54,5 +54,3 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </DataProvider>
     )
 }
-
-    

@@ -79,37 +79,40 @@ export default function TransferPage() {
         setTransferItems(prev => prev.filter(item => item.sku !== sku));
     };
     
-    const handleCompleteTransfer = () => {
+    const handleCompleteTransfer = async () => {
         if(transferItems.length === 0) {
              toast({ variant: 'destructive', title: 'Error', description: "Please add items to transfer."});
             return;
         }
 
-        let newInventory = [...inventory];
+        let updatedInventoryItems: InventoryItem[] = [];
 
         transferItems.forEach(item => {
-            // Deduct from source store
-            const fromInventoryIndex = newInventory.findIndex(i => i.productId === item.productId && i.storeId === fromStoreId);
-            if (fromInventoryIndex > -1) {
-                newInventory[fromInventoryIndex] = {
-                    ...newInventory[fromInventoryIndex],
-                    stock: newInventory[fromInventoryIndex].stock - item.quantity
-                }
+            const fromInventory = inventory.find(i => i.productId === item.productId && i.storeId === fromStoreId);
+            const toInventory = inventory.find(i => i.productId === item.productId && i.storeId === toStoreId);
+
+            if (fromInventory) {
+                updatedInventoryItems.push({
+                    ...fromInventory,
+                    stock: fromInventory.stock - item.quantity
+                });
             }
 
-            // Add to destination store
-            const toInventoryIndex = newInventory.findIndex(i => i.productId === item.productId && i.storeId === toStoreId);
-            if (toInventoryIndex > -1) {
-                 newInventory[toInventoryIndex] = {
-                    ...newInventory[toInventoryIndex],
-                    stock: newInventory[toInventoryIndex].stock + item.quantity
-                }
+            if (toInventory) {
+                updatedInventoryItems.push({
+                    ...toInventory,
+                    stock: toInventory.stock + item.quantity
+                });
             } else {
-                newInventory.push({ productId: item.productId, storeId: toStoreId, stock: item.quantity });
+                 updatedInventoryItems.push({ 
+                    productId: item.productId, 
+                    storeId: toStoreId, 
+                    stock: item.quantity 
+                });
             }
         });
 
-        updateInventory(newInventory);
+        await updateInventory(updatedInventoryItems);
         
         toast({ title: 'Success', description: "Stock transfer completed successfully."});
         setTransferItems([]);
@@ -128,7 +131,7 @@ export default function TransferPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label>From Store</Label>
-              <Select value={fromStoreId} onValueChange={setFromStoreId}>
+              <Select value={fromStoreId} onValueChange={setFromStoreId} disabled={transferItems.length > 0}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select source store" />
                 </SelectTrigger>
@@ -141,7 +144,7 @@ export default function TransferPage() {
             </div>
             <div className="space-y-2">
               <Label>To Store</Label>
-              <Select value={toStoreId} onValueChange={setToStoreId}>
+              <Select value={toStoreId} onValueChange={setToStoreId} disabled={transferItems.length > 0}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select destination store" />
                 </SelectTrigger>

@@ -77,17 +77,15 @@ export default function InventoryPage() {
     setNewStock(item.stock);
   };
 
-  const handleStockAdjustment = () => {
+  const handleStockAdjustment = async () => {
     if (!adjustmentItem) return;
 
-    const updatedInventory = inventory.map(item => {
-      if (item.productId === adjustmentItem.productId && item.storeId === adjustmentItem.storeId) {
-        return { ...item, stock: newStock };
-      }
-      return item;
-    });
+    await updateInventory([{
+        productId: adjustmentItem.productId,
+        storeId: adjustmentItem.storeId,
+        stock: newStock
+    }]);
 
-    updateInventory(updatedInventory);
     toast({ title: 'Success', description: `Stock for ${adjustmentItem.productName} updated to ${newStock}.`});
     setAdjustmentItem(null);
   };
