@@ -1,3 +1,4 @@
+
 'use client';
 import { useData } from '@/lib/data-context';
 import { PageHeader } from "@/components/app/page-header";
@@ -5,9 +6,10 @@ import { StatCard } from "@/components/app/dashboard/stat-card";
 import { SalesChart } from "@/components/app/dashboard/sales-chart";
 import { BestSellers } from "@/components/app/dashboard/best-sellers";
 import { DollarSign, TrendingUp } from "lucide-react";
+import type { Timestamp } from 'firebase/firestore';
 
 export default function DashboardPage() {
-  const { sales, products } = useData();
+  const { sales, products, loading } = useData();
 
   const getTodayMetrics = () => {
     const today = new Date();
@@ -17,7 +19,8 @@ export default function DashboardPage() {
     let todayCogs = 0;
   
     sales.forEach(sale => {
-      const saleDate = new Date(sale.date);
+      // Ensure sale.date is a JS Date object
+      const saleDate = (sale.date as Timestamp)?.toDate ? (sale.date as Timestamp).toDate() : new Date(sale.date);
       saleDate.setHours(0, 0, 0, 0);
   
       if (saleDate.getTime() === today.getTime()) {
@@ -46,12 +49,14 @@ export default function DashboardPage() {
           value={`MMK ${todaySales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={DollarSign}
           description="Total sales recorded today."
+          loading={loading}
         />
         <StatCard 
           title="Today's Profit"
           value={`MMK ${todayProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={TrendingUp}
           description="Gross profit (Sales - COGS)."
+          loading={loading}
         />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">

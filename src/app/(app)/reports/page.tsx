@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { FileDown } from "lucide-react";
 import { useMemo } from "react";
 import type { PurchaseTransaction, SaleTransaction } from "@/lib/types";
+import type { Timestamp } from 'firebase/firestore';
 
 const ReportTable = ({ data, periodLabel }: { data: any[], periodLabel: string }) => (
     <div className="rounded-md border">
@@ -52,14 +53,17 @@ const PurchaseHistoryTable = ({ data, stores, suppliers }: { data: PurchaseTrans
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((purchase) => (
-                <TableRow key={purchase.id}>
-                    <TableCell className="font-medium">{new Date(purchase.date).toLocaleDateString()}</TableCell>
-                    <TableCell>{stores.find(s => s.id === purchase.storeId)?.name || 'N/A'}</TableCell>
-                    <TableCell>{suppliers.find(s => s.id === purchase.supplierId)?.name || 'N/A'}</TableCell>
-                    <TableCell className="text-right">MMK {purchase.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                </TableRow>
-            ))}
+            {data.map((purchase) => {
+                const purchaseDate = (purchase.date as Timestamp)?.toDate ? (purchase.date as Timestamp).toDate() : new Date(purchase.date);
+                return (
+                    <TableRow key={purchase.id}>
+                        <TableCell className="font-medium">{purchaseDate.toLocaleDateString()}</TableCell>
+                        <TableCell>{stores.find(s => s.id === purchase.storeId)?.name || 'N/A'}</TableCell>
+                        <TableCell>{suppliers.find(s => s.id === purchase.supplierId)?.name || 'N/A'}</TableCell>
+                        <TableCell className="text-right">MMK {purchase.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    </TableRow>
+                )
+            })}
              {data.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={4} className="text-center h-24">
@@ -85,15 +89,18 @@ const SalesHistoryTable = ({ data, stores }: { data: SaleTransaction[], stores: 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((sale) => (
-                <TableRow key={sale.id}>
-                    <TableCell className="font-medium">{new Date(sale.date).toLocaleDateString()}</TableCell>
-                    <TableCell>{stores.find(s => s.id === sale.storeId)?.name || 'N/A'}</TableCell>
-                    <TableCell className="text-right">MMK {sale.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell className="text-right">MMK {sale.discount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell className="text-right">MMK {sale.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                </TableRow>
-            ))}
+            {data.map((sale) => {
+                const saleDate = (sale.date as Timestamp)?.toDate ? (sale.date as Timestamp).toDate() : new Date(sale.date);
+                return (
+                    <TableRow key={sale.id}>
+                        <TableCell className="font-medium">{saleDate.toLocaleDateString()}</TableCell>
+                        <TableCell>{stores.find(s => s.id === sale.storeId)?.name || 'N/A'}</TableCell>
+                        <TableCell className="text-right">MMK {sale.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                        <TableCell className="text-right">MMK {sale.discount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                        <TableCell className="text-right">MMK {sale.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    </TableRow>
+                )
+            })}
              {data.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={5} className="text-center h-24">
@@ -114,7 +121,7 @@ export default function ReportsPage() {
     const reports: { [key: string]: { date: string, sales: number, cogs: number, profit: number } } = {};
     
     sales.forEach(sale => {
-        const d = new Date(sale.date);
+        const d = (sale.date as Timestamp)?.toDate ? (sale.date as Timestamp).toDate() : new Date(sale.date);
         const key = period === 'daily' 
             ? d.toISOString().split('T')[0] 
             : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -138,8 +145,23 @@ export default function ReportsPage() {
 
   const dailyReports = useMemo(() => getReportData('daily'), [sales, products]);
   const monthlyReports = useMemo(() => getReportData('monthly'), [sales, products]);
-  const purchaseHistory = useMemo(() => [...purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [purchases]);
-  const salesHistory = useMemo(() => [...sales].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [sales]);
+  
+  const purchaseHistory = useMemo(() => {
+      return [...purchases].sort((a, b) => {
+        const dateA = (a.date as Timestamp)?.toDate ? (a.date as Timestamp).toDate() : new Date(a.date);
+        const dateB = (b.date as Timestamp)?.toDate ? (b.date as Timestamp).toDate() : new Date(b.date);
+        return dateB.getTime() - dateA.getTime();
+      });
+  }, [purchases]);
+
+  const salesHistory = useMemo(() => {
+      return [...sales].sort((a, b) => {
+        const dateA = (a.date as Timestamp)?.toDate ? (a.date as Timestamp).toDate() : new Date(a.date);
+        const dateB = (b.date as Timestamp)?.toDate ? (b.date as Timestamp).toDate() : new Date(b.date);
+        return dateB.getTime() - dateA.getTime();
+      });
+  }, [sales]);
+
 
   return (
     <div>
@@ -160,7 +182,7 @@ export default function ReportsPage() {
             <ReportTable data={dailyReports} periodLabel="Date" />
         </TabsContent>
         <TabsContent value="monthly">
-            <ReportTable data={monthlyReports} periodLabel="Month" />
+            <ReportTable data={monthlyReports} period-label="Month" />
         </TabsContent>
          <TabsContent value="sales">
             <SalesHistoryTable data={salesHistory} stores={stores} />

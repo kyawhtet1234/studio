@@ -6,6 +6,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { useMemo } from "react";
 import type { SaleTransaction } from "@/lib/types";
+import type { Timestamp } from 'firebase/firestore';
 
 const chartConfig = {
   sales: {
@@ -23,13 +24,16 @@ export function SalesChart({ sales }: { sales: SaleTransaction[]}) {
     });
 
     sales.forEach(sale => {
-      const saleDate = new Date(sale.date);
+      const saleDate = (sale.date as Timestamp)?.toDate ? (sale.date as Timestamp).toDate() : new Date(sale.date);
       const today = new Date();
-      const diffDays = Math.floor((today.getTime() - saleDate.getTime()) / (1000 * 3600 * 24));
+      const diffTime = today.getTime() - saleDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 3600 * 24));
       
       if (diffDays >= 0 && diffDays < 30) {
         const index = 29 - diffDays;
-        data[index].sales += sale.total;
+        if(data[index]) {
+            data[index].sales += sale.total;
+        }
       }
     });
 

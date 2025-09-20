@@ -2,13 +2,14 @@
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { SaleTransaction, Product } from "@/lib/types";
+import type { Timestamp } from 'firebase/firestore';
 
 export function BestSellers({ sales, products }: { sales: SaleTransaction[], products: Product[] }) {
   const bestSellingItems = (() => {
     const itemSales: { [key: string]: { name: string, quantity: number, total: number } } = {};
 
     sales.forEach(sale => {
-      const saleDate = new Date(sale.date);
+      const saleDate = (sale.date as Timestamp)?.toDate ? (sale.date as Timestamp).toDate() : new Date(sale.date);
       const today = new Date();
       const monthDiff = today.getMonth() - saleDate.getMonth() + (12 * (today.getFullYear() - saleDate.getFullYear()));
 
@@ -45,13 +46,19 @@ export function BestSellers({ sales, products }: { sales: SaleTransaction[], pro
             </TableRow>
           </TableHeader>
           <TableBody>
-            {bestSellingItems.map((item, index) => (
-              <TableRow key={index}>
-                <TableCell className="font-medium">{item.name}</TableCell>
-                <TableCell className="text-right">{item.quantity}</TableCell>
-                <TableCell className="text-right">MMK {item.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-              </TableRow>
-            ))}
+             {bestSellingItems.length > 0 ? (
+                bestSellingItems.map((item, index) => (
+                <TableRow key={index}>
+                    <TableCell className="font-medium">{item.name}</TableCell>
+                    <TableCell className="text-right">{item.quantity}</TableCell>
+                    <TableCell className="text-right">MMK {item.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                </TableRow>
+                ))
+            ) : (
+                <TableRow>
+                    <TableCell colSpan={3} className="text-center h-24">No best sellers this month.</TableCell>
+                </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>

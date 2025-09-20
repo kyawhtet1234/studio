@@ -3,33 +3,37 @@
 
 import { AppSidebar } from '@/components/app/app-sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
-import { DataProvider } from '@/lib/data-context';
+import { DataProvider, useData } from '@/lib/data-context';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+function AppContent({ children }: { children: React.ReactNode }) {
+  const { loading: dataLoading } = useData();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [user, authLoading, router]);
 
-  if (loading || !user) {
+  if (authLoading || dataLoading) {
     return (
         <div className="flex min-h-screen w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin" />
         </div>
     );
   }
+  
+  if (!user) {
+      return null;
+  }
 
   return (
     <SidebarProvider>
-      <DataProvider>
         <div className="flex min-h-screen bg-background">
             <AppSidebar />
             <SidebarInset>
@@ -38,7 +42,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
             </SidebarInset>
         </div>
-      </DataProvider>
     </SidebarProvider>
   );
 }
+
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <DataProvider>
+            <AppContent>{children}</AppContent>
+        </DataProvider>
+    )
+}
+
+    

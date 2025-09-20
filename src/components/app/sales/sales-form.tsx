@@ -5,7 +5,7 @@ import { useState, useEffect, useTransition } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { autofillAction } from "@/app/(app)/sales/actions";
+import { autofillItemDetails } from "@/ai/flows/autofill-item-details";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,7 +66,6 @@ interface SalesFormProps {
 
 export function SalesForm({ stores, onSave }: SalesFormProps) {
   const { products } = useData();
-  const [autofillState, setAutofillState] = useState({ message: "", data: null });
   const [isAutofillPending, startAutofillTransition] = useTransition();
   const { toast } = useToast();
 
@@ -93,21 +92,26 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
   const watchDiscount = form.watch("discount");
 
   useEffect(() => {
-    if (watchSku.length > 3) {
-      const formData = new FormData();
-      formData.append("sku", watchSku);
-      formData.append("products", JSON.stringify(products));
-      startAutofillTransition(async () => {
-        const result = await autofillAction(autofillState, formData);
-        if (result.data) {
-          form.setValue("itemName", result.data.itemName, { shouldValidate: true });
-          form.setValue("sellPrice", result.data.sellPrice, { shouldValidate: true });
-        } else if (result.message && result.message !== 'Success') {
-          toast({ variant: 'destructive', title: 'Autofill Error', description: result.message });
+    const triggerAutofill = async () => {
+        if (watchSku.length > 3) {
+            startAutofillTransition(async () => {
+                try {
+                    const result = await autofillItemDetails({ sku: watchSku });
+                    if (result) {
+                        form.setValue("itemName", result.itemName, { shouldValidate: true });
+                        form.setValue("sellPrice", result.sellPrice, { shouldValidate: true });
+                    }
+                } catch (error) {
+                    form.resetField("itemName");
+                    form.resetField("sellPrice");
+                    toast({ variant: 'destructive', title: 'Autofill Error', description: (error as Error).message });
+                }
+            });
         }
-      });
-    }
-  }, [watchSku, form, toast, products, autofillState]);
+    };
+    triggerAutofill();
+  }, [watchSku, form, toast]);
+
 
   function addToCart() {
     const { sku, itemName, sellPrice, quantity } = form.getValues();

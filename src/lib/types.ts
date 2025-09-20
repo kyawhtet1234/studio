@@ -1,3 +1,6 @@
+
+import type { Timestamp } from 'firebase/firestore';
+
 export type Category = {
   id: string;
   name: string;
@@ -41,7 +44,7 @@ export type CartItem = {
 
 export type SaleTransaction = {
   id: string;
-  date: Date;
+  date: Date | Timestamp;
   storeId: string;
   items: CartItem[];
   subtotal: number;
@@ -51,7 +54,7 @@ export type SaleTransaction = {
 
 export type PurchaseTransaction = {
   id: string;
-  date: Date;
+  date: Date | Timestamp;
   storeId: string;
   supplierId: string;
   items: {
@@ -64,7 +67,7 @@ export type PurchaseTransaction = {
 
 export type TransferLog = {
   id: string;
-  date: Date;
+  date: Date | Timestamp;
   fromStoreId: string;
   toStoreId: string;
   items: {
@@ -72,3 +75,5 @@ export type TransferLog = {
     quantity: number;
   }[];
 };
+
+    

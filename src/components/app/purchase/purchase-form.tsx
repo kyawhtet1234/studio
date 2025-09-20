@@ -5,8 +5,9 @@ import { useState, useEffect, useTransition } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useFormState } from "react-dom";
-import { autofillPurchaseAction } from "@/app/(app)/purchase/actions";
+// import { useFormState } from "react-dom";
+// import { autofillPurchaseAction } from "@/app/(app)/purchase/actions";
+import { autofillPurchaseDetails } from "@/ai/flows/autofill-purchase-details";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,11 +67,8 @@ interface PurchaseFormProps {
     onSavePurchase: (purchase: Omit<PurchaseTransaction, 'id' | 'date'>) => void;
 }
 
-const initialAutofillState = { message: "", data: null };
-
 export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
-  const { products, suppliers } = useData();
-  const [autofillState, formAction] = useFormState(autofillPurchaseAction, initialAutofillState);
+  const { products } = useData();
   const [isAutofillPending, startAutofillTransition] = useTransition();
   const { toast } = useToast();
 
@@ -96,31 +94,28 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
   const watchCart = form.watch("cart");
 
   useEffect(() => {
-    // Using a debounce effect is better, but for simplicity, we trigger on length.
-    if (watchSku.length > 3) {
-      const formData = new FormData();
-      formData.append("sku", watchSku);
-      // Pass the current data lists to the server action
-      formData.append("products", JSON.stringify(products));
-      formData.append("suppliers", JSON.stringify(suppliers));
-      startAutofillTransition(() => {
-        formAction(formData);
-      });
-    }
-  }, [watchSku, formAction, products, suppliers]);
+    const triggerAutofill = async () => {
+      if (watchSku.length > 3) {
+        startAutofillTransition(async () => {
+          try {
+            const result = await autofillPurchaseDetails({ sku: watchSku });
+            if (result) {
+              form.setValue("itemName", result.itemName, { shouldValidate: true });
+              form.setValue("supplierName", result.supplierName, { shouldValidate: true });
+              form.setValue("buyPrice", result.buyPrice, { shouldValidate: true });
+            }
+          } catch (error) {
+            form.resetField("itemName");
+            form.resetField("supplierName");
+            form.resetField("buyPrice");
+            toast({ variant: 'destructive', title: 'Autofill Error', description: (error as Error).message });
+          }
+        });
+      }
+    };
+    triggerAutofill();
+  }, [watchSku, form, toast]);
 
-  useEffect(() => {
-    if (autofillState.data) {
-        form.setValue("itemName", autofillState.data.itemName, { shouldValidate: true });
-        form.setValue("supplierName", autofillState.data.supplierName, { shouldValidate: true });
-        form.setValue("buyPrice", autofillState.data.buyPrice, { shouldValidate: true });
-    } else if (autofillState.message && autofillState.message !== 'Success' && !isAutofillPending) {
-        form.resetField("itemName");
-        form.resetField("supplierName");
-        form.resetField("buyPrice");
-        toast({ variant: 'destructive', title: 'Autofill Error', description: autofillState.message });
-    }
-  }, [autofillState, form, isAutofillPending, toast]);
 
   function addToCart() {
     const { sku, itemName, buyPrice, quantity } = form.getValues();

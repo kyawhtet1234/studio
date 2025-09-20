@@ -42,11 +42,11 @@ interface FormProps {
   onSuccess: () => void;
 }
 
-export function AddCategoryForm({ onAddCategory, onSuccess }: { onAddCategory: (data: Omit<Category, 'id'>) => void } & FormProps) {
+export function AddCategoryForm({ onAddCategory, onSuccess }: { onAddCategory: (data: Omit<Category, 'id'>) => Promise<void> } & FormProps) {
   const form = useForm({ resolver: zodResolver(baseSchema), defaultValues: { name: "" } });
   const { toast } = useToast();
-  function onSubmit(data: z.infer<typeof baseSchema>) {
-    onAddCategory(data);
+  async function onSubmit(data: z.infer<typeof baseSchema>) {
+    await onAddCategory(data);
     toast({ title: "Category Added", description: `${data.name} has been successfully added.` });
     form.reset();
     onSuccess();
@@ -71,11 +71,11 @@ export function AddCategoryForm({ onAddCategory, onSuccess }: { onAddCategory: (
   );
 }
 
-export function AddSupplierForm({ onAddSupplier, onSuccess }: { onAddSupplier: (data: Omit<Supplier, 'id'>) => void } & FormProps) {
+export function AddSupplierForm({ onAddSupplier, onSuccess }: { onAddSupplier: (data: Omit<Supplier, 'id'>) => Promise<void> } & FormProps) {
     const form = useForm({ resolver: zodResolver(baseSchema), defaultValues: { name: "" } });
     const { toast } = useToast();
-    function onSubmit(data: z.infer<typeof baseSchema>) {
-        onAddSupplier(data);
+    async function onSubmit(data: z.infer<typeof baseSchema>) {
+        await onAddSupplier(data);
         toast({ title: "Supplier Added", description: `${data.name} has been successfully added.` });
         form.reset();
         onSuccess();
@@ -100,11 +100,11 @@ export function AddSupplierForm({ onAddSupplier, onSuccess }: { onAddSupplier: (
     );
 }
 
-export function AddStoreForm({ onAddStore, onSuccess }: { onAddStore: (data: Omit<Store, 'id'>) => void } & FormProps) {
+export function AddStoreForm({ onAddStore, onSuccess }: { onAddStore: (data: Omit<Store, 'id'>) => Promise<void> } & FormProps) {
     const form = useForm({ resolver: zodResolver(storeSchema), defaultValues: {name: "", location: ""} });
     const { toast } = useToast();
-    function onSubmit(data: z.infer<typeof storeSchema>) { 
-        onAddStore(data);
+    async function onSubmit(data: z.infer<typeof storeSchema>) { 
+        await onAddStore(data);
         toast({ title: "Store Added", description: `${data.name} has been successfully added.` });
         form.reset();
         onSuccess();
@@ -126,7 +126,7 @@ export function AddStoreForm({ onAddStore, onSuccess }: { onAddStore: (data: Omi
 }
 
 interface AddProductFormProps {
-  onAddProduct: (data: Omit<Product, 'id'>) => void;
+  onAddProduct: (data: Omit<Product, 'id'>) => Promise<void>;
   categories: Category[];
   suppliers: Supplier[];
   onSuccess: () => void;
@@ -139,8 +139,8 @@ export function AddProductForm({ onAddProduct, categories, suppliers, onSuccess 
   });
   const { toast } = useToast();
 
-  function onSubmit(data: z.infer<typeof productSchema>) { 
-      onAddProduct(data);
+  async function onSubmit(data: z.infer<typeof productSchema>) { 
+      await onAddProduct(data);
       toast({ title: "Product Added", description: `${data.name} has been successfully added.` });
       form.reset();
       onSuccess();
