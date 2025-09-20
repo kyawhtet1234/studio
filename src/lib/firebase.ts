@@ -1,5 +1,6 @@
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
+console.log("Using Firebase config:", firebaseConfig);
 
 const firebaseConfig = {
   "projectId": "studio-7123558124-d8495",
