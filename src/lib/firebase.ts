@@ -2,12 +2,11 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 
 const firebaseConfig = {
-  "projectId": "studio-7123558124-d8495",
-  "appId": "1:621606526544:web:273a5da26917c45816fb55",
-  "apiKey": "AIzaSyCLVesKpDxqIPZ7FpRU2tsu5dtqfijzM2M",
-  "authDomain": "studio-7123558124-d8495.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "621606526544"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
 };
 
 // Initialize Firebase
