@@ -18,30 +18,30 @@ export default function ProductsPage() {
     stores, addStore, deleteStore
   } = useData();
 
-  const renderAddButton = () => {
+  const renderAddButton = (handleSheetClose: () => void) => {
     switch (activeTab) {
       case "items":
         return (
           <AddEntitySheet buttonText="Add Item" title="Add a new item" description="Fill in the details for the new product.">
-            <AddProductForm onAddProduct={addProduct} categories={categories} suppliers={suppliers} />
+            {(onSuccess) => <AddProductForm onAddProduct={addProduct} categories={categories} suppliers={suppliers} onSuccess={onSuccess} />}
           </AddEntitySheet>
         );
       case "categories":
         return (
           <AddEntitySheet buttonText="Add Category" title="Add a new category" description="Enter the name for the new category.">
-            <AddCategoryForm onAddCategory={addCategory} />
+             {(onSuccess) => <AddCategoryForm onAddCategory={addCategory} onSuccess={onSuccess} />}
           </AddEntitySheet>
         );
       case "suppliers":
         return (
           <AddEntitySheet buttonText="Add Supplier" title="Add a new supplier" description="Enter the details for the new supplier.">
-            <AddSupplierForm onAddSupplier={addSupplier} />
+            {(onSuccess) => <AddSupplierForm onAddSupplier={addSupplier} onSuccess={onSuccess} />}
           </AddEntitySheet>
         );
       case "stores":
         return (
           <AddEntitySheet buttonText="Add Store" title="Add a new store" description="Enter the details for the new store location.">
-            <AddStoreForm onAddStore={addStore} />
+            {(onSuccess) => <AddStoreForm onAddStore={addStore} onSuccess={onSuccess} />}
           </AddEntitySheet>
         );
       default:
@@ -66,7 +66,7 @@ export default function ProductsPage() {
                 <TabsTrigger value="stores">Stores</TabsTrigger>
             </TabsList>
             <div>
-              {renderAddButton()}
+              {renderAddButton(() => {})}
             </div>
         </div>
 

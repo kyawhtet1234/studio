@@ -1,3 +1,5 @@
+
+import { useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -13,7 +15,7 @@ interface AddEntitySheetProps {
   buttonText: string;
   title: string;
   description: string;
-  children: React.ReactNode;
+  children: (onSuccess: () => void) => React.ReactNode;
 }
 
 export function AddEntitySheet({
@@ -22,8 +24,14 @@ export function AddEntitySheet({
   description,
   children,
 }: AddEntitySheetProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleSuccess = () => {
+    setIsOpen(false);
+  };
+
   return (
-    <Sheet>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" /> {buttonText}
@@ -34,7 +42,7 @@ export function AddEntitySheet({
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
-        <div className="py-4">{children}</div>
+        <div className="py-4">{children(handleSuccess)}</div>
       </SheetContent>
     </Sheet>
   );

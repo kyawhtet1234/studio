@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import type { Product, Category, Supplier, Store } from "@/lib/types";
-import { SheetClose } from "@/components/ui/sheet";
 
 const baseSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -39,13 +38,18 @@ const productSchema = z.object({
 
 const storeSchema = baseSchema.extend({ location: z.string().min(5) });
 
-export function AddCategoryForm({ onAddCategory }: { onAddCategory: (data: Omit<Category, 'id'>) => void }) {
+interface FormProps {
+  onSuccess: () => void;
+}
+
+export function AddCategoryForm({ onAddCategory, onSuccess }: { onAddCategory: (data: Omit<Category, 'id'>) => void } & FormProps) {
   const form = useForm({ resolver: zodResolver(baseSchema), defaultValues: { name: "" } });
   const { toast } = useToast();
   function onSubmit(data: z.infer<typeof baseSchema>) {
     onAddCategory(data);
     toast({ title: "Category Added", description: `${data.name} has been successfully added.` });
     form.reset();
+    onSuccess();
   }
   return (
     <Form {...form}>
@@ -61,21 +65,20 @@ export function AddCategoryForm({ onAddCategory }: { onAddCategory: (data: Omit<
             </FormItem>
           )}
         />
-        <SheetClose asChild>
-          <Button type="submit">Add Category</Button>
-        </SheetClose>
+        <Button type="submit">Add Category</Button>
       </form>
     </Form>
   );
 }
 
-export function AddSupplierForm({ onAddSupplier }: { onAddSupplier: (data: Omit<Supplier, 'id'>) => void }) {
+export function AddSupplierForm({ onAddSupplier, onSuccess }: { onAddSupplier: (data: Omit<Supplier, 'id'>) => void } & FormProps) {
     const form = useForm({ resolver: zodResolver(baseSchema), defaultValues: { name: "" } });
     const { toast } = useToast();
     function onSubmit(data: z.infer<typeof baseSchema>) {
         onAddSupplier(data);
         toast({ title: "Supplier Added", description: `${data.name} has been successfully added.` });
         form.reset();
+        onSuccess();
     }
     return (
         <Form {...form}>
@@ -91,21 +94,20 @@ export function AddSupplierForm({ onAddSupplier }: { onAddSupplier: (data: Omit<
                 </FormItem>
             )}
             />
-            <SheetClose asChild>
-              <Button type="submit">Add Supplier</Button>
-            </SheetClose>
+            <Button type="submit">Add Supplier</Button>
         </form>
         </Form>
     );
 }
 
-export function AddStoreForm({ onAddStore }: { onAddStore: (data: Omit<Store, 'id'>) => void }) {
+export function AddStoreForm({ onAddStore, onSuccess }: { onAddStore: (data: Omit<Store, 'id'>) => void } & FormProps) {
     const form = useForm({ resolver: zodResolver(storeSchema), defaultValues: {name: "", location: ""} });
     const { toast } = useToast();
     function onSubmit(data: z.infer<typeof storeSchema>) { 
         onAddStore(data);
         toast({ title: "Store Added", description: `${data.name} has been successfully added.` });
         form.reset();
+        onSuccess();
     }
 
     return (
@@ -117,9 +119,7 @@ export function AddStoreForm({ onAddStore }: { onAddStore: (data: Omit<Store, 'i
         <FormField control={form.control} name="location" render={({ field }) => (
             <FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
         )}/>
-        <SheetClose asChild>
-          <Button type="submit">Add Store</Button>
-        </SheetClose>
+        <Button type="submit">Add Store</Button>
       </form>
     </Form>
     );
@@ -129,9 +129,10 @@ interface AddProductFormProps {
   onAddProduct: (data: Omit<Product, 'id'>) => void;
   categories: Category[];
   suppliers: Supplier[];
+  onSuccess: () => void;
 }
 
-export function AddProductForm({ onAddProduct, categories, suppliers }: AddProductFormProps) {
+export function AddProductForm({ onAddProduct, categories, suppliers, onSuccess }: AddProductFormProps) {
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
     defaultValues: { name: "", sku: "", categoryId: "", supplierId: "", sellPrice: 0, buyPrice: 0 },
@@ -142,6 +143,7 @@ export function AddProductForm({ onAddProduct, categories, suppliers }: AddProdu
       onAddProduct(data);
       toast({ title: "Product Added", description: `${data.name} has been successfully added.` });
       form.reset();
+      onSuccess();
   }
 
   return (
@@ -179,9 +181,7 @@ export function AddProductForm({ onAddProduct, categories, suppliers }: AddProdu
         <FormField control={form.control} name="buyPrice" render={({ field }) => (
             <FormItem><FormLabel>Buy Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
         )}/>
-        <SheetClose asChild>
-          <Button type="submit">Add Product</Button>
-        </SheetClose>
+        <Button type="submit">Add Product</Button>
       </form>
     </Form>
   );
