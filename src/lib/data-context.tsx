@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc } from 'firebase/firestore';
 
 import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction } from '@/lib/types';
 
@@ -23,8 +23,8 @@ interface DataContextProps {
     deleteSupplier: (supplierId: string) => Promise<void>;
     addStore: (store: Omit<Store, 'id'>) => Promise<void>;
     deleteStore: (storeId: string) => Promise<void>;
-    addSale: (sale: Omit<SaleTransaction, 'id' | 'date'>) => Promise<void>;
-    deleteSale: (saleId: string) => Promise<void>;
+    addSale: (sale: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => Promise<void>;
+    voidSale: (saleId: string) => Promise<void>;
     addPurchase: (purchase: Omit<PurchaseTransaction, 'id' | 'date'>) => Promise<void>;
     deletePurchase: (purchaseId: string) => Promise<void>;
     updateInventory: (newInventory: InventoryItem[]) => Promise<void>;
@@ -64,7 +64,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setStores(fetchedStores);
 
             const inventorySnap = await getDocs(query(collection(db, 'users', uid, 'inventory')));
-            const fetchedInventory = inventorySnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem & {id: string}));
+            const fetchedInventory = inventorySnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as InventoryItem & {id: string}));
             setInventory(fetchedInventory);
 
             const salesSnap = await getDocs(query(collection(db, 'users', uid, 'sales')));
@@ -195,21 +195,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await fetchData(user.uid);
     };
 
-    const addSale = async (saleData: Omit<SaleTransaction, 'id' | 'date'>) => {
+    const addSale = async (saleData: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => {
         if (!user) return;
-        const newSale = { ...saleData, date: Timestamp.now() };
+        const newSale: Omit<SaleTransaction, 'id'> = { 
+            ...saleData, 
+            date: Timestamp.now(),
+            status: 'completed' 
+        };
         await addDoc(collection(db, 'users', user.uid, 'sales'), newSale);
 
         const batch = writeBatch(db);
         const inventoryQuery = query(
             collection(db, 'users', user.uid, 'inventory'),
-            where('storeId', '==', saleData.storeId)
+            where('storeId', '==', saleData.storeId),
+            where('productId', 'in', saleData.items.map(i => i.productId))
         );
         const inventorySnap = await getDocs(inventoryQuery);
-        const inventoryDocs = inventorySnap.docs;
+        const inventoryMap = new Map(inventorySnap.docs.map(d => [d.data().productId, d]));
 
         for (const item of saleData.items) {
-            const inventoryDoc = inventoryDocs.find(d => d.data().productId === item.productId);
+            const inventoryDoc = inventoryMap.get(item.productId);
             if (inventoryDoc) {
                 const currentStock = inventoryDoc.data().stock;
                 batch.update(inventoryDoc.ref, { stock: currentStock - item.quantity });
@@ -220,20 +225,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await fetchData(user.uid);
     };
 
-    const deleteSale = async (saleId: string) => {
+    const voidSale = async (saleId: string) => {
         if (!user) return;
-
+        
         const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
         const saleSnap = await getDoc(saleRef);
         
-        if (!saleSnap.exists()) {
-            console.error("Sale to delete not found");
+        if (!saleSnap.exists() || saleSnap.data().status === 'voided') {
+            console.error("Sale to void not found or already voided.");
             return;
         }
 
-        const saleData = saleSnap.data() as Omit<SaleTransaction, 'id'>;
+        const saleData = saleSnap.data() as SaleTransaction;
         const batch = writeBatch(db);
 
+        // Restore inventory
         const productIds = saleData.items.map(i => i.productId);
         if (productIds.length > 0) {
             const inventoryQuery = query(
@@ -253,7 +259,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
             }
         }
         
-        batch.delete(saleRef);
+        // Mark sale as voided
+        batch.update(saleRef, { status: 'voided' });
         
         await batch.commit();
         await fetchData(user.uid);
@@ -265,15 +272,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await addDoc(collection(db, 'users', user.uid, 'purchases'), newPurchase);
 
         const batch = writeBatch(db);
+        const productIds = purchaseData.items.map(i => i.productId);
+        if (productIds.length === 0) {
+            await fetchData(user.uid);
+            return;
+        }
+        
         const inventoryQuery = query(
             collection(db, 'users', user.uid, 'inventory'),
-            where('storeId', '==', purchaseData.storeId)
+            where('storeId', '==', purchaseData.storeId),
+            where('productId', 'in', productIds)
         );
         const inventorySnap = await getDocs(inventoryQuery);
-        const inventoryDocs = inventorySnap.docs;
+        const inventoryMap = new Map(inventorySnap.docs.map(d => [d.data().productId, d]));
         
         for (const item of purchaseData.items) {
-            const inventoryDoc = inventoryDocs.find(d => d.data().productId === item.productId);
+            const inventoryDoc = inventoryMap.get(item.productId);
 
             if (inventoryDoc) {
                 const currentStock = inventoryDoc.data().stock;
@@ -366,7 +380,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             suppliers, addSupplier, deleteSupplier,
             stores, addStore, deleteStore,
             inventory, updateInventory,
-            sales, addSale, deleteSale,
+            sales, addSale, voidSale,
             purchases, addPurchase, deletePurchase,
             loading
         }}>

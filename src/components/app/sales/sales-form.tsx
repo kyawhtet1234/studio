@@ -36,6 +36,7 @@ import { Trash2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { CartItem, SaleTransaction, Store, Product } from "@/lib/types";
 import { useData } from "@/lib/data-context";
+import { useAuth } from "@/lib/auth-context";
 
 const formSchema = z.object({
   storeId: z.string().min(1, "Please select a store."),
@@ -60,7 +61,7 @@ type SalesFormValues = z.infer<typeof formSchema>;
 
 interface SalesFormProps {
     stores: Store[];
-    onSave: (sale: Omit<SaleTransaction, 'id' | 'date'>) => void;
+    onSave: (sale: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => void;
 }
 
 export function SalesForm({ stores, onSave }: SalesFormProps) {
@@ -91,7 +92,7 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
 
   useEffect(() => {
     const autofill = () => {
-        if (watchSku.length > 3) {
+        if (watchSku.length > 0) {
             const product = products.find(p => p.sku.toLowerCase().startsWith(watchSku.toLowerCase()));
             if (product) {
                 form.setValue("itemName", product.name);

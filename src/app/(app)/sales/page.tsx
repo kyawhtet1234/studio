@@ -9,13 +9,8 @@ import { useData } from "@/lib/data-context";
 export default function SalesPage() {
   const { addSale, stores } = useData();
 
-  const handleSaveSale = (newSale: Omit<SaleTransaction, 'id' | 'date'>) => {
-    const sale: SaleTransaction = {
-      ...newSale,
-      id: `sale-${Date.now()}`,
-      date: new Date(),
-    };
-    addSale(sale);
+  const handleSaveSale = (newSale: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => {
+    addSale(newSale);
   };
 
   return (

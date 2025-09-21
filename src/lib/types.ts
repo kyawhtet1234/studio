@@ -50,6 +50,7 @@ export type SaleTransaction = {
   subtotal: number;
   discount: number;
   total: number;
+  status: 'completed' | 'voided';
 };
 
 export type PurchaseTransaction = {
@@ -75,5 +76,3 @@ export type TransferLog = {
     quantity: number;
   }[];
 };
-
-    

@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileDown, MoreHorizontal } from "lucide-react";
+import { FileDown, MoreHorizontal, Undo2 } from "lucide-react";
 import { useMemo } from "react";
 import type { PurchaseTransaction, SaleTransaction } from "@/lib/types";
 import type { Timestamp } from 'firebase/firestore';
@@ -14,6 +14,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 
 const ReportTable = ({ data, periodLabel }: { data: any[], periodLabel: string }) => (
@@ -126,15 +128,15 @@ const PurchaseHistoryTable = ({ data, stores, suppliers, onDelete }: { data: Pur
     )
 };
 
-const SalesHistoryTable = ({ data, stores, onDelete }: { data: SaleTransaction[], stores: any[], onDelete: (id: string) => void }) => {
-    const [deleteCandidate, setDeleteCandidate] = useState<string | null>(null);
+const SalesHistoryTable = ({ data, stores, onVoid }: { data: SaleTransaction[], stores: any[], onVoid: (id: string) => void }) => {
+    const [voidCandidate, setVoidCandidate] = useState<string | null>(null);
     const { toast } = useToast();
 
-    const handleDelete = () => {
-        if (deleteCandidate) {
-            onDelete(deleteCandidate);
-            toast({ title: 'Success', description: 'Sale record has been deleted.' });
-            setDeleteCandidate(null);
+    const handleVoid = () => {
+        if (voidCandidate) {
+            onVoid(voidCandidate);
+            toast({ title: 'Success', description: 'Sale has been voided.' });
+            setVoidCandidate(null);
         }
     };
     
@@ -146,6 +148,7 @@ const SalesHistoryTable = ({ data, stores, onDelete }: { data: SaleTransaction[]
                 <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Store</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Subtotal</TableHead>
                 <TableHead className="text-right">Discount</TableHead>
                 <TableHead className="text-right">Total</TableHead>
@@ -155,23 +158,34 @@ const SalesHistoryTable = ({ data, stores, onDelete }: { data: SaleTransaction[]
             <TableBody>
                 {data.map((sale) => {
                     const saleDate = (sale.date as Timestamp)?.toDate ? (sale.date as Timestamp).toDate() : new Date(sale.date);
+                    const isVoided = sale.status === 'voided';
                     return (
-                        <TableRow key={sale.id}>
+                        <TableRow key={sale.id} className={cn(isVoided && "text-muted-foreground bg-muted/30")}>
                             <TableCell className="font-medium">{saleDate.toLocaleDateString()}</TableCell>
                             <TableCell>{stores.find(s => s.id === sale.storeId)?.name || 'N/A'}</TableCell>
+                            <TableCell>
+                                {isVoided ? (
+                                     <Badge variant="destructive">Voided</Badge>
+                                ) : (
+                                    <Badge variant="secondary">Completed</Badge>
+                                )}
+                            </TableCell>
                             <TableCell className="text-right">MMK {sale.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                             <TableCell className="text-right">MMK {sale.discount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                             <TableCell className="text-right">MMK {sale.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                             <TableCell>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                        <Button variant="ghost" className="h-8 w-8 p-0" disabled={isVoided}>
                                             <span className="sr-only">Open menu</span>
                                             <MoreHorizontal className="h-4 w-4" />
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem className="text-destructive" onClick={() => setDeleteCandidate(sale.id)}>Delete</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setVoidCandidate(sale.id)}>
+                                            <Undo2 className="mr-2 h-4 w-4" />
+                                            Void Transaction
+                                        </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>
@@ -180,7 +194,7 @@ const SalesHistoryTable = ({ data, stores, onDelete }: { data: SaleTransaction[]
                 })}
                 {data.length === 0 && (
                     <TableRow>
-                        <TableCell colSpan={6} className="text-center h-24">
+                        <TableCell colSpan={7} className="text-center h-24">
                             No sales history found.
                         </TableCell>
                     </TableRow>
@@ -188,18 +202,18 @@ const SalesHistoryTable = ({ data, stores, onDelete }: { data: SaleTransaction[]
             </TableBody>
             </Table>
         </div>
-        <AlertDialog open={!!deleteCandidate} onOpenChange={() => setDeleteCandidate(null)}>
+        <AlertDialog open={!!voidCandidate} onOpenChange={() => setVoidCandidate(null)}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogTitle>Are you sure you want to void this sale?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the sale record and adjust inventory levels accordingly.
+                        This action cannot be undone. This will mark the sale as void and restore the sold items to your inventory.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                    Delete
+                    <AlertDialogAction onClick={handleVoid}>
+                    Confirm Void
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
@@ -210,12 +224,14 @@ const SalesHistoryTable = ({ data, stores, onDelete }: { data: SaleTransaction[]
 
 
 export default function ReportsPage() {
-  const { sales, products, purchases, stores, suppliers, deleteSale, deletePurchase } = useData();
+  const { sales, products, purchases, stores, suppliers, voidSale, deletePurchase } = useData();
 
   const getReportData = (period: 'daily' | 'monthly') => {
     const reports: { [key: string]: { date: string, sales: number, cogs: number, profit: number } } = {};
     
     sales.forEach(sale => {
+        if(sale.status === 'voided') return;
+        
         const d = (sale.date as Timestamp)?.toDate ? (sale.date as Timestamp).toDate() : new Date(sale.date);
         const key = period === 'daily' 
             ? d.toISOString().split('T')[0] 
@@ -280,7 +296,7 @@ export default function ReportsPage() {
             <ReportTable data={monthlyReports} period-label="Month" />
         </TabsContent>
          <TabsContent value="sales">
-            <SalesHistoryTable data={salesHistory} stores={stores} onDelete={deleteSale} />
+            <SalesHistoryTable data={salesHistory} stores={stores} onVoid={voidSale} />
         </TabsContent>
         <TabsContent value="purchase">
             <PurchaseHistoryTable data={purchaseHistory} stores={stores} suppliers={suppliers} onDelete={deletePurchase} />

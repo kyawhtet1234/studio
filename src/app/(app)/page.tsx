@@ -19,7 +19,8 @@ export default function DashboardPage() {
     let todayCogs = 0;
   
     sales.forEach(sale => {
-      // Ensure sale.date is a JS Date object
+      if (sale.status === 'voided') return;
+
       const saleDate = (sale.date as Timestamp)?.toDate ? (sale.date as Timestamp).toDate() : new Date(sale.date);
       saleDate.setHours(0, 0, 0, 0);
   
