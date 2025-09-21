@@ -35,17 +35,13 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Trash2, PlusCircle, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { CartItem, SaleTransaction, Store } from "@/lib/types";
+import type { CartItem, SaleTransaction, Store, Product } from '@/lib/types';
 import { useData } from "@/lib/data-context";
 import { Receipt } from "./receipt";
 
 
 const formSchema = z.object({
   storeId: z.string().min(1, "Please select a store."),
-  sku: z.string().optional(),
-  itemName: z.string().optional(),
-  sellPrice: z.coerce.number().optional(),
-  quantity: z.coerce.number().min(1, "Min 1"),
   cart: z.array(
     z.object({
       productId: z.string(),
@@ -55,7 +51,7 @@ const formSchema = z.object({
       quantity: z.number(),
       total: z.number(),
     })
-  ),
+  ).min(1, "Cart cannot be empty."),
   discount: z.coerce.number().min(0).optional(),
 });
 
@@ -71,14 +67,17 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
   const { toast } = useToast();
   const [lastSale, setLastSale] = useState<SaleTransaction | null>(null);
 
+  // State for temporary item inputs
+  const [sku, setSku] = useState("");
+  const [itemName, setItemName] = useState("");
+  const [sellPrice, setSellPrice] = useState<number | string>("");
+  const [quantity, setQuantity] = useState<number | string>(1);
+  const [foundProduct, setFoundProduct] = useState<Product | null>(null);
+
   const form = useForm<SalesFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       storeId: "",
-      sku: "",
-      itemName: "",
-      sellPrice: 0,
-      quantity: 1,
       cart: [],
       discount: 0,
     },
@@ -89,46 +88,53 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
     name: "cart",
   });
 
-  const watchSku = form.watch("sku");
   const watchCart = form.watch("cart");
   const watchDiscount = form.watch("discount");
 
   useEffect(() => {
-    const autofill = () => {
-        if (watchSku && watchSku.length > 0) {
-            const product = products.find(p => p.sku.toLowerCase().startsWith(watchSku.toLowerCase()));
-            if (product) {
-                form.setValue("itemName", product.name);
-                form.setValue("sellPrice", product.sellPrice);
-            } else {
-                form.resetField("itemName");
-                form.resetField("sellPrice");
-            }
+    if (sku) {
+        const product = products.find(p => p.sku.toLowerCase().startsWith(sku.toLowerCase()));
+        if (product) {
+            setItemName(product.name);
+            setSellPrice(product.sellPrice);
+            setFoundProduct(product);
+        } else {
+            setItemName("");
+            setSellPrice("");
+            setFoundProduct(null);
         }
-    };
-    autofill();
-  }, [watchSku, products, form]);
+    } else {
+        setItemName("");
+        setSellPrice("");
+        setFoundProduct(null);
+    }
+  }, [sku, products]);
 
 
   function addToCart() {
-    const { sku, itemName, sellPrice, quantity } = form.getValues();
-    const product = products.find(p => p.sku === sku);
+    const currentPrice = Number(sellPrice);
+    const currentQuantity = Number(quantity);
 
-    if (product && itemName && sellPrice && sellPrice > 0 && quantity > 0) {
+    if (foundProduct && itemName && currentPrice > 0 && currentQuantity > 0) {
       const newItem: CartItem = {
-        productId: product.id,
-        sku: product.sku,
+        productId: foundProduct.id,
+        sku: foundProduct.sku,
         name: itemName,
-        sellPrice,
-        quantity,
-        total: sellPrice * quantity,
+        sellPrice: currentPrice,
+        quantity: currentQuantity,
+        total: currentPrice * currentQuantity,
       };
       append(newItem);
-      form.resetField("sku");
-      form.resetField("itemName");
-      form.resetField("sellPrice");
-      form.setValue("quantity", 1);
-      form.setFocus('sku');
+      
+      // Reset temporary inputs
+      setSku("");
+      setItemName("");
+      setSellPrice("");
+      setQuantity(1);
+      setFoundProduct(null);
+      
+      // Focus SKU input for next item
+      document.getElementById('sku-input')?.focus();
     } else {
         toast({ variant: 'destructive', title: 'Invalid Item', description: 'Please fill all item details before adding to cart.' });
     }
@@ -138,11 +144,6 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
   const total = subtotal - (watchDiscount || 0);
   
   async function onSubmit(data: SalesFormValues) {
-    if (data.cart.length === 0) {
-        toast({ variant: 'destructive', title: 'Empty Cart', description: 'Please add items to the cart before saving.' });
-        return;
-    }
-    
     const saleData: Omit<SaleTransaction, 'id' | 'date' | 'status'> = {
         storeId: data.storeId,
         items: data.cart.map(item => ({
@@ -171,7 +172,7 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
     
     toast({ title: 'Sale Saved!', description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
     form.reset();
-    remove();
+    remove(); // Clears the useFieldArray
   }
 
   const handleCloseReceipt = () => {
@@ -210,65 +211,42 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
                 )}
             />
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end pt-4 border-t">
-              <div className="md:col-span-3 relative">
-                <FormField
-                  control={form.control}
-                  name="sku"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>SKU</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter SKU..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="md:col-span-3 relative space-y-2">
+                  <Label htmlFor="sku-input">SKU</Label>
+                  <Input 
+                    id="sku-input" 
+                    placeholder="Enter SKU..." 
+                    value={sku} 
+                    onChange={(e) => setSku(e.target.value)} 
+                  />
               </div>
-              <div className="md:col-span-4">
-                <FormField
-                  control={form.control}
-                  name="itemName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Item Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Item name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="md:col-span-4 space-y-2">
+                  <Label htmlFor="itemName-input">Item Name</Label>
+                  <Input 
+                    id="itemName-input"
+                    placeholder="Item name"
+                    value={itemName}
+                    onChange={(e) => setItemName(e.target.value)}
+                  />
               </div>
-              <div className="md:col-span-2">
-                <FormField
-                  control={form.control}
-                  name="sellPrice"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Sell Price</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="md:col-span-2 space-y-2">
+                  <Label htmlFor="sellPrice-input">Sell Price</Label>
+                  <Input
+                    id="sellPrice-input"
+                    type="number"
+                    step="0.01"
+                    value={sellPrice}
+                    onChange={(e) => setSellPrice(e.target.value)}
+                  />
               </div>
-              <div className="md:col-span-1">
-                <FormField
-                  control={form.control}
-                  name="quantity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Qty</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="md:col-span-1 space-y-2">
+                  <Label htmlFor="quantity-input">Qty</Label>
+                  <Input 
+                    id="quantity-input"
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                  />
               </div>
               <div className="md:col-span-2">
                 <Button type="button" className="w-full" onClick={addToCart}>
@@ -343,7 +321,9 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
             </div>
           </CardFooter>
         </Card>
-
+        {form.formState.errors.cart && (
+            <p className="text-sm font-medium text-destructive">{form.formState.errors.cart.message || form.formState.errors.cart.root?.message}</p>
+        )}
         <div className="flex justify-end">
             <Button type="submit" size="lg">Save Transaction</Button>
         </div>
@@ -365,9 +345,3 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
     </>
   );
 }
-
-    
-
-    
-
-    
