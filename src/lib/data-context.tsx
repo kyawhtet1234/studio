@@ -48,19 +48,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setLoading(true);
         try {
             const productsSnap = await getDocs(query(collection(db, 'users', uid, 'products')));
-            const fetchedProducts = productsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+            const fetchedProducts = productsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Product));
             setProducts(fetchedProducts);
 
             const categoriesSnap = await getDocs(query(collection(db, 'users', uid, 'categories')));
-            const fetchedCategories = categoriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+            const fetchedCategories = categoriesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Category));
             setCategories(fetchedCategories);
 
             const suppliersSnap = await getDocs(query(collection(db, 'users', uid, 'suppliers')));
-            const fetchedSuppliers = suppliersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier));
+            const fetchedSuppliers = suppliersSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Supplier));
             setSuppliers(fetchedSuppliers);
 
             const storesSnap = await getDocs(query(collection(db, 'users', uid, 'stores')));
-            const fetchedStores = storesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Store));
+            const fetchedStores = storesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Store));
             setStores(fetchedStores);
 
             const inventorySnap = await getDocs(query(collection(db, 'users', uid, 'inventory')));
@@ -70,13 +70,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
             const salesSnap = await getDocs(query(collection(db, 'users', uid, 'sales')));
             setSales(salesSnap.docs.map(doc => {
                 const data = doc.data();
-                return { id: doc.id, ...data, date: (data.date as Timestamp).toDate() } as SaleTransaction
+                return { ...data, id: doc.id, date: (data.date as Timestamp).toDate() } as SaleTransaction
             }));
 
             const purchasesSnap = await getDocs(query(collection(db, 'users', uid, 'purchases')));
             setPurchases(purchasesSnap.docs.map(doc => {
                 const data = doc.data();
-                return { id: doc.id, ...data, date: (data.date as Timestamp).toDate() } as PurchaseTransaction
+                return { ...data, id: doc.id, date: (data.date as Timestamp).toDate() } as PurchaseTransaction
             }));
 
         } catch (error) {
@@ -333,24 +333,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (!user) return;
         const batch = writeBatch(db);
         
-        const itemIds = updatedItems.map(item => item.productId);
-        if (itemIds.length === 0) {
+        const productIds = updatedItems.map(item => item.productId);
+        if (productIds.length === 0) {
             await fetchData(user.uid);
             return;
         }
 
-        const inventoryQuery = query(collection(db, 'users', user.uid, 'inventory'), where('productId', 'in', itemIds));
+        const inventoryQuery = query(collection(db, 'users', user.uid, 'inventory'), where('productId', 'in', productIds));
         const inventorySnap = await getDocs(inventoryQuery);
 
-        updatedItems.forEach(newItem => {
+        for (const newItem of updatedItems) {
             const docToUpdate = inventorySnap.docs.find(doc => {
                 const data = doc.data();
                 return data.productId === newItem.productId && data.storeId === newItem.storeId;
             });
-            if (docToUpdate) {
+             if (docToUpdate) {
                 batch.update(docToUpdate.ref, { stock: newItem.stock });
+            } else {
+                 const newInventoryRef = doc(collection(db, 'users', user.uid, 'inventory'));
+                 batch.set(newInventoryRef, newItem);
             }
-        });
+        }
 
         await batch.commit();
         await fetchData(user.uid);
@@ -379,3 +382,5 @@ export function useData() {
     }
     return context;
 }
+
+    
