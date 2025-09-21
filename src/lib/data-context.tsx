@@ -70,7 +70,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             const inventorySnap = await getDocs(query(collection(db, 'users', uid, 'inventory')));
             const fetchedInventory = inventorySnap.docs.map(doc => {
               const [productId, storeId] = doc.id.split('_');
-              return { ...doc.data(), productId, storeId } as InventoryItem
+              return { ...doc.data(), productId, storeId, id: doc.id } as InventoryItem
             });
             setInventory(fetchedInventory);
 
@@ -335,6 +335,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     } else {
                         // Inventory record does not exist, so create it.
                         transaction.set(inventoryRef, {
+                            productId: item.productId,
+                            storeId: purchaseData.storeId,
                             stock: item.quantity,
                         });
                     }
@@ -404,7 +406,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
             if (docSnap.exists()) {
                  batch.update(inventoryRef, { stock: item.stock });
             } else {
-                 batch.set(inventoryRef, { stock: item.stock });
+                 batch.set(inventoryRef, { 
+                     productId: item.productId, 
+                     storeId: item.storeId, 
+                     stock: item.stock 
+                });
             }
         }
 
@@ -435,3 +441,5 @@ export function useData() {
     }
     return context;
 }
+
+    

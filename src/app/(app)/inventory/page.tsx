@@ -119,7 +119,7 @@ export default function InventoryPage() {
           </TableHeader>
           <TableBody>
             {inventoryData.map((item) => (
-                <TableRow key={`${item.productId}-${item.storeId}`}>
+                <TableRow key={`${item.productId}_${item.storeId}`}>
                     <TableCell>{item.sku}</TableCell>
                     <TableCell className="font-medium">{item.productName}</TableCell>
                     <TableCell>{item.categoryName}</TableCell>
@@ -171,3 +171,5 @@ export default function InventoryPage() {
     </div>
   );
 }
+
+    
