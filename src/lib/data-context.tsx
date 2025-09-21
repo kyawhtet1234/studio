@@ -139,8 +139,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     
     const addCategory = async (categoryData: Omit<Category, 'id'>) => {
         if (!user) return;
-        const docRef = await addDoc(collection(db, 'users', user.uid, 'categories'), categoryData);
-        setCategories(prev => [...prev, {id: docRef.id, ...categoryData}]);
+        await addDoc(collection(db, 'users', user.uid, 'categories'), categoryData);
+        await fetchData(user.uid);
     };
     
     const deleteCategory = async (categoryId: string) => {
@@ -151,8 +151,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const addSupplier = async (supplierData: Omit<Supplier, 'id'>) => {
         if (!user) return;
-        const docRef = await addDoc(collection(db, 'users', user.uid, 'suppliers'), supplierData);
-        setSuppliers(prev => [...prev, {id: docRef.id, ...supplierData}]);
+        await addDoc(collection(db, 'users', user.uid, 'suppliers'), supplierData);
+        await fetchData(user.uid);
     };
     
     const deleteSupplier = async (supplierId: string) => {
@@ -396,3 +396,5 @@ export function useData() {
     }
     return context;
 }
+
+    
