@@ -32,11 +32,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Trash2, PlusCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Trash2, PlusCircle, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { CartItem, SaleTransaction, Store, Product } from "@/lib/types";
+import type { CartItem, SaleTransaction, Store } from "@/lib/types";
 import { useData } from "@/lib/data-context";
-import { useAuth } from "@/lib/auth-context";
+import { Receipt } from "./receipt";
+
 
 const formSchema = z.object({
   storeId: z.string().min(1, "Please select a store."),
@@ -67,6 +69,7 @@ interface SalesFormProps {
 export function SalesForm({ stores, onSave }: SalesFormProps) {
   const { products } = useData();
   const { toast } = useToast();
+  const [lastSale, setLastSale] = useState<SaleTransaction | null>(null);
 
   const form = useForm<SalesFormValues>({
     resolver: zodResolver(formSchema),
@@ -140,7 +143,7 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
         return;
     }
     
-    const saleData = {
+    const saleData: Omit<SaleTransaction, 'id' | 'date' | 'status'> = {
         storeId: data.storeId,
         items: data.cart.map(item => ({
             productId: item.productId,
@@ -157,11 +160,25 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
     
     onSave(saleData);
 
+    const completeSaleData: SaleTransaction = {
+      ...saleData,
+      id: `sale-${Date.now()}`,
+      date: new Date(),
+      status: 'completed'
+    }
+
+    setLastSale(completeSaleData);
+    
     toast({ title: 'Sale Saved!', description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
     form.reset();
   }
 
+  const handleCloseReceipt = () => {
+    setLastSale(null);
+  }
+
   return (
+    <>
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card>
@@ -331,5 +348,19 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
         </div>
       </form>
     </Form>
+    <Dialog open={!!lastSale} onOpenChange={handleCloseReceipt}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Sale Receipt</DialogTitle>
+          </DialogHeader>
+          {lastSale && (
+            <Receipt
+              sale={lastSale}
+              store={stores.find((s) => s.id === lastSale.storeId)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
