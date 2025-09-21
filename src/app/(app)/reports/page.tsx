@@ -18,6 +18,12 @@ import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Receipt } from "@/components/app/sales/receipt";
 
+const toDate = (date: Date | Timestamp): Date => {
+  if (date instanceof Date) {
+    return date;
+  }
+  return (date as Timestamp).toDate();
+};
 
 const ReportTable = ({ data, periodLabel }: { data: any[], periodLabel: string }) => (
     <div className="rounded-md border">
@@ -76,7 +82,7 @@ const PurchaseHistoryTable = ({ data, stores, suppliers, onDelete }: { data: Pur
             </TableHeader>
             <TableBody>
                 {data.map((purchase) => {
-                    const purchaseDate = (purchase.date as Timestamp)?.toDate ? (purchase.date as Timestamp).toDate() : new Date(purchase.date);
+                    const purchaseDate = toDate(purchase.date);
                     return (
                         <TableRow key={purchase.id}>
                             <TableCell className="font-medium">{purchaseDate.toLocaleDateString()}</TableCell>
@@ -158,7 +164,7 @@ const SalesHistoryTable = ({ data, stores, onVoid, onPrintReceipt }: { data: Sal
             </TableHeader>
             <TableBody>
                 {data.map((sale) => {
-                    const saleDate = (sale.date as Timestamp)?.toDate ? (sale.date as Timestamp).toDate() : new Date(sale.date);
+                    const saleDate = toDate(sale.date);
                     const isVoided = sale.status === 'voided';
                     return (
                         <TableRow key={sale.id} className={cn(isVoided && "text-muted-foreground bg-muted/30")}>
@@ -238,7 +244,7 @@ export default function ReportsPage() {
     sales.forEach(sale => {
         if(sale.status === 'voided') return;
         
-        const d = (sale.date as Timestamp)?.toDate ? (sale.date as Timestamp).toDate() : new Date(sale.date);
+        const d = toDate(sale.date);
         const key = period === 'daily' 
             ? d.toISOString().split('T')[0] 
             : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -265,16 +271,16 @@ export default function ReportsPage() {
   
   const purchaseHistory = useMemo(() => {
       return [...purchases].sort((a, b) => {
-        const dateA = (a.date as Timestamp)?.toDate ? (a.date as Timestamp).toDate() : new Date(a.date);
-        const dateB = (b.date as Timestamp)?.toDate ? (b.date as Timestamp).toDate() : new Date(b.date);
+        const dateA = toDate(a.date);
+        const dateB = toDate(b.date);
         return dateB.getTime() - dateA.getTime();
       });
   }, [purchases]);
 
   const salesHistory = useMemo(() => {
       return [...sales].sort((a, b) => {
-        const dateA = (a.date as Timestamp)?.toDate ? (a.date as Timestamp).toDate() : new Date(a.date);
-        const dateB = (b.date as Timestamp)?.toDate ? (b.date as Timestamp).toDate() : new Date(b.date);
+        const dateA = toDate(a.date);
+        const dateB = toDate(b.date);
         return dateB.getTime() - dateA.getTime();
       });
   }, [sales]);
@@ -324,5 +330,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
-    

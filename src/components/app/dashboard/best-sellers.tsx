@@ -4,6 +4,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { SaleTransaction, Product } from "@/lib/types";
 import type { Timestamp } from 'firebase/firestore';
 
+const toDate = (date: Date | Timestamp): Date => {
+  if (date instanceof Date) {
+    return date;
+  }
+  return (date as Timestamp).toDate();
+};
+
 export function BestSellers({ sales, products }: { sales: SaleTransaction[], products: Product[] }) {
   const bestSellingItems = (() => {
     const itemSales: { [key: string]: { name: string, quantity: number, total: number } } = {};
@@ -11,7 +18,7 @@ export function BestSellers({ sales, products }: { sales: SaleTransaction[], pro
     sales.forEach(sale => {
       if (sale.status === 'voided') return;
 
-      const saleDate = (sale.date as Timestamp)?.toDate ? (sale.date as Timestamp).toDate() : new Date(sale.date);
+      const saleDate = toDate(sale.date);
       const today = new Date();
       const monthDiff = today.getMonth() - saleDate.getMonth() + (12 * (today.getFullYear() - saleDate.getFullYear()));
 

@@ -15,6 +15,13 @@ const chartConfig = {
   },
 };
 
+const toDate = (date: Date | Timestamp): Date => {
+  if (date instanceof Date) {
+    return date;
+  }
+  return (date as Timestamp).toDate();
+};
+
 export function SalesChart({ sales }: { sales: SaleTransaction[]}) {
   const { monthlySales, hasSales } = useMemo(() => {
     const data = new Array(30).fill(0).map((_, i) => {
@@ -27,7 +34,7 @@ export function SalesChart({ sales }: { sales: SaleTransaction[]}) {
     sales.forEach(sale => {
       if (sale.status === 'voided') return;
 
-      const saleDate = (sale.date as Timestamp)?.toDate ? (sale.date as Timestamp).toDate() : new Date(sale.date);
+      const saleDate = toDate(sale.date);
       const today = new Date();
       const diffTime = today.getTime() - saleDate.getTime();
       const diffDays = Math.floor(diffTime / (1000 * 3600 * 24));

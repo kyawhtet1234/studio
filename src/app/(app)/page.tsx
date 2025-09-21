@@ -8,6 +8,14 @@ import { BestSellers } from "@/components/app/dashboard/best-sellers";
 import { DollarSign, TrendingUp } from "lucide-react";
 import type { Timestamp } from 'firebase/firestore';
 
+// Helper function to safely convert date
+const toDate = (date: Date | Timestamp): Date => {
+  if (date instanceof Date) {
+    return date;
+  }
+  return (date as Timestamp).toDate();
+};
+
 export default function DashboardPage() {
   const { sales, products, loading } = useData();
 
@@ -21,7 +29,7 @@ export default function DashboardPage() {
     sales.forEach(sale => {
       if (sale.status === 'voided') return;
 
-      const saleDate = (sale.date as Timestamp)?.toDate ? (sale.date as Timestamp).toDate() : new Date(sale.date);
+      const saleDate = toDate(sale.date);
       saleDate.setHours(0, 0, 0, 0);
   
       if (saleDate.getTime() === today.getTime()) {
