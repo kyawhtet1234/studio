@@ -64,7 +64,7 @@ interface SalesFormProps {
 }
 
 export function SalesForm({ stores, onSave }: SalesFormProps) {
-  const { products } = useData();
+  const { products, inventory } = useData();
   const { toast } = useToast();
   const [lastSale, setLastSale] = useState<SaleTransaction | null>(null);
 
@@ -91,6 +91,7 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
 
   const watchCart = form.watch("cart");
   const watchDiscount = form.watch("discount");
+  const watchStoreId = form.watch("storeId");
 
   useEffect(() => {
     if (sku) {
@@ -116,7 +117,20 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
     const currentPrice = Number(sellPrice);
     const currentQuantity = Number(quantity);
 
+    if (!watchStoreId) {
+        toast({ variant: 'destructive', title: 'Error', description: "Please select a store first." });
+        return;
+    }
+    
     if (foundProduct && itemName && currentPrice > 0 && currentQuantity > 0) {
+      const inventoryItem = inventory.find(i => i.productId === foundProduct.id && i.storeId === watchStoreId);
+      const availableStock = inventoryItem?.stock || 0;
+
+      if(availableStock < currentQuantity) {
+        toast({ variant: 'destructive', title: 'Not enough stock', description: `Only ${availableStock} of ${itemName} available.` });
+        return;
+      }
+
       const newItem: CartItem = {
         productId: foundProduct.id,
         sku: foundProduct.sku,
@@ -160,20 +174,28 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
         total: total,
     };
     
-    await onSave(saleData);
+    try {
+      await onSave(saleData);
 
-    const completeSaleData: SaleTransaction = {
-      ...saleData,
-      id: `sale-${Date.now()}`,
-      date: new Date(),
-      status: 'completed'
+      const completeSaleData: SaleTransaction = {
+        ...saleData,
+        id: `sale-${Date.now()}`,
+        date: new Date(),
+        status: 'completed'
+      }
+
+      setLastSale(completeSaleData);
+      
+      toast({ title: 'Sale Saved!', description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
+      form.reset();
+      remove(); // Clears the useFieldArray
+    } catch(error) {
+       toast({
+        variant: 'destructive',
+        title: 'Sale Failed',
+        description: (error as Error).message,
+      });
     }
-
-    setLastSale(completeSaleData);
-    
-    toast({ title: 'Sale Saved!', description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
-    form.reset();
-    remove(); // Clears the useFieldArray
   }
 
   const handleCloseReceipt = () => {
@@ -227,7 +249,7 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
                     id="itemName-input"
                     placeholder="Item name"
                     value={itemName}
-                    onChange={(e) => setItemName(e.target.value)}
+                    readOnly
                   />
               </div>
               <div className="md:col-span-2 space-y-2">
@@ -237,7 +259,7 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
                     type="number"
                     step="0.01"
                     value={sellPrice}
-                    onChange={(e) => setSellPrice(e.target.value)}
+                    readOnly
                   />
               </div>
               <div className="md:col-span-1 space-y-2">
