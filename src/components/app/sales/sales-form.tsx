@@ -37,6 +37,7 @@ import { Trash2, Loader2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { CartItem, SaleTransaction, Store, Product } from "@/lib/types";
 import { useData } from "@/lib/data-context";
+import { useAuth } from "@/lib/auth-context";
 
 const formSchema = z.object({
   storeId: z.string().min(1, "Please select a store."),
@@ -66,6 +67,7 @@ interface SalesFormProps {
 
 export function SalesForm({ stores, onSave }: SalesFormProps) {
   const { products } = useData();
+  const { user } = useAuth();
   const [isAutofillPending, startAutofillTransition] = useTransition();
   const { toast } = useToast();
 
@@ -93,10 +95,10 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
 
   useEffect(() => {
     const triggerAutofill = async () => {
-        if (watchSku.length > 3) {
+        if (watchSku.length > 3 && user) {
             startAutofillTransition(async () => {
                 try {
-                    const result = await autofillItemDetails({ sku: watchSku });
+                    const result = await autofillItemDetails({ sku: watchSku, userId: user.uid });
                     if (result) {
                         form.setValue("itemName", result.itemName, { shouldValidate: true });
                         form.setValue("sellPrice", result.sellPrice, { shouldValidate: true });
@@ -110,7 +112,7 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
         }
     };
     triggerAutofill();
-  }, [watchSku, form, toast]);
+  }, [watchSku, form, toast, user]);
 
 
   function addToCart() {
@@ -340,5 +342,3 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
     </Form>
   );
 }
-
-    

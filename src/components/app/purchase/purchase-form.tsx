@@ -5,8 +5,6 @@ import { useState, useEffect, useTransition } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-// import { useFormState } from "react-dom";
-// import { autofillPurchaseAction } from "@/app/(app)/purchase/actions";
 import { autofillPurchaseDetails } from "@/ai/flows/autofill-purchase-details";
 
 import { Button } from "@/components/ui/button";
@@ -39,6 +37,7 @@ import { Loader2, Trash2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Store, PurchaseTransaction, Product } from "@/lib/types";
 import { useData } from "@/lib/data-context";
+import { useAuth } from "@/lib/auth-context";
 
 
 const formSchema = z.object({
@@ -69,6 +68,7 @@ interface PurchaseFormProps {
 
 export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
   const { products } = useData();
+  const { user } = useAuth();
   const [isAutofillPending, startAutofillTransition] = useTransition();
   const { toast } = useToast();
 
@@ -95,10 +95,10 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
 
   useEffect(() => {
     const triggerAutofill = async () => {
-      if (watchSku.length > 3) {
+      if (watchSku.length > 3 && user) {
         startAutofillTransition(async () => {
           try {
-            const result = await autofillPurchaseDetails({ sku: watchSku });
+            const result = await autofillPurchaseDetails({ sku: watchSku, userId: user.uid });
             if (result) {
               form.setValue("itemName", result.itemName, { shouldValidate: true });
               form.setValue("supplierName", result.supplierName, { shouldValidate: true });
@@ -114,7 +114,7 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
       }
     };
     triggerAutofill();
-  }, [watchSku, form, toast]);
+  }, [watchSku, form, toast, user]);
 
 
   function addToCart() {
@@ -346,5 +346,3 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
     </Form>
   );
 }
-
-    

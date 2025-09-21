@@ -2,7 +2,7 @@
 'use server';
 /**
  * @fileOverview This file defines a Genkit flow that automatically fills item details (name, supplier, and buy price)
- * based on the SKU entered on the purchase page.
+ * based on the SKU entered on the purchase page for a specific user.
  *
  * @exports autofillPurchaseDetails - The main function to trigger the flow.
  * @exports AutofillPurchaseDetailsInput - The input type for the autofillPurchaseDetails function.
@@ -11,10 +11,14 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { productsData, suppliersData } from '@/lib/data';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import type { Product, Supplier } from '@/lib/types';
+
 
 const AutofillPurchaseDetailsInputSchema = z.object({
   sku: z.string().describe('The Stock Keeping Unit (SKU) of the item.'),
+  userId: z.string().describe('The ID of the user to fetch data for.'),
 });
 export type AutofillPurchaseDetailsInput = z.infer<typeof AutofillPurchaseDetailsInputSchema>;
 
@@ -35,23 +39,29 @@ const autofillPurchaseDetailsFlow = ai.defineFlow(
     inputSchema: AutofillPurchaseDetailsInputSchema,
     outputSchema: AutofillPurchaseDetailsOutputSchema,
   },
-  async ({ sku }) => {
-    // In a real app, you'd fetch this from a database.
-    // For the prototype, we use the static data files.
-    // This is more robust than passing all data from the client.
-    const products = productsData;
-    const suppliers = suppliersData;
+  async ({ sku, userId }) => {
+    const productsRef = collection(db, 'users', userId, 'products');
+    const q = query(productsRef, where('sku', '==', sku));
+    const productsSnapshot = await getDocs(q);
 
-    const product = products.find(p => p.sku === sku);
-    if (!product) {
-      // Try finding in localStorage if a real app was built this way
-      // But for this prototype, we will assume productsData is the source of truth on the server
+    if (productsSnapshot.empty) {
       throw new Error('Product not found for the given SKU.');
     }
-    const supplier = suppliers.find(s => s.id === product.supplierId);
-    if (!supplier) {
+    
+    const product = productsSnapshot.docs[0].data() as Product;
+
+    if (!product.supplierId) {
+        throw new Error('Product does not have a supplier.');
+    }
+
+    const supplierRef = doc(db, 'users', userId, 'suppliers', product.supplierId);
+    const supplierSnapshot = await getDoc(supplierRef);
+
+    if (!supplierSnapshot.exists()) {
         throw new Error('Supplier not found for the given product.');
     }
+
+    const supplier = supplierSnapshot.data() as Supplier;
     
     const output: AutofillPurchaseDetailsOutput = {
         itemName: product.name,
