@@ -6,16 +6,17 @@ import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileDown, MoreHorizontal, Undo2 } from "lucide-react";
-import { useMemo } from "react";
-import type { PurchaseTransaction, SaleTransaction } from "@/lib/types";
+import { FileDown, MoreHorizontal, Printer, Undo2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import type { PurchaseTransaction, SaleTransaction, Store } from "@/lib/types";
 import type { Timestamp } from 'firebase/firestore';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Receipt } from "@/components/app/sales/receipt";
 
 
 const ReportTable = ({ data, periodLabel }: { data: any[], periodLabel: string }) => (
@@ -128,7 +129,7 @@ const PurchaseHistoryTable = ({ data, stores, suppliers, onDelete }: { data: Pur
     )
 };
 
-const SalesHistoryTable = ({ data, stores, onVoid }: { data: SaleTransaction[], stores: any[], onVoid: (id: string) => void }) => {
+const SalesHistoryTable = ({ data, stores, onVoid, onPrintReceipt }: { data: SaleTransaction[], stores: Store[], onVoid: (id: string) => void, onPrintReceipt: (sale: SaleTransaction) => void }) => {
     const [voidCandidate, setVoidCandidate] = useState<string | null>(null);
     const { toast } = useToast();
 
@@ -162,7 +163,7 @@ const SalesHistoryTable = ({ data, stores, onVoid }: { data: SaleTransaction[], 
                     return (
                         <TableRow key={sale.id} className={cn(isVoided && "text-muted-foreground bg-muted/30")}>
                             <TableCell className="font-medium">{saleDate.toLocaleDateString()}</TableCell>
-                            <TableCell>{stores.find(s => s.id === sale.storeId)?.name || 'N/A'}</TableCell>
+                            <TableCell>{stores.find(s => s.id === sale.storeId)?.name || 'NA'}</TableCell>
                             <TableCell>
                                 {isVoided ? (
                                      <Badge variant="destructive">Voided</Badge>
@@ -182,6 +183,10 @@ const SalesHistoryTable = ({ data, stores, onVoid }: { data: SaleTransaction[], 
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => onPrintReceipt(sale)}>
+                                            <Printer className="mr-2 h-4 w-4" />
+                                            Print Receipt
+                                        </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setVoidCandidate(sale.id)}>
                                             <Undo2 className="mr-2 h-4 w-4" />
                                             Void Transaction
@@ -225,6 +230,7 @@ const SalesHistoryTable = ({ data, stores, onVoid }: { data: SaleTransaction[], 
 
 export default function ReportsPage() {
   const { sales, products, purchases, stores, suppliers, voidSale, deletePurchase } = useData();
+  const [receiptToPrint, setReceiptToPrint] = useState<SaleTransaction | null>(null);
 
   const getReportData = (period: 'daily' | 'monthly') => {
     const reports: { [key: string]: { date: string, sales: number, cogs: number, profit: number } } = {};
@@ -296,12 +302,27 @@ export default function ReportsPage() {
             <ReportTable data={monthlyReports} period-label="Month" />
         </TabsContent>
          <TabsContent value="sales">
-            <SalesHistoryTable data={salesHistory} stores={stores} onVoid={voidSale} />
+            <SalesHistoryTable data={salesHistory} stores={stores} onVoid={voidSale} onPrintReceipt={setReceiptToPrint} />
         </TabsContent>
         <TabsContent value="purchase">
             <PurchaseHistoryTable data={purchaseHistory} stores={stores} suppliers={suppliers} onDelete={deletePurchase} />
         </TabsContent>
       </Tabs>
+      <Dialog open={!!receiptToPrint} onOpenChange={() => setReceiptToPrint(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Sale Receipt</DialogTitle>
+          </DialogHeader>
+          {receiptToPrint && (
+            <Receipt
+              sale={receiptToPrint}
+              store={stores.find((s) => s.id === receiptToPrint.storeId)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+    
