@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction } from 'firebase/firestore';
+import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup } from 'firebase/firestore';
 
 import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction } from '@/lib/types';
 
@@ -212,27 +212,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
         try {
             await runTransaction(db, async (transaction) => {
                 // ===== READS FIRST =====
-                const inventoryRefsAndNewStock = [];
-                for (const item of saleData.items) {
-                    const inventoryQuery = query(
-                        collection(db, 'users', user.uid, 'inventory'),
-                        where('storeId', '==', saleData.storeId),
-                        where('productId', '==', item.productId)
-                    );
-                    const inventorySnap = await getDocs(inventoryQuery);
-                    
-                    if (inventorySnap.empty) {
-                        throw new Error(`Product ${item.name} is out of stock.`);
-                    }
-
-                    const inventoryDoc = inventorySnap.docs[0];
-                    const currentStock = inventoryDoc.data().stock || 0;
-                    if (currentStock < item.quantity) {
-                        throw new Error(`Not enough stock for ${item.name}. Available: ${currentStock}, Requested: ${item.quantity}`);
-                    }
-                    const newStock = currentStock - item.quantity;
-                    inventoryRefsAndNewStock.push({ ref: inventoryDoc.ref, stock: newStock });
-                }
+                const inventoryRefs = saleData.items.map(item => {
+                    const inventoryId = `${item.productId}_${saleData.storeId}`;
+                    return doc(db, 'users', user.uid, 'inventory', inventoryId);
+                });
+                
+                const inventorySnaps = await transaction.getAll(...inventoryRefs);
+                const inventoryMap = new Map(inventorySnaps.map(snap => [snap.id, snap]));
 
                 // ===== WRITES SECOND =====
                 const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
@@ -242,8 +228,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     status: 'completed' 
                 });
 
-                for (const { ref, stock } of inventoryRefsAndNewStock) {
-                    transaction.update(ref, { stock: stock });
+                for (const item of saleData.items) {
+                    const inventoryId = `${item.productId}_${saleData.storeId}`;
+                    const inventorySnap = inventoryMap.get(inventoryId);
+
+                    if (!inventorySnap || !inventorySnap.exists()) {
+                        throw new Error(`Product ${item.name} is out of stock.`);
+                    }
+
+                    const currentStock = inventorySnap.data().stock || 0;
+                    if (currentStock < item.quantity) {
+                        throw new Error(`Not enough stock for ${item.name}. Available: ${currentStock}, Requested: ${item.quantity}`);
+                    }
+
+                    const newStock = currentStock - item.quantity;
+                    transaction.update(inventorySnap.ref, { stock: newStock });
                 }
             });
         } catch (e) {
@@ -268,45 +267,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
 
                 const saleData = saleSnap.data() as SaleTransaction;
-                const inventoryUpdates = [];
                 
-                for (const item of saleData.items) {
-                    const inventoryQuery = query(
-                        collection(db, 'users', user.uid, 'inventory'),
-                        where('storeId', '==', saleData.storeId),
-                        where('productId', '==', item.productId)
-                    );
-                    const inventorySnap = await getDocs(inventoryQuery);
+                const inventoryRefs = saleData.items.map(item => {
+                    const inventoryId = `${item.productId}_${saleData.storeId}`;
+                    return doc(db, 'users', user.uid, 'inventory', inventoryId);
+                });
 
-                    if (!inventorySnap.empty) {
-                        const inventoryDocRef = inventorySnap.docs[0].ref;
-                        const inventoryDoc = await transaction.get(inventoryDocRef);
-                        const currentStock = inventoryDoc.data()?.stock || 0;
-                        inventoryUpdates.push({ ref: inventoryDocRef, newStock: currentStock + item.quantity, isNew: false });
-                    } else {
-                        const newInventoryRef = doc(collection(db, 'users', user.uid, 'inventory'));
-                        inventoryUpdates.push({ 
-                            ref: newInventoryRef, 
-                            newStock: item.quantity, 
-                            isNew: true, 
-                            productId: item.productId, 
-                            storeId: saleData.storeId 
-                        });
-                    }
-                }
+                const inventorySnaps = await transaction.getAll(...inventoryRefs);
+                const inventoryMap = new Map(inventorySnaps.map(snap => [snap.id, snap]));
 
                 // ===== WRITES SECOND =====
                 transaction.update(saleRef, { status: 'voided' });
 
-                for (const update of inventoryUpdates) {
-                    if (update.isNew) {
-                        transaction.set(update.ref, {
-                            productId: update.productId,
-                            storeId: update.storeId,
-                            stock: update.newStock,
-                        });
+                for (const item of saleData.items) {
+                    const inventoryId = `${item.productId}_${saleData.storeId}`;
+                    const inventorySnap = inventoryMap.get(inventoryId);
+
+                    if (inventorySnap && inventorySnap.exists()) {
+                        const currentStock = inventorySnap.data().stock || 0;
+                        transaction.update(inventorySnap.ref, { stock: currentStock + item.quantity });
                     } else {
-                        transaction.update(update.ref, { stock: update.newStock });
+                        // If inventory record doesn't exist, create it.
+                        transaction.set(doc(db, 'users', user.uid, 'inventory', inventoryId), {
+                            productId: item.productId,
+                            storeId: saleData.storeId,
+                            stock: item.quantity,
+                        });
                     }
                 }
             });
@@ -324,45 +310,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
         try {
             await runTransaction(db, async (transaction) => {
                 // ===== READS FIRST =====
-                const inventoryUpdates = [];
-                for (const item of purchaseData.items) {
-                    const inventoryQuery = query(
-                        collection(db, 'users', user.uid, 'inventory'),
-                        where('storeId', '==', purchaseData.storeId),
-                        where('productId', '==', item.productId)
-                    );
-                    const inventorySnap = await getDocs(inventoryQuery);
-    
-                    if (inventorySnap.empty) {
-                        const newInventoryRef = doc(collection(db, 'users', user.uid, 'inventory'));
-                        inventoryUpdates.push({ 
-                            ref: newInventoryRef,
-                            newStock: item.quantity,
-                            isNew: true,
-                            productId: item.productId,
-                            storeId: purchaseData.storeId,
-                        });
-                    } else {
-                        const inventoryDocRef = inventorySnap.docs[0].ref;
-                        const inventoryDoc = await transaction.get(inventoryDocRef);
-                        const currentStock = inventoryDoc.data()?.stock || 0;
-                        inventoryUpdates.push({ ref: inventoryDocRef, newStock: currentStock + item.quantity, isNew: false });
-                    }
-                }
-                
+                const inventoryRefs = purchaseData.items.map(item => {
+                    const inventoryId = `${item.productId}_${purchaseData.storeId}`;
+                    return doc(db, 'users', user.uid, 'inventory', inventoryId);
+                });
+
+                const inventorySnaps = await transaction.getAll(...inventoryRefs);
+                const inventoryMap = new Map(inventorySnaps.map(snap => [snap.id, snap]));
+
                 // ===== WRITES SECOND =====
                 const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
                 transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.now() });
 
-                for (const update of inventoryUpdates) {
-                    if (update.isNew) {
-                        transaction.set(update.ref, {
-                            productId: update.productId,
-                            storeId: update.storeId,
-                            stock: update.newStock,
-                        });
+                for (const item of purchaseData.items) {
+                    const inventoryId = `${item.productId}_${purchaseData.storeId}`;
+                    const inventorySnap = inventoryMap.get(inventoryId);
+
+                    if (inventorySnap && inventorySnap.exists()) {
+                        const currentStock = inventorySnap.data().stock || 0;
+                        const newStock = currentStock + item.quantity;
+                        transaction.update(inventorySnap.ref, { stock: newStock });
                     } else {
-                        transaction.update(update.ref, { stock: update.newStock });
+                        // Inventory record does not exist, so create it.
+                        transaction.set(doc(db, 'users', user.uid, 'inventory', inventoryId), {
+                            productId: item.productId,
+                            storeId: purchaseData.storeId,
+                            stock: item.quantity,
+                        });
                     }
                 }
             });
@@ -388,29 +362,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
 
                 const purchaseData = purchaseSnap.data() as PurchaseTransaction;
-                const inventoryUpdates = [];
 
-                for (const item of purchaseData.items) {
-                     const inventoryQuery = query(
-                        collection(db, 'users', user.uid, 'inventory'),
-                        where('storeId', '==', purchaseData.storeId),
-                        where('productId', '==', item.productId)
-                    );
-                    const inventorySnap = await getDocs(inventoryQuery);
-                    
-                    if (!inventorySnap.empty) {
-                        const inventoryDocRef = inventorySnap.docs[0].ref;
-                        const inventoryDoc = await transaction.get(inventoryDocRef);
-                        const currentStock = inventoryDoc.data()?.stock || 0;
-                        const newStock = Math.max(0, currentStock - item.quantity);
-                        inventoryUpdates.push({ ref: inventoryDocRef, stock: newStock });
-                    }
-                }
+                const inventoryRefs = purchaseData.items.map(item => {
+                    const inventoryId = `${item.productId}_${purchaseData.storeId}`;
+                    return doc(db, 'users', user.uid, 'inventory', inventoryId);
+                });
+
+                const inventorySnaps = await transaction.getAll(...inventoryRefs);
+                const inventoryMap = new Map(inventorySnaps.map(snap => [snap.id, snap]));
 
                 // ===== WRITES SECOND =====
                 transaction.delete(purchaseRef);
-                for(const update of inventoryUpdates) {
-                    transaction.update(update.ref, { stock: update.stock });
+                
+                for(const item of purchaseData.items) {
+                    const inventoryId = `${item.productId}_${purchaseData.storeId}`;
+                    const inventorySnap = inventoryMap.get(inventoryId);
+
+                    if (inventorySnap && inventorySnap.exists()) {
+                        const currentStock = inventorySnap.data().stock || 0;
+                        const newStock = Math.max(0, currentStock - item.quantity);
+                        transaction.update(inventorySnap.ref, { stock: newStock });
+                    }
                 }
             });
         } catch (e) {
@@ -424,26 +396,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const updateInventory = async (updatedItems: InventoryItem[]) => {
         if (!user) return;
         const batch = writeBatch(db);
-        
-        const productIds = updatedItems.map(item => item.productId);
-        if (productIds.length === 0) {
-            await fetchData(user.uid);
-            return;
-        }
 
-        const inventoryQuery = query(collection(db, 'users', user.uid, 'inventory'), where('productId', 'in', productIds));
-        const inventorySnap = await getDocs(inventoryQuery);
+        for (const item of updatedItems) {
+            const inventoryId = `${item.productId}_${item.storeId}`;
+            const inventoryRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
+            const docSnap = await getDoc(inventoryRef);
 
-        for (const newItem of updatedItems) {
-            const docToUpdate = inventorySnap.docs.find(doc => {
-                const data = doc.data();
-                return data.productId === newItem.productId && data.storeId === newItem.storeId;
-            });
-             if (docToUpdate) {
-                batch.update(docToUpdate.ref, { stock: newItem.stock });
+            if (docSnap.exists()) {
+                 batch.update(inventoryRef, { stock: item.stock });
             } else {
-                 const newInventoryRef = doc(collection(db, 'users', user.uid, 'inventory'));
-                 batch.set(newInventoryRef, newItem);
+                 batch.set(inventoryRef, item);
             }
         }
 
@@ -474,5 +436,7 @@ export function useData() {
     }
     return context;
 }
+
+    
 
     
