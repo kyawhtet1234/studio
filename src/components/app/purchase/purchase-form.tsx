@@ -62,7 +62,7 @@ type PurchaseFormValues = z.infer<typeof formSchema>;
 interface PurchaseFormProps {
     stores: Store[];
     suppliers: Supplier[];
-    onSavePurchase: (purchase: Omit<PurchaseTransaction, 'id' | 'date'>) => void;
+    onSavePurchase: (purchase: Omit<PurchaseTransaction, 'id' | 'date'>) => Promise<void>;
 }
 
 export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseFormProps) {
@@ -141,7 +141,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
 
   const total = watchCart.reduce((acc, item) => acc + item.total, 0);
   
-  function onSubmit(data: PurchaseFormValues) {
+  async function onSubmit(data: PurchaseFormValues) {
     if (data.cart.length === 0) {
       toast({ variant: "destructive", title: "Empty Cart", description: "Please add items to the cart before saving." });
       return;
@@ -158,11 +158,11 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
       total: total,
     };
   
-    onSavePurchase(purchaseData);
+    await onSavePurchase(purchaseData);
   
     toast({ title: "Purchase Saved!", description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
     form.reset();
-    remove(); // This will clear the cart items after a successful submission.
+    remove();
   }
   
   const isFormLocked = fields.length > 0;
@@ -345,5 +345,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
     </Form>
   );
 }
+
+    
 
     

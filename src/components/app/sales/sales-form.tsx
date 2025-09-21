@@ -63,7 +63,7 @@ type SalesFormValues = z.infer<typeof formSchema>;
 
 interface SalesFormProps {
     stores: Store[];
-    onSave: (sale: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => void;
+    onSave: (sale: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => Promise<void>;
 }
 
 export function SalesForm({ stores, onSave }: SalesFormProps) {
@@ -137,7 +137,7 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
   const subtotal = watchCart.reduce((acc, item) => acc + item.total, 0);
   const total = subtotal - (watchDiscount || 0);
   
-  function onSubmit(data: SalesFormValues) {
+  async function onSubmit(data: SalesFormValues) {
     if (data.cart.length === 0) {
         toast({ variant: 'destructive', title: 'Empty Cart', description: 'Please add items to the cart before saving.' });
         return;
@@ -158,7 +158,7 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
         total: total,
     };
     
-    onSave(saleData);
+    await onSave(saleData);
 
     const completeSaleData: SaleTransaction = {
       ...saleData,
@@ -171,6 +171,7 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
     
     toast({ title: 'Sale Saved!', description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
     form.reset();
+    remove();
   }
 
   const handleCloseReceipt = () => {
@@ -364,5 +365,7 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
     </>
   );
 }
+
+    
 
     
