@@ -225,6 +225,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
         const saleSnap = await getDoc(saleRef);
+        
         if (!saleSnap.exists()) {
             console.error("Sale to delete not found");
             return;
@@ -294,6 +295,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         const purchaseRef = doc(db, 'users', user.uid, 'purchases', purchaseId);
         const purchaseSnap = await getDoc(purchaseRef);
+        
         if (!purchaseSnap.exists()) {
              console.error("Purchase to delete not found");
             return;
