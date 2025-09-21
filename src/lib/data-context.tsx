@@ -281,75 +281,76 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const addPurchase = async (purchaseData: Omit<PurchaseTransaction, 'id' | 'date'>) => {
         if (!user) return;
-        
+    
         const batch = writeBatch(db);
         const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
         batch.set(newPurchaseRef, { ...purchaseData, date: Timestamp.now() });
-
-        const inventoryColRef = collection(db, 'users', user.uid, 'inventory');
     
-        for (const item of purchaseData.items) {
-            const q = query(
-                inventoryColRef,
+        const productIds = purchaseData.items.map(item => item.productId);
+        if (productIds.length > 0) {
+            const inventoryQuery = query(
+                collection(db, 'users', user.uid, 'inventory'),
                 where('storeId', '==', purchaseData.storeId),
-                where('productId', '==', item.productId)
+                where('productId', 'in', productIds)
             );
-            const inventorySnap = await getDocs(q);
+            const inventorySnap = await getDocs(inventoryQuery);
+            const inventoryMap = new Map(inventorySnap.docs.map(d => [d.data().productId, { id: d.id, ref: d.ref, ...d.data() }]));
     
-            if (inventorySnap.empty) {
-                // If inventory item doesn't exist, create it
-                const newInventoryRef = doc(inventoryColRef);
-                batch.set(newInventoryRef, {
-                    productId: item.productId,
-                    storeId: purchaseData.storeId,
-                    stock: item.quantity,
-                });
-            } else {
-                // If it exists, update it
-                const inventoryDocRef = inventorySnap.docs[0].ref;
-                const currentStock = inventorySnap.docs[0].data().stock;
-                batch.update(inventoryDocRef, { stock: currentStock + item.quantity });
+            for (const item of purchaseData.items) {
+                const inventoryDoc = inventoryMap.get(item.productId);
+                if (inventoryDoc) {
+                    const currentStock = inventoryDoc.stock;
+                    batch.update(inventoryDoc.ref, { stock: currentStock + item.quantity });
+                } else {
+                    const newInventoryRef = doc(collection(db, 'users', user.uid, 'inventory'));
+                    batch.set(newInventoryRef, {
+                        productId: item.productId,
+                        storeId: purchaseData.storeId,
+                        stock: item.quantity,
+                    });
+                }
             }
         }
     
         await batch.commit();
         await fetchData(user.uid);
     };
-
+    
     const deletePurchase = async (purchaseId: string) => {
         if (!user) return;
-
+    
         const purchaseRef = doc(db, 'users', user.uid, 'purchases', purchaseId);
         const purchaseSnap = await getDoc(purchaseRef);
-        
+    
         if (!purchaseSnap.exists()) {
-             console.error("Purchase to delete not found");
+            console.error("Purchase to delete not found");
             return;
         }
-
+    
         const purchaseData = purchaseSnap.data() as Omit<PurchaseTransaction, 'id'>;
         const batch = writeBatch(db);
         batch.delete(purchaseRef);
-        
-        const inventoryColRef = collection(db, 'users', user.uid, 'inventory');
     
-        for (const item of purchaseData.items) {
-            const q = query(
-                inventoryColRef,
+        const productIds = purchaseData.items.map(item => item.productId);
+        if (productIds.length > 0) {
+            const inventoryQuery = query(
+                collection(db, 'users', user.uid, 'inventory'),
                 where('storeId', '==', purchaseData.storeId),
-                where('productId', '==', item.productId)
+                where('productId', 'in', productIds)
             );
-            const inventorySnap = await getDocs(q);
+            const inventorySnap = await getDocs(inventoryQuery);
+            const inventoryMap = new Map(inventorySnap.docs.map(d => [d.data().productId, { ref: d.ref, ...d.data() }]));
     
-            if (!inventorySnap.empty) {
-                const inventoryDocRef = inventorySnap.docs[0].ref;
-                const currentStock = inventorySnap.docs[0].data().stock;
-                // Ensure stock doesn't go below zero
-                const newStock = Math.max(0, currentStock - item.quantity);
-                batch.update(inventoryDocRef, { stock: newStock });
+            for (const item of purchaseData.items) {
+                const inventoryDoc = inventoryMap.get(item.productId);
+                if (inventoryDoc) {
+                    const currentStock = inventoryDoc.stock;
+                    const newStock = Math.max(0, currentStock - item.quantity);
+                    batch.update(inventoryDoc.ref, { stock: newStock });
+                }
             }
         }
-        
+    
         await batch.commit();
         await fetchData(user.uid);
     };
@@ -407,5 +408,3 @@ export function useData() {
     }
     return context;
 }
-
-    
