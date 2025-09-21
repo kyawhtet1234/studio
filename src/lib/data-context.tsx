@@ -68,7 +68,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setStores(fetchedStores);
 
             const inventorySnap = await getDocs(query(collection(db, 'users', uid, 'inventory')));
-            const fetchedInventory = inventorySnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as InventoryItem & {id: string}));
+            const fetchedInventory = inventorySnap.docs.map(doc => {
+              const [productId, storeId] = doc.id.split('_');
+              return { ...doc.data(), productId, storeId } as InventoryItem
+            });
             setInventory(fetchedInventory);
 
             const salesSnap = await getDocs(query(collection(db, 'users', uid, 'sales')));
@@ -231,7 +234,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     const item = saleData.items[i];
                     const inventorySnap = inventorySnaps[i];
 
-                    if (!inventorySnap || !inventorySnap.exists()) {
+                    if (!inventorySnap.exists()) {
                         throw new Error(`Product ${item.name} is out of stock.`);
                     }
 
@@ -280,14 +283,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 for (let i = 0; i < saleData.items.length; i++) {
                     const item = saleData.items[i];
                     const inventorySnap = inventorySnaps[i];
+                    const inventoryRef = inventoryRefs[i];
 
-                    if (inventorySnap && inventorySnap.exists()) {
+                    if (inventorySnap.exists()) {
                         const currentStock = inventorySnap.data().stock || 0;
-                        transaction.update(inventorySnap.ref, { stock: currentStock + item.quantity });
+                        transaction.update(inventoryRef, { stock: currentStock + item.quantity });
                     } else {
                         // If inventory record doesn't exist, create it.
-                        const newInventoryRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${saleData.storeId}`);
-                        transaction.set(newInventoryRef, {
+                        transaction.set(inventoryRef, {
                             productId: item.productId,
                             storeId: saleData.storeId,
                             stock: item.quantity,
@@ -323,17 +326,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 for (let i = 0; i < purchaseData.items.length; i++) {
                     const item = purchaseData.items[i];
                     const inventorySnap = inventorySnaps[i];
+                    const inventoryRef = inventoryRefs[i];
 
-                    if (inventorySnap && inventorySnap.exists()) {
+                    if (inventorySnap.exists()) {
                         const currentStock = inventorySnap.data().stock || 0;
                         const newStock = currentStock + item.quantity;
-                        transaction.update(inventorySnap.ref, { stock: newStock });
+                        transaction.update(inventoryRef, { stock: newStock });
                     } else {
                         // Inventory record does not exist, so create it.
-                        const newInventoryRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${purchaseData.storeId}`);
-                        transaction.set(newInventoryRef, {
-                            productId: item.productId,
-                            storeId: purchaseData.storeId,
+                        transaction.set(inventoryRef, {
                             stock: item.quantity,
                         });
                     }
@@ -376,7 +377,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     const item = purchaseData.items[i];
                     const inventorySnap = inventorySnaps[i];
 
-                    if (inventorySnap && inventorySnap.exists()) {
+                    if (inventorySnap.exists()) {
                         const currentStock = inventorySnap.data().stock || 0;
                         const newStock = Math.max(0, currentStock - item.quantity);
                         transaction.update(inventorySnap.ref, { stock: newStock });
@@ -403,7 +404,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             if (docSnap.exists()) {
                  batch.update(inventoryRef, { stock: item.stock });
             } else {
-                 batch.set(inventoryRef, item);
+                 batch.set(inventoryRef, { stock: item.stock });
             }
         }
 
@@ -434,7 +435,3 @@ export function useData() {
     }
     return context;
 }
-
-    
-
-    
