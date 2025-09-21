@@ -211,6 +211,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
         
         try {
             await runTransaction(db, async (transaction) => {
+                // ===== READS FIRST =====
+                const inventoryRefsAndNewStock = [];
+                for (const item of saleData.items) {
+                    const inventoryQuery = query(
+                        collection(db, 'users', user.uid, 'inventory'),
+                        where('storeId', '==', saleData.storeId),
+                        where('productId', '==', item.productId)
+                    );
+                    const inventorySnap = await getDocs(inventoryQuery);
+                    
+                    if (inventorySnap.empty) {
+                        throw new Error(`Product ${item.name} is out of stock.`);
+                    }
+
+                    const inventoryDoc = inventorySnap.docs[0];
+                    const currentStock = inventoryDoc.data().stock || 0;
+                    if (currentStock < item.quantity) {
+                        throw new Error(`Not enough stock for ${item.name}. Available: ${currentStock}, Requested: ${item.quantity}`);
+                    }
+                    const newStock = currentStock - item.quantity;
+                    inventoryRefsAndNewStock.push({ ref: inventoryDoc.ref, stock: newStock });
+                }
+
+                // ===== WRITES SECOND =====
                 const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
                 transaction.set(newSaleRef, { 
                     ...saleData, 
@@ -218,25 +242,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     status: 'completed' 
                 });
 
-                for (const item of saleData.items) {
-                    const inventoryQuery = query(
-                        collection(db, 'users', user.uid, 'inventory'),
-                        where('storeId', '==', saleData.storeId),
-                        where('productId', '==', item.productId)
-                    );
-                    
-                    const inventorySnap = await getDocs(inventoryQuery);
-                    
-                    if (!inventorySnap.empty) {
-                        const inventoryDocRef = inventorySnap.docs[0].ref;
-                        const inventoryDoc = await transaction.get(inventoryDocRef);
-                        const currentStock = inventoryDoc.data()?.stock || 0;
-                        transaction.update(inventoryDocRef, { stock: currentStock - item.quantity });
-                    } else {
-                        // This case should ideally not happen in a sale, as it implies selling an item with no stock record.
-                        // For robustness, we can log this or handle as a special case. Here we just log.
-                        console.warn(`Attempted to sell product ${item.productId} with no inventory record in store ${saleData.storeId}.`);
-                    }
+                for (const { ref, stock } of inventoryRefsAndNewStock) {
+                    transaction.update(ref, { stock: stock });
                 }
             });
         } catch (e) {
@@ -252,39 +259,54 @@ export function DataProvider({ children }: { children: ReactNode }) {
         
         try {
             await runTransaction(db, async (transaction) => {
+                // ===== READS FIRST =====
                 const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
                 const saleSnap = await transaction.get(saleRef);
                 
                 if (!saleSnap.exists() || saleSnap.data().status === 'voided') {
-                    throw "Sale to void not found or already voided.";
+                    throw new Error("Sale to void not found or already voided.");
                 }
 
                 const saleData = saleSnap.data() as SaleTransaction;
+                const inventoryUpdates = [];
                 
-                transaction.update(saleRef, { status: 'voided' });
-
                 for (const item of saleData.items) {
                     const inventoryQuery = query(
                         collection(db, 'users', user.uid, 'inventory'),
                         where('storeId', '==', saleData.storeId),
                         where('productId', '==', item.productId)
                     );
-                    
                     const inventorySnap = await getDocs(inventoryQuery);
 
                     if (!inventorySnap.empty) {
                         const inventoryDocRef = inventorySnap.docs[0].ref;
                         const inventoryDoc = await transaction.get(inventoryDocRef);
                         const currentStock = inventoryDoc.data()?.stock || 0;
-                        transaction.update(inventoryDocRef, { stock: currentStock + item.quantity });
+                        inventoryUpdates.push({ ref: inventoryDocRef, newStock: currentStock + item.quantity, isNew: false });
                     } else {
-                        // If inventory record was deleted, we might need to recreate it.
                         const newInventoryRef = doc(collection(db, 'users', user.uid, 'inventory'));
-                        transaction.set(newInventoryRef, {
-                            productId: item.productId,
-                            storeId: saleData.storeId,
-                            stock: item.quantity,
+                        inventoryUpdates.push({ 
+                            ref: newInventoryRef, 
+                            newStock: item.quantity, 
+                            isNew: true, 
+                            productId: item.productId, 
+                            storeId: saleData.storeId 
                         });
+                    }
+                }
+
+                // ===== WRITES SECOND =====
+                transaction.update(saleRef, { status: 'voided' });
+
+                for (const update of inventoryUpdates) {
+                    if (update.isNew) {
+                        transaction.set(update.ref, {
+                            productId: update.productId,
+                            storeId: update.storeId,
+                            stock: update.newStock,
+                        });
+                    } else {
+                        transaction.update(update.ref, { stock: update.newStock });
                     }
                 }
             });
@@ -301,9 +323,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     
         try {
             await runTransaction(db, async (transaction) => {
-                const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
-                transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.now() });
-    
+                // ===== READS FIRST =====
+                const inventoryUpdates = [];
                 for (const item of purchaseData.items) {
                     const inventoryQuery = query(
                         collection(db, 'users', user.uid, 'inventory'),
@@ -314,22 +335,40 @@ export function DataProvider({ children }: { children: ReactNode }) {
     
                     if (inventorySnap.empty) {
                         const newInventoryRef = doc(collection(db, 'users', user.uid, 'inventory'));
-                        transaction.set(newInventoryRef, {
+                        inventoryUpdates.push({ 
+                            ref: newInventoryRef,
+                            newStock: item.quantity,
+                            isNew: true,
                             productId: item.productId,
                             storeId: purchaseData.storeId,
-                            stock: item.quantity,
                         });
                     } else {
                         const inventoryDocRef = inventorySnap.docs[0].ref;
                         const inventoryDoc = await transaction.get(inventoryDocRef);
                         const currentStock = inventoryDoc.data()?.stock || 0;
-                        transaction.update(inventoryDocRef, { stock: currentStock + item.quantity });
+                        inventoryUpdates.push({ ref: inventoryDocRef, newStock: currentStock + item.quantity, isNew: false });
+                    }
+                }
+                
+                // ===== WRITES SECOND =====
+                const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
+                transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.now() });
+
+                for (const update of inventoryUpdates) {
+                    if (update.isNew) {
+                        transaction.set(update.ref, {
+                            productId: update.productId,
+                            storeId: update.storeId,
+                            stock: update.newStock,
+                        });
+                    } else {
+                        transaction.update(update.ref, { stock: update.newStock });
                     }
                 }
             });
         } catch (e) {
             console.error("Purchase transaction failed: ", e);
-            throw e; // Re-throw the error so the form can catch it
+            throw e;
         }
     
         await fetchData(user.uid);
@@ -340,15 +379,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
         
         try {
             await runTransaction(db, async (transaction) => {
+                // ===== READS FIRST =====
                 const purchaseRef = doc(db, 'users', user.uid, 'purchases', purchaseId);
                 const purchaseSnap = await transaction.get(purchaseRef);
 
                 if (!purchaseSnap.exists()) {
-                    throw "Purchase to delete not found";
+                    throw new Error("Purchase to delete not found");
                 }
 
                 const purchaseData = purchaseSnap.data() as PurchaseTransaction;
-                transaction.delete(purchaseRef);
+                const inventoryUpdates = [];
 
                 for (const item of purchaseData.items) {
                      const inventoryQuery = query(
@@ -363,8 +403,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
                         const inventoryDoc = await transaction.get(inventoryDocRef);
                         const currentStock = inventoryDoc.data()?.stock || 0;
                         const newStock = Math.max(0, currentStock - item.quantity);
-                        transaction.update(inventoryDocRef, { stock: newStock });
+                        inventoryUpdates.push({ ref: inventoryDocRef, stock: newStock });
                     }
+                }
+
+                // ===== WRITES SECOND =====
+                transaction.delete(purchaseRef);
+                for(const update of inventoryUpdates) {
+                    transaction.update(update.ref, { stock: update.stock });
                 }
             });
         } catch (e) {
@@ -428,7 +474,5 @@ export function useData() {
     }
     return context;
 }
-
-    
 
     
