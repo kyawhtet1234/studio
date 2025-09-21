@@ -7,21 +7,19 @@ import { useData } from "@/lib/data-context";
 import type { PurchaseTransaction } from "@/lib/types";
 
 export default function PurchasePage() {
-  const { stores, addPurchase } = useData();
+  const { stores, suppliers, addPurchase } = useData();
 
   const handleSavePurchase = (newPurchase: Omit<PurchaseTransaction, 'id' | 'date'>) => {
-    addPurchase({
-      ...newPurchase,
-      id: `pur-${Date.now()}`,
-      date: new Date(),
-    });
+    addPurchase(newPurchase);
   };
   
   return (
     <div>
       <PageHeader title="New Purchase" />
-      <PurchaseForm stores={stores} onSavePurchase={handleSavePurchase}/>
+      <PurchaseForm stores={stores} suppliers={suppliers} onSavePurchase={handleSavePurchase}/>
     </div>
   );
 }
 
+
+    

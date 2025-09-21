@@ -34,14 +34,15 @@ import {
 } from "@/components/ui/form";
 import { Trash2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Store, PurchaseTransaction, Product } from "@/lib/types";
+import type { Store, PurchaseTransaction, Supplier } from "@/lib/types";
 import { useData } from "@/lib/data-context";
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   storeId: z.string().min(1, "Please select a store."),
+  supplierId: z.string().min(1, "Please select a supplier."),
   sku: z.string(),
   itemName: z.string(),
-  supplierName: z.string(),
   buyPrice: z.coerce.number(),
   quantity: z.coerce.number().min(1, "Min 1"),
   cart: z.array(
@@ -60,20 +61,21 @@ type PurchaseFormValues = z.infer<typeof formSchema>;
 
 interface PurchaseFormProps {
     stores: Store[];
+    suppliers: Supplier[];
     onSavePurchase: (purchase: Omit<PurchaseTransaction, 'id' | 'date'>) => void;
 }
 
-export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
-  const { products, suppliers } = useData();
+export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseFormProps) {
+  const { products } = useData();
   const { toast } = useToast();
 
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       storeId: "",
+      supplierId: "",
       sku: "",
       itemName: "",
-      supplierName: "",
       buyPrice: 0,
       quantity: 1,
       cart: [],
@@ -87,34 +89,40 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
 
   const watchSku = form.watch("sku");
   const watchCart = form.watch("cart");
+  const watchSupplierId = form.watch("supplierId");
 
   useEffect(() => {
     const autofill = () => {
       if (watchSku.length > 0) {
         const product = products.find(p => p.sku.toLowerCase().startsWith(watchSku.toLowerCase()));
         if (product) {
-            const supplier = suppliers.find(s => s.id === product.supplierId);
             form.setValue("itemName", product.name);
             form.setValue("buyPrice", product.buyPrice);
-            if(supplier) {
-                form.setValue("supplierName", supplier.name);
-            }
         } else {
             form.resetField("itemName");
             form.resetField("buyPrice");
-            form.resetField("supplierName");
         }
       }
     };
     autofill();
-  }, [watchSku, products, suppliers, form]);
+  }, [watchSku, products, form]);
 
 
   function addToCart() {
-    const { sku, itemName, buyPrice, quantity } = form.getValues();
+    const { sku, itemName, buyPrice, quantity, supplierId } = form.getValues();
     const product = products.find(p => p.sku === sku);
 
-    if (product && itemName && buyPrice > 0 && quantity > 0) {
+    if (!product || !itemName || buyPrice <= 0 || quantity <= 0) {
+        toast({ variant: 'destructive', title: 'Invalid Item', description: 'Please fill all item details correctly before adding to cart.' });
+        return;
+    }
+    
+    if (product.supplierId !== supplierId) {
+        const supplier = suppliers.find(s => s.id === product.supplierId);
+        toast({ variant: 'destructive', title: 'Wrong Supplier', description: `Item ${product.name} belongs to ${supplier?.name || 'another supplier'}.` });
+        return;
+    }
+
       const newItem = {
         productId: product.id,
         sku,
@@ -126,13 +134,9 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
       append(newItem);
       form.resetField("sku");
       form.resetField("itemName");
-      form.resetField("supplierName");
       form.resetField("buyPrice");
       form.setValue("quantity", 1);
       form.setFocus('sku');
-    } else {
-        toast({ variant: 'destructive', title: 'Invalid Item', description: 'Please fill all item details before adding to cart.' });
-    }
   }
 
   const total = watchCart.reduce((acc, item) => acc + item.total, 0);
@@ -142,19 +146,10 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
       toast({ variant: "destructive", title: "Empty Cart", description: "Please add items to the cart before saving." });
       return;
     }
-  
-    const firstValidProductInCart = data.cart
-      .map(item => products.find(p => p.id === item.productId))
-      .find(p => p !== undefined);
-  
-    if (!firstValidProductInCart) {
-      toast({ variant: "destructive", title: "Error", description: "Could not find product information for items in cart." });
-      return;
-    }
     
     const purchaseData = {
       storeId: data.storeId,
-      supplierId: firstValidProductInCart.supplierId, 
+      supplierId: data.supplierId, 
       items: data.cart.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
@@ -168,6 +163,8 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
     toast({ title: "Purchase Saved!", description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
     form.reset();
   }
+  
+  const isFormLocked = fields.length > 0;
 
   return (
     <Form {...form}>
@@ -177,30 +174,54 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
              <CardTitle>Purchase Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-             <FormField
-                control={form.control}
-                name="storeId"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Store</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                        <SelectTrigger>
-                        <SelectValue placeholder="Select the store receiving stock" />
-                        </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        {stores.map(store => (
-                        <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end pt-4 border-t">
-              <div className="md:col-span-2 relative">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                    control={form.control}
+                    name="storeId"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Store</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isFormLocked}>
+                        <FormControl>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Select the store receiving stock" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {stores.map(store => (
+                            <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="supplierId"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Supplier</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isFormLocked}>
+                        <FormControl>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Select the supplier for this purchase" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {suppliers.map(supplier => (
+                            <SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+            </div>
+            <div className={cn("grid grid-cols-1 md:grid-cols-12 gap-4 items-end pt-4 border-t", !watchSupplierId && "opacity-50 pointer-events-none")}>
+              <div className="md:col-span-3 relative">
                 <FormField
                   control={form.control}
                   name="sku"
@@ -215,7 +236,7 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
                   )}
                 />
               </div>
-              <div className="md:col-span-3">
+              <div className="md:col-span-4">
                 <FormField
                   control={form.control}
                   name="itemName"
@@ -224,21 +245,6 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
                       <FormLabel>Item Name</FormLabel>
                       <FormControl>
                         <Input placeholder="Item name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-               <div className="md:col-span-2">
-                <FormField
-                  control={form.control}
-                  name="supplierName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Supplier</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Supplier" {...field} readOnly />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
