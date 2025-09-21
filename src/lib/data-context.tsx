@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction } from 'firebase/firestore';
 
 import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction } from '@/lib/types';
 
@@ -282,76 +282,75 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const addPurchase = async (purchaseData: Omit<PurchaseTransaction, 'id' | 'date'>) => {
         if (!user) return;
     
-        const batch = writeBatch(db);
-        const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
-        batch.set(newPurchaseRef, { ...purchaseData, date: Timestamp.now() });
+        try {
+            await runTransaction(db, async (transaction) => {
+                const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
+                transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.now() });
     
-        const productIds = purchaseData.items.map(item => item.productId);
-        if (productIds.length > 0) {
-            const inventoryQuery = query(
-                collection(db, 'users', user.uid, 'inventory'),
-                where('storeId', '==', purchaseData.storeId),
-                where('productId', 'in', productIds)
-            );
-            const inventorySnap = await getDocs(inventoryQuery);
-            const inventoryMap = new Map(inventorySnap.docs.map(d => [d.data().productId, d]));
+                for (const item of purchaseData.items) {
+                    const inventoryQuery = query(
+                        collection(db, 'users', user.uid, 'inventory'),
+                        where('storeId', '==', purchaseData.storeId),
+                        where('productId', '==', item.productId)
+                    );
+                    const inventorySnap = await getDocs(inventoryQuery);
     
-            for (const item of purchaseData.items) {
-                const inventoryDoc = inventoryMap.get(item.productId);
-                if (inventoryDoc) {
-                    const currentStock = inventoryDoc.data().stock;
-                    batch.update(inventoryDoc.ref, { stock: currentStock + item.quantity });
-                } else {
-                    const newInventoryRef = doc(collection(db, 'users', user.uid, 'inventory'));
-                    batch.set(newInventoryRef, {
-                        productId: item.productId,
-                        storeId: purchaseData.storeId,
-                        stock: item.quantity,
-                    });
+                    if (inventorySnap.empty) {
+                        const newInventoryRef = doc(collection(db, 'users', user.uid, 'inventory'));
+                        transaction.set(newInventoryRef, {
+                            productId: item.productId,
+                            storeId: purchaseData.storeId,
+                            stock: item.quantity,
+                        });
+                    } else {
+                        const inventoryDocRef = inventorySnap.docs[0].ref;
+                        const currentStock = inventorySnap.docs[0].data().stock;
+                        transaction.update(inventoryDocRef, { stock: currentStock + item.quantity });
+                    }
                 }
-            }
+            });
+        } catch (e) {
+            console.error("Purchase transaction failed: ", e);
         }
     
-        await batch.commit();
         await fetchData(user.uid);
     };
     
     const deletePurchase = async (purchaseId: string) => {
         if (!user) return;
-    
-        const purchaseRef = doc(db, 'users', user.uid, 'purchases', purchaseId);
-        const purchaseSnap = await getDoc(purchaseRef);
-    
-        if (!purchaseSnap.exists()) {
-            console.error("Purchase to delete not found");
-            return;
-        }
-    
-        const purchaseData = purchaseSnap.data() as Omit<PurchaseTransaction, 'id' | 'date'> & { date: Timestamp };
-        const batch = writeBatch(db);
-        batch.delete(purchaseRef);
-    
-        const productIds = purchaseData.items.map(item => item.productId);
-        if (productIds.length > 0) {
-            const inventoryQuery = query(
-                collection(db, 'users', user.uid, 'inventory'),
-                where('storeId', '==', purchaseData.storeId),
-                where('productId', 'in', productIds)
-            );
-            const inventorySnap = await getDocs(inventoryQuery);
-            const inventoryMap = new Map(inventorySnap.docs.map(d => [d.data().productId, d]));
-    
-            for (const item of purchaseData.items) {
-                const inventoryDoc = inventoryMap.get(item.productId);
-                if (inventoryDoc) {
-                    const currentStock = inventoryDoc.data().stock;
-                    const newStock = Math.max(0, currentStock - item.quantity);
-                    batch.update(inventoryDoc.ref, { stock: newStock });
+        
+        try {
+            await runTransaction(db, async (transaction) => {
+                const purchaseRef = doc(db, 'users', user.uid, 'purchases', purchaseId);
+                const purchaseSnap = await transaction.get(purchaseRef);
+
+                if (!purchaseSnap.exists()) {
+                    throw "Purchase to delete not found";
                 }
-            }
+
+                const purchaseData = purchaseSnap.data() as PurchaseTransaction;
+                transaction.delete(purchaseRef);
+
+                for (const item of purchaseData.items) {
+                     const inventoryQuery = query(
+                        collection(db, 'users', user.uid, 'inventory'),
+                        where('storeId', '==', purchaseData.storeId),
+                        where('productId', '==', item.productId)
+                    );
+                    const inventorySnap = await getDocs(inventoryQuery);
+                    
+                    if (!inventorySnap.empty) {
+                        const inventoryDocRef = inventorySnap.docs[0].ref;
+                        const currentStock = inventorySnap.docs[0].data().stock;
+                        const newStock = Math.max(0, currentStock - item.quantity);
+                        transaction.update(inventoryDocRef, { stock: newStock });
+                    }
+                }
+            });
+        } catch (e) {
+            console.error("Delete purchase transaction failed: ", e);
         }
-    
-        await batch.commit();
+
         await fetchData(user.uid);
     };
 
@@ -408,3 +407,5 @@ export function useData() {
     }
     return context;
 }
+
+    
