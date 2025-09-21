@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId } from 'firebase/firestore';
+import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc } from 'firebase/firestore';
 
 import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction } from '@/lib/types';
 
@@ -24,7 +24,9 @@ interface DataContextProps {
     addStore: (store: Omit<Store, 'id'>) => Promise<void>;
     deleteStore: (storeId: string) => Promise<void>;
     addSale: (sale: Omit<SaleTransaction, 'id' | 'date'>) => Promise<void>;
+    deleteSale: (saleId: string) => Promise<void>;
     addPurchase: (purchase: Omit<PurchaseTransaction, 'id' | 'date'>) => Promise<void>;
+    deletePurchase: (purchaseId: string) => Promise<void>;
     updateInventory: (newInventory: InventoryItem[]) => Promise<void>;
     loading: boolean;
 }
@@ -218,6 +220,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await fetchData(user.uid);
     };
 
+    const deleteSale = async (saleId: string) => {
+        if (!user) return;
+
+        const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
+        const saleSnap = await getDoc(saleRef);
+        if (!saleSnap.exists()) return;
+
+        const saleData = saleSnap.data() as Omit<SaleTransaction, 'id'>;
+
+        await deleteDoc(saleRef);
+
+        const batch = writeBatch(db);
+        const inventoryQuery = query(
+            collection(db, 'users', user.uid, 'inventory'),
+            where('storeId', '==', saleData.storeId)
+        );
+        const inventorySnap = await getDocs(inventoryQuery);
+        const inventoryDocs = inventorySnap.docs;
+
+        for (const item of saleData.items) {
+            const inventoryDoc = inventoryDocs.find(d => d.data().productId === item.productId);
+            if (inventoryDoc) {
+                const currentStock = inventoryDoc.data().stock;
+                batch.update(inventoryDoc.ref, { stock: currentStock + item.quantity });
+            }
+        }
+        
+        await batch.commit();
+        await fetchData(user.uid);
+    };
+
     const addPurchase = async (purchaseData: Omit<PurchaseTransaction, 'id'| 'date'>) => {
         if (!user) return;
         const newPurchase = { ...purchaseData, date: Timestamp.now() };
@@ -245,6 +278,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     storeId: purchaseData.storeId,
                     stock: item.quantity
                 });
+            }
+        }
+        
+        await batch.commit();
+        await fetchData(user.uid);
+    };
+
+    const deletePurchase = async (purchaseId: string) => {
+        if (!user) return;
+
+        const purchaseRef = doc(db, 'users', user.uid, 'purchases', purchaseId);
+        const purchaseSnap = await getDoc(purchaseRef);
+        if (!purchaseSnap.exists()) return;
+
+        const purchaseData = purchaseSnap.data() as Omit<PurchaseTransaction, 'id'>;
+
+        await deleteDoc(purchaseRef);
+
+        const batch = writeBatch(db);
+        const inventoryQuery = query(
+            collection(db, 'users', user.uid, 'inventory'),
+            where('storeId', '==', purchaseData.storeId)
+        );
+        const inventorySnap = await getDocs(inventoryQuery);
+        const inventoryDocs = inventorySnap.docs;
+
+        for (const item of purchaseData.items) {
+            const inventoryDoc = inventoryDocs.find(d => d.data().productId === item.productId);
+            if (inventoryDoc) {
+                const currentStock = inventoryDoc.data().stock;
+                batch.update(inventoryDoc.ref, { stock: currentStock - item.quantity });
             }
         }
         
@@ -286,8 +350,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
             suppliers, addSupplier, deleteSupplier,
             stores, addStore, deleteStore,
             inventory, updateInventory,
-            sales, addSale,
-            purchases, addPurchase,
+            sales, addSale, deleteSale,
+            purchases, addPurchase, deletePurchase,
             loading
         }}>
             {children}
