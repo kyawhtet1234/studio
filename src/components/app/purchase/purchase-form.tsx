@@ -90,7 +90,7 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
 
   useEffect(() => {
     const autofill = () => {
-      if (watchSku.length > 3) {
+      if (watchSku.length > 0) {
         const product = products.find(p => p.sku.toLowerCase().startsWith(watchSku.toLowerCase()));
         if (product) {
             const supplier = suppliers.find(s => s.id === product.supplierId);
@@ -338,3 +338,5 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
     </Form>
   );
 }
+
+    
