@@ -294,12 +294,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 where('productId', 'in', productIds)
             );
             const inventorySnap = await getDocs(inventoryQuery);
-            const inventoryMap = new Map(inventorySnap.docs.map(d => [d.data().productId, { id: d.id, ref: d.ref, ...d.data() }]));
+            const inventoryMap = new Map(inventorySnap.docs.map(d => [d.data().productId, d]));
     
             for (const item of purchaseData.items) {
                 const inventoryDoc = inventoryMap.get(item.productId);
                 if (inventoryDoc) {
-                    const currentStock = inventoryDoc.stock;
+                    const currentStock = inventoryDoc.data().stock;
                     batch.update(inventoryDoc.ref, { stock: currentStock + item.quantity });
                 } else {
                     const newInventoryRef = doc(collection(db, 'users', user.uid, 'inventory'));
@@ -327,7 +327,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             return;
         }
     
-        const purchaseData = purchaseSnap.data() as Omit<PurchaseTransaction, 'id' | 'date'>;
+        const purchaseData = purchaseSnap.data() as Omit<PurchaseTransaction, 'id' | 'date'> & { date: Timestamp };
         const batch = writeBatch(db);
         batch.delete(purchaseRef);
     
@@ -339,12 +339,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 where('productId', 'in', productIds)
             );
             const inventorySnap = await getDocs(inventoryQuery);
-            const inventoryMap = new Map(inventorySnap.docs.map(d => [d.data().productId, { ref: d.ref, ...d.data() }]));
+            const inventoryMap = new Map(inventorySnap.docs.map(d => [d.data().productId, d]));
     
             for (const item of purchaseData.items) {
                 const inventoryDoc = inventoryMap.get(item.productId);
                 if (inventoryDoc) {
-                    const currentStock = inventoryDoc.stock;
+                    const currentStock = inventoryDoc.data().stock;
                     const newStock = Math.max(0, currentStock - item.quantity);
                     batch.update(inventoryDoc.ref, { stock: newStock });
                 }
@@ -409,4 +409,5 @@ export function useData() {
     return context;
 }
 
+    
     
