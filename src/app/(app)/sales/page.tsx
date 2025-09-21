@@ -9,8 +9,8 @@ import { useData } from "@/lib/data-context";
 export default function SalesPage() {
   const { addSale, stores } = useData();
 
-  const handleSaveSale = (newSale: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => {
-    addSale(newSale);
+  const handleSaveSale = async (newSale: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => {
+    await addSale(newSale);
   };
 
   return (
