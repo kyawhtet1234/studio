@@ -1,11 +1,10 @@
 
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { autofillPurchaseDetails } from "@/ai/flows/autofill-purchase-details";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,12 +32,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Loader2, Trash2, PlusCircle } from "lucide-react";
+import { Trash2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Store, PurchaseTransaction, Product } from "@/lib/types";
 import { useData } from "@/lib/data-context";
-import { useAuth } from "@/lib/auth-context";
-
 
 const formSchema = z.object({
   storeId: z.string().min(1, "Please select a store."),
@@ -67,9 +64,7 @@ interface PurchaseFormProps {
 }
 
 export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
-  const { products } = useData();
-  const { user } = useAuth();
-  const [isAutofillPending, startAutofillTransition] = useTransition();
+  const { products, suppliers } = useData();
   const { toast } = useToast();
 
   const form = useForm<PurchaseFormValues>({
@@ -94,27 +89,25 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
   const watchCart = form.watch("cart");
 
   useEffect(() => {
-    const triggerAutofill = async () => {
-      if (watchSku.length > 3 && user) {
-        startAutofillTransition(async () => {
-          try {
-            const result = await autofillPurchaseDetails({ sku: watchSku, userId: user.uid });
-            if (result) {
-              form.setValue("itemName", result.itemName, { shouldValidate: true });
-              form.setValue("supplierName", result.supplierName, { shouldValidate: true });
-              form.setValue("buyPrice", result.buyPrice, { shouldValidate: true });
+    const autofill = () => {
+      if (watchSku.length > 3) {
+        const product = products.find(p => p.sku.toLowerCase().startsWith(watchSku.toLowerCase()));
+        if (product) {
+            const supplier = suppliers.find(s => s.id === product.supplierId);
+            form.setValue("itemName", product.name);
+            form.setValue("buyPrice", product.buyPrice);
+            if(supplier) {
+                form.setValue("supplierName", supplier.name);
             }
-          } catch (error) {
+        } else {
             form.resetField("itemName");
-            form.resetField("supplierName");
             form.resetField("buyPrice");
-            toast({ variant: 'destructive', title: 'Autofill Error', description: (error as Error).message });
-          }
-        });
+            form.resetField("supplierName");
+        }
       }
     };
-    triggerAutofill();
-  }, [watchSku, form, toast, user]);
+    autofill();
+  }, [watchSku, products, suppliers, form]);
 
 
   function addToCart() {
@@ -221,7 +214,6 @@ export function PurchaseForm({ stores, onSavePurchase }: PurchaseFormProps) {
                     </FormItem>
                   )}
                 />
-                 {isAutofillPending && <Loader2 className="absolute top-9 right-2 h-4 w-4 animate-spin text-muted-foreground" />}
               </div>
               <div className="md:col-span-3">
                 <FormField
