@@ -209,73 +209,90 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const addSale = async (saleData: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => {
         if (!user) return;
         
-        const batch = writeBatch(db);
-        const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
-        batch.set(newSaleRef, { 
-            ...saleData, 
-            date: Timestamp.now(),
-            status: 'completed' 
-        });
+        try {
+            await runTransaction(db, async (transaction) => {
+                const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
+                transaction.set(newSaleRef, { 
+                    ...saleData, 
+                    date: Timestamp.now(),
+                    status: 'completed' 
+                });
 
-        const productIds = saleData.items.map(i => i.productId);
-        if (productIds.length > 0) {
-            const inventoryQuery = query(
-                collection(db, 'users', user.uid, 'inventory'),
-                where('storeId', '==', saleData.storeId),
-                where('productId', 'in', productIds)
-            );
-            const inventorySnap = await getDocs(inventoryQuery);
-            const inventoryMap = new Map(inventorySnap.docs.map(d => [d.data().productId, d]));
-    
-            for (const item of saleData.items) {
-                const inventoryDoc = inventoryMap.get(item.productId);
-                if (inventoryDoc) {
-                    const currentStock = inventoryDoc.data().stock;
-                    batch.update(inventoryDoc.ref, { stock: currentStock - item.quantity });
+                for (const item of saleData.items) {
+                    const inventoryQuery = query(
+                        collection(db, 'users', user.uid, 'inventory'),
+                        where('storeId', '==', saleData.storeId),
+                        where('productId', '==', item.productId)
+                    );
+                    
+                    const inventorySnap = await getDocs(inventoryQuery);
+                    
+                    if (!inventorySnap.empty) {
+                        const inventoryDocRef = inventorySnap.docs[0].ref;
+                        const inventoryDoc = await transaction.get(inventoryDocRef);
+                        const currentStock = inventoryDoc.data()?.stock || 0;
+                        transaction.update(inventoryDocRef, { stock: currentStock - item.quantity });
+                    } else {
+                        // This case should ideally not happen in a sale, as it implies selling an item with no stock record.
+                        // For robustness, we can log this or handle as a special case. Here we just log.
+                        console.warn(`Attempted to sell product ${item.productId} with no inventory record in store ${saleData.storeId}.`);
+                    }
                 }
-            }
+            });
+        } catch (e) {
+            console.error("Sale transaction failed: ", e);
+            throw e;
         }
-        
-        await batch.commit();
+
         await fetchData(user.uid);
     };
 
     const voidSale = async (saleId: string) => {
         if (!user) return;
         
-        const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
-        const saleSnap = await getDoc(saleRef);
-        
-        if (!saleSnap.exists() || saleSnap.data().status === 'voided') {
-            console.error("Sale to void not found or already voided.");
-            return;
-        }
-
-        const saleData = saleSnap.data() as SaleTransaction;
-        const batch = writeBatch(db);
-
-        const productIds = saleData.items.map(i => i.productId);
-        if (productIds.length > 0) {
-            const inventoryQuery = query(
-                collection(db, 'users', user.uid, 'inventory'),
-                where('storeId', '==', saleData.storeId),
-                where('productId', 'in', productIds)
-            );
-            const inventorySnap = await getDocs(inventoryQuery);
-            const inventoryMap = new Map(inventorySnap.docs.map(d => [d.data().productId, d]));
-    
-            for (const item of saleData.items) {
-                const inventoryDoc = inventoryMap.get(item.productId);
-                if (inventoryDoc) {
-                    const currentStock = inventoryDoc.data().stock;
-                    batch.update(inventoryDoc.ref, { stock: currentStock + item.quantity });
+        try {
+            await runTransaction(db, async (transaction) => {
+                const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
+                const saleSnap = await transaction.get(saleRef);
+                
+                if (!saleSnap.exists() || saleSnap.data().status === 'voided') {
+                    throw "Sale to void not found or already voided.";
                 }
-            }
+
+                const saleData = saleSnap.data() as SaleTransaction;
+                
+                transaction.update(saleRef, { status: 'voided' });
+
+                for (const item of saleData.items) {
+                    const inventoryQuery = query(
+                        collection(db, 'users', user.uid, 'inventory'),
+                        where('storeId', '==', saleData.storeId),
+                        where('productId', '==', item.productId)
+                    );
+                    
+                    const inventorySnap = await getDocs(inventoryQuery);
+
+                    if (!inventorySnap.empty) {
+                        const inventoryDocRef = inventorySnap.docs[0].ref;
+                        const inventoryDoc = await transaction.get(inventoryDocRef);
+                        const currentStock = inventoryDoc.data()?.stock || 0;
+                        transaction.update(inventoryDocRef, { stock: currentStock + item.quantity });
+                    } else {
+                        // If inventory record was deleted, we might need to recreate it.
+                        const newInventoryRef = doc(collection(db, 'users', user.uid, 'inventory'));
+                        transaction.set(newInventoryRef, {
+                            productId: item.productId,
+                            storeId: saleData.storeId,
+                            stock: item.quantity,
+                        });
+                    }
+                }
+            });
+        } catch(e) {
+            console.error("Void sale transaction failed: ", e);
+            throw e;
         }
         
-        batch.update(saleRef, { status: 'voided' });
-        
-        await batch.commit();
         await fetchData(user.uid);
     };
 
@@ -304,13 +321,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
                         });
                     } else {
                         const inventoryDocRef = inventorySnap.docs[0].ref;
-                        const currentStock = inventorySnap.docs[0].data().stock;
+                        const inventoryDoc = await transaction.get(inventoryDocRef);
+                        const currentStock = inventoryDoc.data()?.stock || 0;
                         transaction.update(inventoryDocRef, { stock: currentStock + item.quantity });
                     }
                 }
             });
         } catch (e) {
             console.error("Purchase transaction failed: ", e);
+            throw e; // Re-throw the error so the form can catch it
         }
     
         await fetchData(user.uid);
@@ -341,7 +360,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     
                     if (!inventorySnap.empty) {
                         const inventoryDocRef = inventorySnap.docs[0].ref;
-                        const currentStock = inventorySnap.docs[0].data().stock;
+                        const inventoryDoc = await transaction.get(inventoryDocRef);
+                        const currentStock = inventoryDoc.data()?.stock || 0;
                         const newStock = Math.max(0, currentStock - item.quantity);
                         transaction.update(inventoryDocRef, { stock: newStock });
                     }
@@ -349,6 +369,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             });
         } catch (e) {
             console.error("Delete purchase transaction failed: ", e);
+            throw e;
         }
 
         await fetchData(user.uid);
@@ -407,5 +428,7 @@ export function useData() {
     }
     return context;
 }
+
+    
 
     
