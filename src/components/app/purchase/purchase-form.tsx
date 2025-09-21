@@ -162,7 +162,6 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
   
     toast({ title: "Purchase Saved!", description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
     form.reset();
-    remove();
   }
   
   const isFormLocked = fields.length > 0;
