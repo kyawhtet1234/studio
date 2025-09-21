@@ -9,6 +9,8 @@ export function BestSellers({ sales, products }: { sales: SaleTransaction[], pro
     const itemSales: { [key: string]: { name: string, quantity: number, total: number } } = {};
 
     sales.forEach(sale => {
+      if (sale.status === 'voided') return;
+
       const saleDate = (sale.date as Timestamp)?.toDate ? (sale.date as Timestamp).toDate() : new Date(sale.date);
       const today = new Date();
       const monthDiff = today.getMonth() - saleDate.getMonth() + (12 * (today.getFullYear() - saleDate.getFullYear()));
