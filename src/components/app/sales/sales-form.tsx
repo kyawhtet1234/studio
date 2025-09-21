@@ -42,9 +42,9 @@ import { Receipt } from "./receipt";
 
 const formSchema = z.object({
   storeId: z.string().min(1, "Please select a store."),
-  sku: z.string(),
-  itemName: z.string(),
-  sellPrice: z.coerce.number(),
+  sku: z.string().optional(),
+  itemName: z.string().optional(),
+  sellPrice: z.coerce.number().optional(),
   quantity: z.coerce.number().min(1, "Min 1"),
   cart: z.array(
     z.object({
@@ -95,7 +95,7 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
 
   useEffect(() => {
     const autofill = () => {
-        if (watchSku.length > 0) {
+        if (watchSku && watchSku.length > 0) {
             const product = products.find(p => p.sku.toLowerCase().startsWith(watchSku.toLowerCase()));
             if (product) {
                 form.setValue("itemName", product.name);
@@ -114,10 +114,10 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
     const { sku, itemName, sellPrice, quantity } = form.getValues();
     const product = products.find(p => p.sku === sku);
 
-    if (product && itemName && sellPrice > 0 && quantity > 0) {
+    if (product && itemName && sellPrice && sellPrice > 0 && quantity > 0) {
       const newItem: CartItem = {
         productId: product.id,
-        sku,
+        sku: product.sku,
         name: itemName,
         sellPrice,
         quantity,
@@ -365,6 +365,8 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
     </>
   );
 }
+
+    
 
     
 
