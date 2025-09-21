@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import type { Product, Category, Supplier, Store } from "@/lib/types";
+import { useEffect } from "react";
 
 const baseSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -38,16 +39,24 @@ const productSchema = z.object({
 
 const storeSchema = baseSchema.extend({ location: z.string().min(5) });
 
-interface FormProps {
+interface FormProps<T> {
+  onSave: (data: T) => Promise<void>;
   onSuccess: () => void;
+  entity?: any;
 }
 
-export function AddCategoryForm({ onAddCategory, onSuccess }: { onAddCategory: (data: Omit<Category, 'id'>) => Promise<void> } & FormProps) {
-  const form = useForm({ resolver: zodResolver(baseSchema), defaultValues: { name: "" } });
+export function AddCategoryForm({ onSave, onSuccess, category }: FormProps<Omit<Category, 'id'>> & { category?: Category }) {
+  const form = useForm({ resolver: zodResolver(baseSchema), defaultValues: { name: category?.name || "" } });
   const { toast } = useToast();
+  const isEditMode = !!category;
+
+  useEffect(() => {
+    if (category) form.reset({ name: category.name });
+  }, [category, form]);
+
   async function onSubmit(data: z.infer<typeof baseSchema>) {
-    await onAddCategory(data);
-    toast({ title: "Category Added", description: `${data.name} has been successfully added.` });
+    await onSave(data);
+    toast({ title: `Category ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
     form.reset();
     onSuccess();
   }
@@ -65,18 +74,24 @@ export function AddCategoryForm({ onAddCategory, onSuccess }: { onAddCategory: (
             </FormItem>
           )}
         />
-        <Button type="submit">Add Category</Button>
+        <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Category'}</Button>
       </form>
     </Form>
   );
 }
 
-export function AddSupplierForm({ onAddSupplier, onSuccess }: { onAddSupplier: (data: Omit<Supplier, 'id'>) => Promise<void> } & FormProps) {
-    const form = useForm({ resolver: zodResolver(baseSchema), defaultValues: { name: "" } });
+export function AddSupplierForm({ onSave, onSuccess, supplier }: FormProps<Omit<Supplier, 'id'>> & { supplier?: Supplier }) {
+    const form = useForm({ resolver: zodResolver(baseSchema), defaultValues: { name: supplier?.name || "" } });
     const { toast } = useToast();
+    const isEditMode = !!supplier;
+
+    useEffect(() => {
+        if (supplier) form.reset({ name: supplier.name });
+    }, [supplier, form]);
+
     async function onSubmit(data: z.infer<typeof baseSchema>) {
-        await onAddSupplier(data);
-        toast({ title: "Supplier Added", description: `${data.name} has been successfully added.` });
+        await onSave(data);
+        toast({ title: `Supplier ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
         form.reset();
         onSuccess();
     }
@@ -94,18 +109,24 @@ export function AddSupplierForm({ onAddSupplier, onSuccess }: { onAddSupplier: (
                 </FormItem>
             )}
             />
-            <Button type="submit">Add Supplier</Button>
+            <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Supplier'}</Button>
         </form>
         </Form>
     );
 }
 
-export function AddStoreForm({ onAddStore, onSuccess }: { onAddStore: (data: Omit<Store, 'id'>) => Promise<void> } & FormProps) {
-    const form = useForm({ resolver: zodResolver(storeSchema), defaultValues: {name: "", location: ""} });
+export function AddStoreForm({ onSave, onSuccess, store }: FormProps<Omit<Store, 'id'>> & { store?: Store }) {
+    const form = useForm({ resolver: zodResolver(storeSchema), defaultValues: {name: store?.name || "", location: store?.location || ""} });
     const { toast } = useToast();
+    const isEditMode = !!store;
+
+    useEffect(() => {
+        if (store) form.reset({ name: store.name, location: store.location });
+    }, [store, form]);
+
     async function onSubmit(data: z.infer<typeof storeSchema>) { 
-        await onAddStore(data);
-        toast({ title: "Store Added", description: `${data.name} has been successfully added.` });
+        await onSave(data);
+        toast({ title: `Store ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
         form.reset();
         onSuccess();
     }
@@ -119,29 +140,39 @@ export function AddStoreForm({ onAddStore, onSuccess }: { onAddStore: (data: Omi
         <FormField control={form.control} name="location" render={({ field }) => (
             <FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
         )}/>
-        <Button type="submit">Add Store</Button>
+        <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Store'}</Button>
       </form>
     </Form>
     );
 }
 
-interface AddProductFormProps {
-  onAddProduct: (data: Omit<Product, 'id'>) => Promise<void>;
+interface AddProductFormProps extends FormProps<Omit<Product, 'id'>> {
   categories: Category[];
   suppliers: Supplier[];
-  onSuccess: () => void;
+  product?: Product;
 }
 
-export function AddProductForm({ onAddProduct, categories, suppliers, onSuccess }: AddProductFormProps) {
+export function AddProductForm({ onSave, categories, suppliers, onSuccess, product }: AddProductFormProps) {
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: "", sku: "", categoryId: "", supplierId: "", sellPrice: 0, buyPrice: 0 },
+    defaultValues: product ? {
+        ...product,
+        sellPrice: product.sellPrice ?? 0,
+        buyPrice: product.buyPrice ?? 0,
+    } : { name: "", sku: "", categoryId: "", supplierId: "", sellPrice: 0, buyPrice: 0 },
   });
   const { toast } = useToast();
+  const isEditMode = !!product;
+
+  useEffect(() => {
+      if (product) {
+          form.reset(product);
+      }
+  }, [product, form]);
 
   async function onSubmit(data: z.infer<typeof productSchema>) { 
-      await onAddProduct(data);
-      toast({ title: "Product Added", description: `${data.name} has been successfully added.` });
+      await onSave(data);
+      toast({ title: `Product ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
       form.reset();
       onSuccess();
   }
@@ -158,7 +189,7 @@ export function AddProductForm({ onAddProduct, categories, suppliers, onSuccess 
         <FormField control={form.control} name="categoryId" render={({ field }) => (
           <FormItem>
             <FormLabel>Category</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select onValueChange={field.onChange} value={field.value}>
               <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
               <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
@@ -168,7 +199,7 @@ export function AddProductForm({ onAddProduct, categories, suppliers, onSuccess 
         <FormField control={form.control} name="supplierId" render={({ field }) => (
           <FormItem>
             <FormLabel>Supplier</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select onValueChange={field.onChange} value={field.value}>
               <FormControl><SelectTrigger><SelectValue placeholder="Select a supplier" /></SelectTrigger></FormControl>
               <SelectContent>{suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
             </Select>
@@ -181,7 +212,7 @@ export function AddProductForm({ onAddProduct, categories, suppliers, onSuccess 
         <FormField control={form.control} name="buyPrice" render={({ field }) => (
             <FormItem><FormLabel>Buy Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
         )}/>
-        <Button type="submit">Add Product</Button>
+        <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Product'}</Button>
       </form>
     </Form>
   );

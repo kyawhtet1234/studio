@@ -34,11 +34,13 @@ interface DeletableRow {
 const ActionsCell = <TData extends DeletableRow>({
   row,
   copyLabel,
+  onEdit,
   onDelete,
   deleteConfirmationText
 }: {
   row: any,
   copyLabel: string,
+  onEdit?: (item: TData) => void,
   onDelete?: (id: string) => void
   deleteConfirmationText?: string
 }) => {
@@ -72,7 +74,7 @@ const ActionsCell = <TData extends DeletableRow>({
             {copyLabel}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Edit</DropdownMenuItem>
+          {onEdit && <DropdownMenuItem onClick={() => onEdit(item)}>Edit</DropdownMenuItem>}
           {onDelete && (
             <DropdownMenuItem
               className="text-destructive"
@@ -103,7 +105,7 @@ const ActionsCell = <TData extends DeletableRow>({
   );
 };
 
-export const productColumns = ({ onDelete }: { onDelete: (id: string) => void }): ColumnDef<Product>[] => [
+export const productColumns = ({ onEdit, onDelete }: { onEdit: (item: Product) => void, onDelete: (id: string) => void }): ColumnDef<Product>[] => [
   { accessorKey: "sku", header: "SKU" },
   { accessorKey: "name", header: "Name" },
   { accessorKey: "sellPrice", header: "Sell Price", cell: ({ row }) => `MMK ${row.original.sellPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
@@ -114,6 +116,7 @@ export const productColumns = ({ onDelete }: { onDelete: (id: string) => void })
       <ActionsCell
         row={row}
         copyLabel="Copy product ID"
+        onEdit={onEdit}
         onDelete={onDelete}
         deleteConfirmationText={`This action cannot be undone. This will permanently delete the product "${row.original.name}" and all associated inventory records.`}
       />
@@ -121,33 +124,35 @@ export const productColumns = ({ onDelete }: { onDelete: (id: string) => void })
   },
 ];
 
-export const categoryColumns = ({ onDelete }: { onDelete: (id: string) => void }): ColumnDef<Category>[] => [
+export const categoryColumns = ({ onEdit, onDelete }: { onEdit: (item: Category) => void, onDelete: (id: string) => void }): ColumnDef<Category>[] => [
   { accessorKey: "name", header: "Name" },
   { 
     id: "actions",
     cell: ({ row }) => <ActionsCell 
       row={row} 
       copyLabel="Copy category ID" 
+      onEdit={onEdit}
       onDelete={onDelete}
       deleteConfirmationText={`This will permanently delete the category "${row.original.name}". Products in this category will not be deleted.`}
     />
   },
 ];
 
-export const supplierColumns = ({ onDelete }: { onDelete: (id: string) => void }): ColumnDef<Supplier>[] => [
+export const supplierColumns = ({ onEdit, onDelete }: { onEdit: (item: Supplier) => void, onDelete: (id: string) => void }): ColumnDef<Supplier>[] => [
   { accessorKey: "name", header: "Name" },
   { 
     id: "actions",
     cell: ({ row }) => <ActionsCell 
       row={row} 
       copyLabel="Copy supplier ID" 
+      onEdit={onEdit}
       onDelete={onDelete}
       deleteConfirmationText={`This will permanently delete the supplier "${row.original.name}". Products from this supplier will not be deleted.`}
     />
   },
 ];
 
-export const storeColumns = ({ onDelete }: { onDelete: (id: string) => void }): ColumnDef<Store>[] => [
+export const storeColumns = ({ onEdit, onDelete }: { onEdit: (item: Store) => void, onDelete: (id: string) => void }): ColumnDef<Store>[] => [
   { accessorKey: "name", header: "Name" },
   { accessorKey: "location", header: "Location" },
   { 
@@ -155,6 +160,7 @@ export const storeColumns = ({ onDelete }: { onDelete: (id: string) => void }): 
     cell: ({ row }) => <ActionsCell 
       row={row} 
       copyLabel="Copy store ID" 
+      onEdit={onEdit}
       onDelete={onDelete}
       deleteConfirmationText={`This will permanently delete the store "${row.original.name}" and all associated inventory.`}
     />
