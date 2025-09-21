@@ -18,7 +18,7 @@ export default function ProductsPage() {
     stores, addStore, deleteStore
   } = useData();
 
-  const renderAddButton = (handleSheetClose: () => void) => {
+  const renderAddButton = () => {
     switch (activeTab) {
       case "items":
         return (
@@ -66,7 +66,7 @@ export default function ProductsPage() {
                 <TabsTrigger value="stores">Stores</TabsTrigger>
             </TabsList>
             <div>
-              {renderAddButton(() => {})}
+              {renderAddButton()}
             </div>
         </div>
 

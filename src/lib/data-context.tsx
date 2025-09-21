@@ -139,8 +139,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     
     const addCategory = async (categoryData: Omit<Category, 'id'>) => {
         if (!user) return;
-        await addDoc(collection(db, 'users', user.uid, 'categories'), categoryData);
-        await fetchData(user.uid);
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'categories'), categoryData);
+        setCategories(prev => [...prev, {id: docRef.id, ...categoryData}]);
     };
     
     const deleteCategory = async (categoryId: string) => {
@@ -151,8 +151,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const addSupplier = async (supplierData: Omit<Supplier, 'id'>) => {
         if (!user) return;
-        await addDoc(collection(db, 'users', user.uid, 'suppliers'), supplierData);
-        await fetchData(user.uid);
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'suppliers'), supplierData);
+        setSuppliers(prev => [...prev, {id: docRef.id, ...supplierData}]);
     };
     
     const deleteSupplier = async (supplierId: string) => {
@@ -225,16 +225,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
         const saleSnap = await getDoc(saleRef);
-        if (!saleSnap.exists()) return;
+        if (!saleSnap.exists()) {
+            console.error("Sale to delete not found");
+            return;
+        }
 
         const saleData = saleSnap.data() as Omit<SaleTransaction, 'id'>;
-
-        await deleteDoc(saleRef);
-
         const batch = writeBatch(db);
+
         const inventoryQuery = query(
             collection(db, 'users', user.uid, 'inventory'),
-            where('storeId', '==', saleData.storeId)
+            where('storeId', '==', saleData.storeId),
+            where('productId', 'in', saleData.items.map(i => i.productId))
         );
         const inventorySnap = await getDocs(inventoryQuery);
         const inventoryDocs = inventorySnap.docs;
@@ -246,6 +248,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 batch.update(inventoryDoc.ref, { stock: currentStock + item.quantity });
             }
         }
+        
+        batch.delete(saleRef);
         
         await batch.commit();
         await fetchData(user.uid);
@@ -290,16 +294,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         const purchaseRef = doc(db, 'users', user.uid, 'purchases', purchaseId);
         const purchaseSnap = await getDoc(purchaseRef);
-        if (!purchaseSnap.exists()) return;
+        if (!purchaseSnap.exists()) {
+             console.error("Purchase to delete not found");
+            return;
+        }
 
         const purchaseData = purchaseSnap.data() as Omit<PurchaseTransaction, 'id'>;
-
-        await deleteDoc(purchaseRef);
-
         const batch = writeBatch(db);
+        
         const inventoryQuery = query(
             collection(db, 'users', user.uid, 'inventory'),
-            where('storeId', '==', purchaseData.storeId)
+            where('storeId', '==', purchaseData.storeId),
+            where('productId', 'in', purchaseData.items.map(i => i.productId))
         );
         const inventorySnap = await getDocs(inventoryQuery);
         const inventoryDocs = inventorySnap.docs;
@@ -311,6 +317,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 batch.update(inventoryDoc.ref, { stock: currentStock - item.quantity });
             }
         }
+        
+        batch.delete(purchaseRef);
         
         await batch.commit();
         await fetchData(user.uid);
