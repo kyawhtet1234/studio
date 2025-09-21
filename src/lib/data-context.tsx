@@ -104,29 +104,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const addProduct = async (productData: Omit<Product, 'id'>) => {
         if (!user) return;
-        const newProductRef = doc(collection(db, 'users', user.uid, 'products'));
-        const newProduct = { ...productData };
-        
-        const batch = writeBatch(db);
-        batch.set(newProductRef, newProduct);
-
-        const currentStores = (await getDocs(query(collection(db, 'users', user.uid, 'stores')))).docs;
-
-        // Initialize inventory for this product in all stores
-        currentStores.forEach(storeDoc => {
-            const inventoryRef = doc(collection(db, 'users', user.uid, 'inventory'));
-            batch.set(inventoryRef, { productId: newProductRef.id, storeId: storeDoc.id, stock: 0 });
-        });
-        
-        await batch.commit();
-        await fetchData(user.uid); // Refresh all data
+        await addDoc(collection(db, 'users', user.uid, 'products'), productData);
+        await fetchData(user.uid);
     };
 
     const deleteProduct = async (productId: string) => {
         if (!user) return;
-        await deleteDoc(doc(db, 'users', user.uid, 'products', productId));
         
         const batch = writeBatch(db);
+        
+        // Delete product
+        const productRef = doc(db, 'users', user.uid, 'products', productId);
+        batch.delete(productRef);
+
+        // Delete associated inventory records
         const q = query(collection(db, 'users', user.uid, 'inventory'), where("productId", "==", productId));
         const inventoryToDeleteSnap = await getDocs(q);
         inventoryToDeleteSnap.forEach(doc => {
@@ -163,28 +154,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const addStore = async (storeData: Omit<Store, 'id'>) => {
         if (!user) return;
-        const newStoreRef = doc(collection(db, 'users', user.uid, 'stores'));
-        
-        const batch = writeBatch(db);
-        batch.set(newStoreRef, storeData);
-        
-        const currentProducts = (await getDocs(query(collection(db, 'users', user.uid, 'products')))).docs;
-
-        // Initialize inventory for all products in the new store
-        currentProducts.forEach(productDoc => {
-            const inventoryRef = doc(collection(db, 'users', user.uid, 'inventory'));
-            batch.set(inventoryRef, { productId: productDoc.id, storeId: newStoreRef.id, stock: 0 });
-        });
-        
-        await batch.commit();
+        await addDoc(collection(db, 'users', user.uid, 'stores'), storeData);
         await fetchData(user.uid);
     };
     
     const deleteStore = async (storeId: string) => {
         if (!user) return;
-        await deleteDoc(doc(db, 'users', user.uid, 'stores', storeId));
 
         const batch = writeBatch(db);
+
+        // Delete store
+        const storeRef = doc(db, 'users', user.uid, 'stores', storeId);
+        batch.delete(storeRef);
+        
+        // Delete associated inventory records
         const q = query(collection(db, 'users', user.uid, 'inventory'), where("storeId", "==", storeId));
         const inventoryToDeleteSnap = await getDocs(q);
         inventoryToDeleteSnap.forEach(doc => {
@@ -396,5 +379,3 @@ export function useData() {
     }
     return context;
 }
-
-    
