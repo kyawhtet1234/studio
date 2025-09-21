@@ -327,7 +327,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             return;
         }
     
-        const purchaseData = purchaseSnap.data() as Omit<PurchaseTransaction, 'id'>;
+        const purchaseData = purchaseSnap.data() as Omit<PurchaseTransaction, 'id' | 'date'>;
         const batch = writeBatch(db);
         batch.delete(purchaseRef);
     
@@ -408,3 +408,5 @@ export function useData() {
     }
     return context;
 }
+
+    
