@@ -8,6 +8,7 @@ import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -34,17 +35,13 @@ import {
 } from "@/components/ui/form";
 import { Trash2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Store, PurchaseTransaction, Supplier } from "@/lib/types";
+import type { Store, PurchaseTransaction, Supplier, Product } from "@/lib/types";
 import { useData } from "@/lib/data-context";
 import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   storeId: z.string().min(1, "Please select a store."),
   supplierId: z.string().min(1, "Please select a supplier."),
-  sku: z.string(),
-  itemName: z.string(),
-  buyPrice: z.coerce.number(),
-  quantity: z.coerce.number().min(1, "Min 1"),
   cart: z.array(
     z.object({
       productId: z.string(),
@@ -54,7 +51,7 @@ const formSchema = z.object({
       quantity: z.number(),
       total: z.number(),
     })
-  ),
+  ).min(1, "Cart cannot be empty."),
 });
 
 type PurchaseFormValues = z.infer<typeof formSchema>;
@@ -69,74 +66,82 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
   const { products } = useData();
   const { toast } = useToast();
 
+  const [sku, setSku] = useState("");
+  const [itemName, setItemName] = useState("");
+  const [buyPrice, setBuyPrice] = useState<number | string>("");
+  const [quantity, setQuantity] = useState<number | string>(1);
+  const [foundProduct, setFoundProduct] = useState<Product | null>(null);
+
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       storeId: "",
       supplierId: "",
-      sku: "",
-      itemName: "",
-      buyPrice: 0,
-      quantity: 1,
       cart: [],
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "cart",
   });
 
-  const watchSku = form.watch("sku");
   const watchCart = form.watch("cart");
   const watchSupplierId = form.watch("supplierId");
 
   useEffect(() => {
-    const autofill = () => {
-      if (watchSku.length > 0) {
-        const product = products.find(p => p.sku.toLowerCase().startsWith(watchSku.toLowerCase()));
+    if (sku) {
+        const product = products.find(p => p.sku.toLowerCase().startsWith(sku.toLowerCase()));
         if (product) {
-            form.setValue("itemName", product.name);
-            form.setValue("buyPrice", product.buyPrice);
+            setItemName(product.name);
+            setBuyPrice(product.buyPrice);
+            setFoundProduct(product);
         } else {
-            form.resetField("itemName");
-            form.resetField("buyPrice");
+            setItemName("");
+            setBuyPrice("");
+            setFoundProduct(null);
         }
-      }
-    };
-    autofill();
-  }, [watchSku, products, form]);
+    } else {
+        setItemName("");
+        setBuyPrice("");
+        setFoundProduct(null);
+    }
+  }, [sku, products]);
 
 
   function addToCart() {
-    const { sku, itemName, buyPrice, quantity, supplierId } = form.getValues();
-    const product = products.find(p => p.sku === sku);
+    const currentPrice = Number(buyPrice);
+    const currentQuantity = Number(quantity);
+    const supplierId = form.getValues("supplierId");
 
-    if (!product || !itemName || buyPrice <= 0 || quantity <= 0) {
+    if (!foundProduct || !itemName || currentPrice <= 0 || currentQuantity <= 0) {
         toast({ variant: 'destructive', title: 'Invalid Item', description: 'Please fill all item details correctly before adding to cart.' });
         return;
     }
     
-    if (product.supplierId !== supplierId) {
-        const supplier = suppliers.find(s => s.id === product.supplierId);
-        toast({ variant: 'destructive', title: 'Wrong Supplier', description: `Item ${product.name} belongs to ${supplier?.name || 'another supplier'}.` });
+    if (foundProduct.supplierId !== supplierId) {
+        const supplier = suppliers.find(s => s.id === foundProduct.supplierId);
+        toast({ variant: 'destructive', title: 'Wrong Supplier', description: `Item ${foundProduct.name} belongs to ${supplier?.name || 'another supplier'}.` });
         return;
     }
 
       const newItem = {
-        productId: product.id,
-        sku,
+        productId: foundProduct.id,
+        sku: foundProduct.sku,
         name: itemName,
-        buyPrice,
-        quantity,
-        total: buyPrice * quantity,
+        buyPrice: currentPrice,
+        quantity: currentQuantity,
+        total: currentPrice * currentQuantity,
       };
       append(newItem);
-      form.resetField("sku");
-      form.resetField("itemName");
-      form.resetField("buyPrice");
-      form.setValue("quantity", 1);
-      form.setFocus('sku');
+      
+      setSku("");
+      setItemName("");
+      setBuyPrice("");
+      setQuantity(1);
+      setFoundProduct(null);
+
+      document.getElementById('sku-input')?.focus();
   }
 
   const total = watchCart.reduce((acc, item) => acc + item.total, 0);
@@ -162,6 +167,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
   
     toast({ title: "Purchase Saved!", description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
     form.reset();
+    replace([]); // Correctly clears the field array after submission
   }
   
   const isFormLocked = fields.length > 0;
@@ -221,65 +227,21 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                 />
             </div>
             <div className={cn("grid grid-cols-1 md:grid-cols-12 gap-4 items-end pt-4 border-t", !watchSupplierId && "opacity-50 pointer-events-none")}>
-              <div className="md:col-span-3 relative">
-                <FormField
-                  control={form.control}
-                  name="sku"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>SKU</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter SKU..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="md:col-span-3 relative space-y-2">
+                <Label htmlFor="sku-input">SKU</Label>
+                <Input id="sku-input" placeholder="Enter SKU..." value={sku} onChange={(e) => setSku(e.target.value)} />
               </div>
-              <div className="md:col-span-4">
-                <FormField
-                  control={form.control}
-                  name="itemName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Item Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Item name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="md:col-span-4 space-y-2">
+                <Label htmlFor="itemName-input">Item Name</Label>
+                <Input id="itemName-input" placeholder="Item name" value={itemName} onChange={(e) => setItemName(e.target.value)} />
               </div>
-              <div className="md:col-span-2">
-                <FormField
-                  control={form.control}
-                  name="buyPrice"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Purchase Price</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="md:col-span-2 space-y-2">
+                <Label htmlFor="buyPrice-input">Purchase Price</Label>
+                <Input id="buyPrice-input" type="number" step="0.01" value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} />
               </div>
-              <div className="md:col-span-1">
-                <FormField
-                  control={form.control}
-                  name="quantity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Qty</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="md:col-span-1 space-y-2">
+                <Label htmlFor="quantity-input">Qty</Label>
+                <Input id="quantity-input" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
               </div>
               <div className="md:col-span-2">
                 <Button type="button" className="w-full" onClick={addToCart}>
@@ -337,6 +299,9 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
           </CardFooter>
         </Card>
 
+        {form.formState.errors.cart && (
+            <p className="text-sm font-medium text-destructive">{form.formState.errors.cart.message || form.formState.errors.cart.root?.message}</p>
+        )}
         <div className="flex justify-end">
             <Button type="submit" size="lg">Save Purchase</Button>
         </div>
@@ -344,7 +309,3 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
     </Form>
   );
 }
-
-    
-
-    
