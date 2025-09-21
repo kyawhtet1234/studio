@@ -234,19 +234,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const saleData = saleSnap.data() as Omit<SaleTransaction, 'id'>;
         const batch = writeBatch(db);
 
-        const inventoryQuery = query(
-            collection(db, 'users', user.uid, 'inventory'),
-            where('storeId', '==', saleData.storeId),
-            where('productId', 'in', saleData.items.map(i => i.productId))
-        );
-        const inventorySnap = await getDocs(inventoryQuery);
-        const inventoryDocs = inventorySnap.docs;
-
-        for (const item of saleData.items) {
-            const inventoryDoc = inventoryDocs.find(d => d.data().productId === item.productId);
-            if (inventoryDoc) {
-                const currentStock = inventoryDoc.data().stock;
-                batch.update(inventoryDoc.ref, { stock: currentStock + item.quantity });
+        const productIds = saleData.items.map(i => i.productId);
+        if (productIds.length > 0) {
+            const inventoryQuery = query(
+                collection(db, 'users', user.uid, 'inventory'),
+                where('storeId', '==', saleData.storeId),
+                where('productId', 'in', productIds)
+            );
+            const inventorySnap = await getDocs(inventoryQuery);
+            const inventoryMap = new Map(inventorySnap.docs.map(d => [d.data().productId, d]));
+    
+            for (const item of saleData.items) {
+                const inventoryDoc = inventoryMap.get(item.productId);
+                if (inventoryDoc) {
+                    const currentStock = inventoryDoc.data().stock;
+                    batch.update(inventoryDoc.ref, { stock: currentStock + item.quantity });
+                }
             }
         }
         
@@ -304,19 +307,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const purchaseData = purchaseSnap.data() as Omit<PurchaseTransaction, 'id'>;
         const batch = writeBatch(db);
         
-        const inventoryQuery = query(
-            collection(db, 'users', user.uid, 'inventory'),
-            where('storeId', '==', purchaseData.storeId),
-            where('productId', 'in', purchaseData.items.map(i => i.productId))
-        );
-        const inventorySnap = await getDocs(inventoryQuery);
-        const inventoryDocs = inventorySnap.docs;
-
-        for (const item of purchaseData.items) {
-            const inventoryDoc = inventoryDocs.find(d => d.data().productId === item.productId);
-            if (inventoryDoc) {
-                const currentStock = inventoryDoc.data().stock;
-                batch.update(inventoryDoc.ref, { stock: currentStock - item.quantity });
+        const productIds = purchaseData.items.map(i => i.productId);
+        if (productIds.length > 0) {
+            const inventoryQuery = query(
+                collection(db, 'users', user.uid, 'inventory'),
+                where('storeId', '==', purchaseData.storeId),
+                where('productId', 'in', productIds)
+            );
+            const inventorySnap = await getDocs(inventoryQuery);
+            const inventoryMap = new Map(inventorySnap.docs.map(d => [d.data().productId, d]));
+    
+            for (const item of purchaseData.items) {
+                const inventoryDoc = inventoryMap.get(item.productId);
+                if (inventoryDoc) {
+                    const currentStock = inventoryDoc.data().stock;
+                    batch.update(inventoryDoc.ref, { stock: currentStock - item.quantity });
+                }
             }
         }
         
