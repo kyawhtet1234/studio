@@ -46,12 +46,12 @@ export default function InventoryPage() {
   const { inventory, products, stores, categories, updateInventory } = useData();
   const { toast } = useToast();
   const [selectedStore, setSelectedStore] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [adjustmentItem, setAdjustmentItem] = useState<AdjustmentItem | null>(null);
   const [newStock, setNewStock] = useState<number>(0);
 
   const inventoryData = useMemo(() => {
     return inventory
-        .filter(item => selectedStore === 'all' || item.storeId === selectedStore)
         .map(item => {
             const product = products.find(p => p.id === item.productId);
             const store = stores.find(s => s.id === item.storeId);
@@ -60,11 +60,14 @@ export default function InventoryPage() {
                 ...item,
                 productName: product?.name,
                 sku: product?.sku,
+                categoryId: product?.categoryId,
                 categoryName: category?.name,
                 storeName: store?.name,
             };
-    });
-  }, [inventory, selectedStore, products, stores, categories]);
+        })
+        .filter(item => selectedStore === 'all' || item.storeId === selectedStore)
+        .filter(item => selectedCategory === 'all' || item.categoryId === selectedCategory);
+  }, [inventory, selectedStore, selectedCategory, products, stores, categories]);
 
   const handleOpenAdjustDialog = (item: { productId: string; storeId: string; productName?: string; storeName?: string, stock: number }) => {
     setAdjustmentItem({
@@ -93,17 +96,30 @@ export default function InventoryPage() {
   return (
     <div>
       <PageHeader title="Inventory">
-        <Select onValueChange={setSelectedStore} value={selectedStore}>
-            <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by store" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="all">All Stores</SelectItem>
-                {stores.map(store => (
-                    <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
-                ))}
-            </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+            <Select onValueChange={setSelectedCategory} value={selectedCategory}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by category" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map(category => (
+                        <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Select onValueChange={setSelectedStore} value={selectedStore}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by store" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Stores</SelectItem>
+                    {stores.map(store => (
+                        <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
       </PageHeader>
       <div className="rounded-md border">
         <Table>
@@ -135,7 +151,7 @@ export default function InventoryPage() {
              {inventoryData.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={6} className="text-center h-24">
-                        No inventory for this store.
+                        No inventory found for the selected filters.
                     </TableCell>
                 </TableRow>
             )}
@@ -171,5 +187,3 @@ export default function InventoryPage() {
     </div>
   );
 }
-
-    
