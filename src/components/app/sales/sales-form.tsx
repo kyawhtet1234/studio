@@ -1,5 +1,5 @@
 
-"use client";
+'use client';
 
 import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -353,7 +353,7 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
       </form>
     </Form>
     <Dialog open={!!lastSale} onOpenChange={handleCloseReceipt}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Sale Receipt</DialogTitle>
           </DialogHeader>

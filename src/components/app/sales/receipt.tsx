@@ -1,22 +1,30 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import type { SaleTransaction, Store } from '@/lib/types';
 import { format } from 'date-fns';
 import { Printer } from 'lucide-react';
 
+const LOGO_STORAGE_KEY = 'receipt-logo';
+
 interface ReceiptProps {
   sale: SaleTransaction;
   store: Store | undefined;
 }
 
-const ReceiptContent: React.FC<ReceiptProps> = React.forwardRef(({ sale, store }, ref) => {
+const ReceiptContent: React.FC<ReceiptProps & { logo: string | null }> = React.forwardRef(({ sale, store, logo }, ref) => {
     return (
       <div ref={ref as React.Ref<HTMLDivElement>} className="p-4 bg-white text-black font-mono text-xs">
         <div className="text-center">
+          {logo && (
+            <div className="mb-4 flex justify-center">
+              <Image src={logo} alt="Company Logo" width={128} height={128} className="object-contain" style={{ maxHeight: '80px', width: 'auto'}}/>
+            </div>
+          )}
           <h2 className="text-base font-bold">{store?.name || 'CloudPOS'}</h2>
           <p>{store?.location}</p>
           <p>{format(new Date(sale.date as Date), 'PPpp')}</p>
@@ -58,42 +66,71 @@ ReceiptContent.displayName = 'ReceiptContent';
 
 export const Receipt: React.FC<ReceiptProps> = ({ sale, store }) => {
     const receiptRef = React.useRef<HTMLDivElement>(null);
+    const [logo, setLogo] = useState<string | null>(null);
+
+    useEffect(() => {
+        // Must be in useEffect to avoid server/client mismatch with localStorage
+        const savedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
+        if (savedLogo) {
+            setLogo(savedLogo);
+        }
+    }, []);
 
     const handlePrint = () => {
         const printContent = receiptRef.current;
         if (printContent) {
-            const originalContents = document.body.innerHTML;
-            const styles = Array.from(document.styleSheets)
-                .map(styleSheet => {
-                    try {
-                        return Array.from(styleSheet.cssRules)
-                            .map(rule => rule.cssText)
-                            .join('');
-                    } catch (e) {
-                        console.log('Access to stylesheet %s is denied. Skipping.', styleSheet.href);
-                        return '';
-                    }
-                })
-                .join('\n');
-
-            const printWindow = window.open('', '', 'height=600,width=800');
+            const printWindow = window.open('', '', 'height=800,width=800');
             if (printWindow) {
                 printWindow.document.write('<html><head><title>Print Receipt</title>');
-                printWindow.document.write(`<style>${styles}</style>`);
+                // Simple styles for printing
+                printWindow.document.write(`
+                    <style>
+                        body { font-family: monospace; font-size: 10pt; color: black; }
+                        .p-4 { padding: 1rem; }
+                        .bg-white { background-color: white; }
+                        .text-black { color: black; }
+                        .font-mono { font-family: monospace; }
+                        .text-xs { font-size: 0.75rem; }
+                        .text-center { text-align: center; }
+                        .text-base { font-size: 1rem; }
+                        .font-bold { font-weight: 700; }
+                        .mb-4 { margin-bottom: 1rem; }
+                        .flex { display: flex; }
+                        .justify-center { justify-content: center; }
+                        .object-contain { object-fit: contain; }
+                        .my-2 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
+                        .bg-black { background-color: black; height: 1px; border: 0; }
+                        .space-y-1 > * + * { margin-top: 0.25rem; }
+                        .grid { display: grid; }
+                        .grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+                        .col-span-8 { grid-column: span 8 / span 8; }
+                        .col-span-4 { grid-column: span 4 / span 4; }
+                        .pl-2 { padding-left: 0.5rem; }
+                        .text-right { text-align: right; }
+                        .justify-between { justify-content: space-between; }
+                        .text-sm { font-size: 0.875rem; }
+                        .mt-4 { margin-top: 1rem; }
+                        img { max-height: 80px; width: auto; }
+                    </style>
+                `);
                 printWindow.document.write('</head><body>');
                 printWindow.document.write(printContent.innerHTML);
                 printWindow.document.write('</body></html>');
                 printWindow.document.close();
                 printWindow.focus();
-                printWindow.print();
-                printWindow.close();
+                
+                // Use a timeout to ensure images are loaded before printing
+                setTimeout(() => {
+                    printWindow.print();
+                    printWindow.close();
+                }, 500);
             }
         }
     };
 
     return (
         <div>
-            <ReceiptContent ref={receiptRef} sale={sale} store={store} />
+            <ReceiptContent ref={receiptRef} sale={sale} store={store} logo={logo} />
             <div className="mt-4 flex justify-end">
                 <Button onClick={handlePrint}>
                     <Printer className="mr-2 h-4 w-4" />

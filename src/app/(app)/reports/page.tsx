@@ -315,7 +315,7 @@ export default function ReportsPage() {
         </TabsContent>
       </Tabs>
       <Dialog open={!!receiptToPrint} onOpenChange={() => setReceiptToPrint(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Sale Receipt</DialogTitle>
           </DialogHeader>
