@@ -22,20 +22,26 @@ export function BestSellers({ sales, products }: { sales: SaleTransaction[], pro
       const today = new Date();
       const monthDiff = today.getMonth() - saleDate.getMonth() + (12 * (today.getFullYear() - saleDate.getFullYear()));
 
-      if (monthDiff === 0) {
+      if (monthDiff === 0) { // Only for the current month
         sale.items.forEach(item => {
           if (!itemSales[item.productId]) {
             const product = products.find(p => p.id === item.productId);
             itemSales[item.productId] = { name: product?.name || 'Unknown', quantity: 0, total: 0 };
           }
+          
+          // Calculate the portion of the discount for this item
+          const discountRatio = sale.subtotal > 0 ? item.total / sale.subtotal : 0;
+          const itemDiscount = sale.discount * discountRatio;
+          const salesAfterDiscount = item.total - itemDiscount;
+
           itemSales[item.productId].quantity += item.quantity;
-          itemSales[item.productId].total += item.total;
+          itemSales[item.productId].total += salesAfterDiscount;
         });
       }
     });
 
     return Object.values(itemSales)
-      .sort((a, b) => b.total - a.total)
+      .sort((a, b) => b.quantity - a.total)
       .slice(0, 5);
   })();
 
@@ -43,15 +49,15 @@ export function BestSellers({ sales, products }: { sales: SaleTransaction[], pro
     <Card>
       <CardHeader>
         <CardTitle>Best Selling Items</CardTitle>
-        <CardDescription>Top 5 best selling items this month.</CardDescription>
+        <CardDescription>Top 5 best selling items this month by quantity.</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Item</TableHead>
-              <TableHead className="text-right">Quantity</TableHead>
-              <TableHead className="text-right">Total Sales</TableHead>
+              <TableHead className="text-right">Quantity Sold</TableHead>
+              <TableHead className="text-right">Total Sales (After Discount)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -74,3 +80,4 @@ export function BestSellers({ sales, products }: { sales: SaleTransaction[], pro
     </Card>
   );
 }
+
