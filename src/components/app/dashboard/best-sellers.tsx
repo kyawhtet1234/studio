@@ -41,7 +41,7 @@ export function BestSellers({ sales, products }: { sales: SaleTransaction[], pro
     });
 
     return Object.values(itemSales)
-      .sort((a, b) => b.quantity - a.total)
+      .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 5);
   })();
 
@@ -80,4 +80,3 @@ export function BestSellers({ sales, products }: { sales: SaleTransaction[], pro
     </Card>
   );
 }
-
