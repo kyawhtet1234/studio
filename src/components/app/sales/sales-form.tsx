@@ -248,14 +248,13 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     <FormItem>
                         <FormLabel>Customer</FormLabel>
                         <div className="flex gap-2">
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} defaultValue="">
                             <FormControl>
                                 <SelectTrigger>
                                 <SelectValue placeholder="Select a customer (optional)" />
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                <SelectItem value="">None</SelectItem>
                                 {customers.map(customer => (
                                 <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
                                 ))}
