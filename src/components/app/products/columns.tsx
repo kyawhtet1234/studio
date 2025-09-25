@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import type { Product, Category, Supplier, Store } from "@/lib/types";
+import type { Product, Category, Supplier, Store, Customer } from "@/lib/types";
 
 interface DeletableRow {
   id: string;
@@ -165,4 +165,21 @@ export const storeColumns = ({ onEdit, onDelete }: { onEdit: (item: Store) => vo
       deleteConfirmationText={`This will permanently delete the store "${row.original.name}" and all associated inventory.`}
     />
   },
+];
+
+export const customerColumns = ({ onEdit, onDelete }: { onEdit: (item: Customer) => void, onDelete: (id: string) => void }): ColumnDef<Customer>[] => [
+    { accessorKey: "name", header: "Name" },
+    { accessorKey: "phone", header: "Phone" },
+    {
+        id: "actions",
+        cell: ({ row }) => (
+            <ActionsCell
+                row={row}
+                copyLabel="Copy customer ID"
+                onEdit={onEdit}
+                onDelete={onDelete}
+                deleteConfirmationText={`This action cannot be undone. This will permanently delete the customer "${row.original.name}".`}
+            />
+        ),
+    },
 ];

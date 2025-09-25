@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileDown, MoreHorizontal, Printer, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { PurchaseTransaction, SaleTransaction, Store } from "@/lib/types";
+import type { PurchaseTransaction, SaleTransaction, Store, Customer } from "@/lib/types";
 import type { Timestamp } from 'firebase/firestore';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +51,34 @@ const ReportTable = ({ data, periodLabel }: { data: any[], periodLabel: string }
                 </TableRow>
             )}
           </TableBody>
+        </Table>
+    </div>
+);
+
+const SalesByCustomerTable = ({ data }: { data: any[] }) => (
+    <div className="rounded-md border">
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead className="text-right">Total Sales</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {data.map((report) => (
+                    <TableRow key={report.customerId}>
+                        <TableCell className="font-medium">{report.customerName}</TableCell>
+                        <TableCell className="text-right">MMK {report.totalSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    </TableRow>
+                ))}
+                {data.length === 0 && (
+                    <TableRow>
+                        <TableCell colSpan={2} className="text-center h-24">
+                            No sales with customers found.
+                        </TableCell>
+                    </TableRow>
+                )}
+            </TableBody>
         </Table>
     </div>
 );
@@ -135,7 +163,7 @@ const PurchaseHistoryTable = ({ data, stores, suppliers, onDelete }: { data: Pur
     )
 };
 
-const SalesHistoryTable = ({ data, stores, onVoid, onPrintReceipt }: { data: SaleTransaction[], stores: Store[], onVoid: (id: string) => void, onPrintReceipt: (sale: SaleTransaction) => void }) => {
+const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt }: { data: SaleTransaction[], stores: Store[], customers: Customer[], onVoid: (id: string) => void, onPrintReceipt: (sale: SaleTransaction) => void }) => {
     const [voidCandidate, setVoidCandidate] = useState<string | null>(null);
     const { toast } = useToast();
 
@@ -155,6 +183,7 @@ const SalesHistoryTable = ({ data, stores, onVoid, onPrintReceipt }: { data: Sal
                 <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Store</TableHead>
+                <TableHead>Customer</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Subtotal</TableHead>
                 <TableHead className="text-right">Discount</TableHead>
@@ -166,10 +195,12 @@ const SalesHistoryTable = ({ data, stores, onVoid, onPrintReceipt }: { data: Sal
                 {data.map((sale) => {
                     const saleDate = toDate(sale.date);
                     const isVoided = sale.status === 'voided';
+                    const customerName = customers.find(c => c.id === sale.customerId)?.name || 'N/A';
                     return (
                         <TableRow key={sale.id} className={cn(isVoided && "text-muted-foreground bg-muted/30")}>
                             <TableCell className="font-medium">{saleDate.toLocaleDateString()}</TableCell>
                             <TableCell>{stores.find(s => s.id === sale.storeId)?.name || 'NA'}</TableCell>
+                            <TableCell>{customerName}</TableCell>
                             <TableCell>
                                 {isVoided ? (
                                      <Badge variant="destructive">Voided</Badge>
@@ -205,7 +236,7 @@ const SalesHistoryTable = ({ data, stores, onVoid, onPrintReceipt }: { data: Sal
                 })}
                 {data.length === 0 && (
                     <TableRow>
-                        <TableCell colSpan={7} className="text-center h-24">
+                        <TableCell colSpan={8} className="text-center h-24">
                             No sales history found.
                         </TableCell>
                     </TableRow>
@@ -235,7 +266,7 @@ const SalesHistoryTable = ({ data, stores, onVoid, onPrintReceipt }: { data: Sal
 
 
 export default function ReportsPage() {
-  const { sales, products, purchases, stores, suppliers, voidSale, deletePurchase } = useData();
+  const { sales, products, purchases, stores, suppliers, customers, voidSale, deletePurchase } = useData();
   const [receiptToPrint, setReceiptToPrint] = useState<SaleTransaction | null>(null);
 
   const getReportData = (period: 'daily' | 'monthly') => {
@@ -266,8 +297,30 @@ export default function ReportsPage() {
     return Object.values(reports).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
+  const getSalesByCustomerData = () => {
+    const customerSales: { [key: string]: { customerId: string, customerName: string, totalSales: number } } = {};
+
+    sales.forEach(sale => {
+        if (sale.status === 'voided' || !sale.customerId) return;
+
+        if (!customerSales[sale.customerId]) {
+            const customer = customers.find(c => c.id === sale.customerId);
+            customerSales[sale.customerId] = {
+                customerId: sale.customerId,
+                customerName: customer ? customer.name : 'Unknown Customer',
+                totalSales: 0
+            };
+        }
+        customerSales[sale.customerId].totalSales += sale.total;
+    });
+
+    return Object.values(customerSales).sort((a, b) => b.totalSales - a.totalSales);
+  };
+
+
   const dailyReports = useMemo(() => getReportData('daily'), [sales, products]);
   const monthlyReports = useMemo(() => getReportData('monthly'), [sales, products]);
+  const salesByCustomer = useMemo(() => getSalesByCustomerData(), [sales, customers]);
   
   const purchaseHistory = useMemo(() => {
       return [...purchases].sort((a, b) => {
@@ -298,6 +351,7 @@ export default function ReportsPage() {
         <TabsList>
             <TabsTrigger value="daily">Daily</TabsTrigger>
             <TabsTrigger value="monthly">Monthly</TabsTrigger>
+            <TabsTrigger value="salesByCustomer">Sales By Customer</TabsTrigger>
             <TabsTrigger value="sales">Sales History</TabsTrigger>
             <TabsTrigger value="purchase">Purchase History</TabsTrigger>
         </TabsList>
@@ -307,8 +361,11 @@ export default function ReportsPage() {
         <TabsContent value="monthly">
             <ReportTable data={monthlyReports} period-label="Month" />
         </TabsContent>
+        <TabsContent value="salesByCustomer">
+            <SalesByCustomerTable data={salesByCustomer} />
+        </TabsContent>
          <TabsContent value="sales">
-            <SalesHistoryTable data={salesHistory} stores={stores} onVoid={voidSale} onPrintReceipt={setReceiptToPrint} />
+            <SalesHistoryTable data={salesHistory} stores={stores} customers={customers} onVoid={voidSale} onPrintReceipt={setReceiptToPrint} />
         </TabsContent>
         <TabsContent value="purchase">
             <PurchaseHistoryTable data={purchaseHistory} stores={stores} suppliers={suppliers} onDelete={deletePurchase} />

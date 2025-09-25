@@ -3,19 +3,20 @@
 import { PageHeader } from "@/components/app/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/app/products/data-table";
-import { productColumns, categoryColumns, supplierColumns, storeColumns } from "@/components/app/products/columns";
+import { productColumns, categoryColumns, supplierColumns, storeColumns, customerColumns } from "@/components/app/products/columns";
 import { AddEntitySheet } from "@/components/app/products/add-entity-sheet";
 import { EditEntitySheet } from "@/components/app/products/edit-entity-sheet";
-import { AddProductForm, AddCategoryForm, AddSupplierForm, AddStoreForm } from "@/components/app/products/forms";
+import { AddProductForm, AddCategoryForm, AddSupplierForm, AddStoreForm, AddCustomerForm } from "@/components/app/products/forms";
 import { useState } from "react";
 import { useData } from "@/lib/data-context";
-import type { Product, Category, Supplier, Store } from "@/lib/types";
+import type { Product, Category, Supplier, Store, Customer } from "@/lib/types";
 
 type EditingState = 
   | { type: 'product', data: Product }
   | { type: 'category', data: Category }
   | { type: 'supplier', data: Supplier }
   | { type: 'store', data: Store }
+  | { type: 'customer', data: Customer }
   | null;
 
 export default function ProductsPage() {
@@ -26,7 +27,8 @@ export default function ProductsPage() {
     products, addProduct, updateProduct, deleteProduct,
     categories, addCategory, updateCategory, deleteCategory,
     suppliers, addSupplier, updateSupplier, deleteSupplier,
-    stores, addStore, updateStore, deleteStore
+    stores, addStore, updateStore, deleteStore,
+    customers, addCustomer, updateCustomer, deleteCustomer
   } = useData();
 
   const renderAddButton = () => {
@@ -54,6 +56,12 @@ export default function ProductsPage() {
           <AddEntitySheet buttonText="Add Store" title="Add a new store" description="Enter the details for the new store location.">
             {(onSuccess) => <AddStoreForm onSave={addStore} onSuccess={onSuccess} />}
           </AddEntitySheet>
+        );
+      case "customers":
+        return (
+            <AddEntitySheet buttonText="Add Customer" title="Add a new customer" description="Enter the details for the new customer.">
+                {(onSuccess) => <AddCustomerForm onSave={addCustomer} onSuccess={onSuccess} />}
+            </AddEntitySheet>
         );
       default:
         return null;
@@ -111,7 +119,7 @@ export default function ProductsPage() {
             />}
           </EditEntitySheet>
         );
-      case "stores":
+      case "store":
         return (
           <EditEntitySheet
             title="Edit Store"
@@ -126,6 +134,21 @@ export default function ProductsPage() {
             />}
           </EditEntitySheet>
         );
+      case "customer":
+        return (
+          <EditEntitySheet
+            title="Edit Customer"
+            description="Update the details for this customer."
+            isOpen={!!editingEntity}
+            onClose={() => setEditingEntity(null)}
+          >
+            {(onSuccess) => <AddCustomerForm
+              onSave={(data) => updateCustomer(editingEntity.data.id, data)}
+              onSuccess={onSuccess}
+              customer={editingEntity.data}
+            />}
+          </EditEntitySheet>
+        );
       default:
         return null;
     }
@@ -135,6 +158,8 @@ export default function ProductsPage() {
   const categoryCols = categoryColumns({ onEdit: (data) => setEditingEntity({ type: 'category', data }), onDelete: deleteCategory });
   const supplierCols = supplierColumns({ onEdit: (data) => setEditingEntity({ type: 'supplier', data }), onDelete: deleteSupplier });
   const storeCols = storeColumns({ onEdit: (data) => setEditingEntity({ type: 'store', data }), onDelete: deleteStore });
+  const customerCols = customerColumns({ onEdit: (data) => setEditingEntity({ type: 'customer', data }), onDelete: deleteCustomer });
+
 
   return (
     <div>
@@ -146,6 +171,7 @@ export default function ProductsPage() {
                 <TabsTrigger value="categories">Categories</TabsTrigger>
                 <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
                 <TabsTrigger value="stores">Stores</TabsTrigger>
+                <TabsTrigger value="customers">Customers</TabsTrigger>
             </TabsList>
             <div>
               {renderAddButton()}
@@ -163,6 +189,9 @@ export default function ProductsPage() {
         </TabsContent>
         <TabsContent value="stores">
           <DataTable columns={storeCols} data={stores} filterColumnId="name" filterPlaceholder="Filter stores by name..."/>
+        </TabsContent>
+        <TabsContent value="customers">
+            <DataTable columns={customerCols} data={customers} filterColumnId="name" filterPlaceholder="Filter customers by name..."/>
         </TabsContent>
       </Tabs>
       {renderEditSheet()}

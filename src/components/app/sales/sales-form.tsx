@@ -33,16 +33,18 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import { Trash2, PlusCircle, Printer } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Trash2, PlusCircle, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { CartItem, SaleTransaction, Store, Product } from '@/lib/types';
+import type { CartItem, SaleTransaction, Store, Product, Customer } from '@/lib/types';
 import { useData } from "@/lib/data-context";
 import { Receipt } from "./receipt";
+import { AddCustomerForm } from "@/components/app/products/forms";
 
 
 const formSchema = z.object({
   storeId: z.string().min(1, "Please select a store."),
+  customerId: z.string().optional(),
   cart: z.array(
     z.object({
       productId: z.string(),
@@ -60,13 +62,16 @@ type SalesFormValues = z.infer<typeof formSchema>;
 
 interface SalesFormProps {
     stores: Store[];
+    customers: Customer[];
     onSave: (sale: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => Promise<void>;
+    onAddCustomer: (customer: Omit<Customer, 'id'>) => Promise<void>;
 }
 
-export function SalesForm({ stores, onSave }: SalesFormProps) {
+export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFormProps) {
   const { products, inventory } = useData();
   const { toast } = useToast();
   const [lastSale, setLastSale] = useState<SaleTransaction | null>(null);
+  const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
 
   // State for temporary item inputs
   const [sku, setSku] = useState("");
@@ -79,6 +84,7 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       storeId: "",
+      customerId: "",
       cart: [],
       discount: 0,
     },
@@ -161,6 +167,7 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
   async function onSubmit(data: SalesFormValues) {
     const saleData: Omit<SaleTransaction, 'id' | 'date' | 'status'> = {
         storeId: data.storeId,
+        customerId: data.customerId,
         items: data.cart.map(item => ({
             productId: item.productId,
             name: item.name,
@@ -211,28 +218,58 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
              <CardTitle>Sale Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <FormField
-                control={form.control}
-                name="storeId"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Store</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                        <SelectTrigger>
-                        <SelectValue placeholder="Select the store for this sale" />
-                        </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        {stores.map(store => (
-                        <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                    control={form.control}
+                    name="storeId"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Store</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Select the store for this sale" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {stores.map(store => (
+                            <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="customerId"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Customer</FormLabel>
+                        <div className="flex gap-2">
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                <SelectValue placeholder="Select a customer (optional)" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="">None</SelectItem>
+                                {customers.map(customer => (
+                                <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Button type="button" variant="outline" size="icon" onClick={() => setIsAddCustomerOpen(true)}>
+                            <UserPlus className="h-4 w-4" />
+                        </Button>
+                        </div>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end pt-4 border-t">
               <div className="md:col-span-3 relative space-y-2">
                   <Label htmlFor="sku-input">SKU</Label>
@@ -352,6 +389,16 @@ export function SalesForm({ stores, onSave }: SalesFormProps) {
         </div>
       </form>
     </Form>
+
+    <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Add a new customer</DialogTitle>
+            </DialogHeader>
+            <AddCustomerForm onSave={onAddCustomer} onSuccess={() => setIsAddCustomerOpen(false)} />
+        </DialogContent>
+    </Dialog>
+
     <Dialog open={!!lastSale} onOpenChange={handleCloseReceipt}>
         <DialogContent className="max-w-md">
           <DialogHeader>

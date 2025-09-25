@@ -5,13 +5,14 @@ import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup } from 'firebase/firestore';
 
-import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction } from '@/lib/types';
+import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer } from '@/lib/types';
 
 interface DataContextProps {
     products: Product[];
     categories: Category[];
     suppliers: Supplier[];
     stores: Store[];
+    customers: Customer[];
     inventory: InventoryItem[];
     sales: SaleTransaction[];
     purchases: PurchaseTransaction[];
@@ -27,6 +28,9 @@ interface DataContextProps {
     addStore: (store: Omit<Store, 'id'>) => Promise<void>;
     updateStore: (storeId: string, store: Partial<Omit<Store, 'id'>>) => Promise<void>;
     deleteStore: (storeId: string) => Promise<void>;
+    addCustomer: (customer: Omit<Customer, 'id'>) => Promise<void>;
+    updateCustomer: (customerId: string, customer: Partial<Omit<Customer, 'id'>>) => Promise<void>;
+    deleteCustomer: (customerId: string) => Promise<void>;
     addSale: (sale: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => Promise<void>;
     voidSale: (saleId: string) => Promise<void>;
     addPurchase: (purchase: Omit<PurchaseTransaction, 'id' | 'date'>) => Promise<void>;
@@ -43,6 +47,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [categories, setCategories] = useState<Category[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [stores, setStores] = useState<Store[]>([]);
+    const [customers, setCustomers] = useState<Customer[]>([]);
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
     const [sales, setSales] = useState<SaleTransaction[]>([]);
     const [purchases, setPurchases] = useState<PurchaseTransaction[]>([]);
@@ -66,6 +71,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
             const storesSnap = await getDocs(query(collection(db, 'users', uid, 'stores')));
             const fetchedStores = storesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Store));
             setStores(fetchedStores);
+
+            const customersSnap = await getDocs(query(collection(db, 'users', uid, 'customers')));
+            const fetchedCustomers = customersSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Customer));
+            setCustomers(fetchedCustomers);
 
             const inventorySnap = await getDocs(query(collection(db, 'users', uid, 'inventory')));
             const fetchedInventory = inventorySnap.docs.map(doc => {
@@ -102,6 +111,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setCategories([]);
             setSuppliers([]);
             setStores([]);
+            setCustomers([]);
             setInventory([]);
             setSales([]);
             setPurchases([]);
@@ -209,6 +219,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await fetchData(user.uid);
     };
 
+    const addCustomer = async (customerData: Omit<Customer, 'id'>) => {
+        if (!user) return;
+        await addDoc(collection(db, 'users', user.uid, 'customers'), customerData);
+        await fetchData(user.uid);
+    };
+
+    const updateCustomer = async (customerId: string, customerData: Partial<Omit<Customer, 'id'>>) => {
+        if (!user) return;
+        const customerRef = doc(db, 'users', user.uid, 'customers', customerId);
+        await updateDoc(customerRef, customerData);
+        await fetchData(user.uid);
+    };
+    
+    const deleteCustomer = async (customerId: string) => {
+        if (!user) return;
+        await deleteDoc(doc(db, 'users', user.uid, 'customers', customerId));
+        await fetchData(user.uid);
+    };
+
     const addSale = async (saleData: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => {
         if (!user) return;
         
@@ -219,7 +248,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     const inventoryId = `${item.productId}_${saleData.storeId}`;
                     return doc(db, 'users', user.uid, 'inventory', inventoryId);
                 });
-                
+
                 const inventorySnaps = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
 
                 // ===== WRITES SECOND =====
@@ -371,7 +400,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 });
 
                 const inventorySnaps = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
-
                 // ===== WRITES SECOND =====
                 transaction.delete(purchaseRef);
                 
@@ -424,6 +452,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             categories, addCategory, updateCategory, deleteCategory,
             suppliers, addSupplier, updateSupplier, deleteSupplier,
             stores, addStore, updateStore, deleteStore,
+            customers, addCustomer, updateCustomer, deleteCustomer,
             inventory, updateInventory,
             sales, addSale, voidSale,
             purchases, addPurchase, deletePurchase,
@@ -441,5 +470,3 @@ export function useData() {
     }
     return context;
 }
-
-    

@@ -17,6 +17,12 @@ export type Store = {
   location: string;
 };
 
+export type Customer = {
+  id: string;
+  name: string;
+  phone: string;
+};
+
 export type Product = {
   id: string;
   sku: string;
@@ -46,6 +52,7 @@ export type SaleTransaction = {
   id: string;
   date: Date | Timestamp;
   storeId: string;
+  customerId?: string;
   items: CartItem[];
   subtotal: number;
   discount: number;

@@ -7,7 +7,7 @@ import type { SaleTransaction } from '@/lib/types';
 import { useData } from "@/lib/data-context";
 
 export default function SalesPage() {
-  const { addSale, stores } = useData();
+  const { addSale, stores, customers, addCustomer } = useData();
 
   const handleSaveSale = async (newSale: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => {
     await addSale(newSale);
@@ -16,7 +16,7 @@ export default function SalesPage() {
   return (
     <div>
       <PageHeader title="New Sale" />
-      <SalesForm stores={stores} onSave={handleSaveSale} />
+      <SalesForm stores={stores} customers={customers} onSave={handleSaveSale} onAddCustomer={addCustomer} />
     </div>
   );
 }

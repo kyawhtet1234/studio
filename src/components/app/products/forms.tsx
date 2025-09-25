@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import type { Product, Category, Supplier, Store } from "@/lib/types";
+import type { Product, Category, Supplier, Store, Customer } from "@/lib/types";
 import { useEffect } from "react";
 
 const baseSchema = z.object({
@@ -38,6 +38,7 @@ const productSchema = z.object({
 });
 
 const storeSchema = baseSchema.extend({ location: z.string().min(5) });
+const customerSchema = baseSchema.extend({ phone: z.string().min(5, "Phone must be at least 5 characters.") });
 
 interface FormProps<T> {
   onSave: (data: T) => Promise<void>;
@@ -145,6 +146,54 @@ export function AddStoreForm({ onSave, onSuccess, store }: FormProps<Omit<Store,
     </Form>
     );
 }
+
+export function AddCustomerForm({ onSave, onSuccess, customer }: FormProps<Omit<Customer, 'id'>> & { customer?: Customer }) {
+    const form = useForm({ resolver: zodResolver(customerSchema), defaultValues: { name: customer?.name || "", phone: customer?.phone || "" } });
+    const { toast } = useToast();
+    const isEditMode = !!customer;
+
+    useEffect(() => {
+        if (customer) form.reset({ name: customer.name, phone: customer.phone });
+    }, [customer, form]);
+
+    async function onSubmit(data: z.infer<typeof customerSchema>) {
+        await onSave(data);
+        toast({ title: `Customer ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
+        form.reset();
+        onSuccess();
+    }
+
+    return (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Name</FormLabel>
+                            <FormControl><Input {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Phone</FormLabel>
+                            <FormControl><Input {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Customer'}</Button>
+            </form>
+        </Form>
+    );
+}
+
 
 interface AddProductFormProps extends FormProps<Omit<Product, 'id'>> {
   categories: Category[];
