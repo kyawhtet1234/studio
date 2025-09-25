@@ -18,7 +18,7 @@ import {
   Boxes,
   ArrowRightLeft,
   BarChart3,
-  Coins,
+  Building2,
   Settings,
   UserCircle,
   LogOut,
@@ -51,7 +51,7 @@ export function AppSidebar() {
     <Sidebar className="border-r" side="left" collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2 p-2">
-          <Coins className="w-8 h-8 text-primary" />
+          <Building2 className="w-8 h-8 text-primary" />
           <span className="text-lg font-semibold font-headline">CloudPOS</span>
         </div>
       </SidebarHeader>
