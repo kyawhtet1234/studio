@@ -61,10 +61,10 @@ const affordabilityAnalysisFlow = ai.defineFlow(
         First, analyze the provided historical sales and expense data to generate a baseline monthly forecast (net cash flow) for the next ${input.durationInMonths} months.
         
         Historical Sales:
-        ${input.historicalSales.map(s => `${s.date.toISOString().substring(0,10)}: ${s.amount.toFixed(2)}`).join('\n')}
+        ${input.historicalSales.map(s => `${toDate(s.date).toISOString().substring(0,10)}: ${s.amount.toFixed(2)}`).join('\n')}
 
         Historical Expenses:
-        ${input.historicalExpenses.map(e => `${e.date.toISOString().substring(0,10)}: ${e.amount.toFixed(2)}`).join('\n')}
+        ${input.historicalExpenses.map(e => `${toDate(e.date).toISOString().substring(0,10)}: ${e.amount.toFixed(2)}`).join('\n')}
 
         The business's current total cash balance is ${input.currentCashBalance.toLocaleString()} MMK.
 
