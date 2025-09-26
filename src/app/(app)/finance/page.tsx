@@ -16,6 +16,7 @@ import { AddExpenseForm, AddExpenseCategoryForm, AddCashAllocationForm } from "@
 import type { Expense, ExpenseCategory, CashAllocation } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CashFlowReport } from '@/components/app/finance/cash-flow-report';
+import { FinancialForecast } from '@/components/app/finance/financial-forecast';
 
 
 // Helper function to safely convert date
@@ -188,15 +189,7 @@ export default function FinancePage() {
             <DataTable columns={categoryCols} data={expenseCategories} filterColumnId="name" filterPlaceholder="Filter categories by name..."/>
         </TabsContent>
         <TabsContent value="forecast">
-             <Card>
-                <CardHeader>
-                    <CardTitle>Financial Forecast</CardTitle>
-                    <CardDescription>Projections based on historical data. Coming soon!</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground">This section will display financial forecasts to help with planning.</p>
-                </CardContent>
-            </Card>
+             <FinancialForecast sales={sales} expenses={expenses} />
         </TabsContent>
         <TabsContent value="allocations">
              <DataTable columns={allocationCols} data={cashAllocations} filterColumnId="name" filterPlaceholder="Filter allocations by name..."/>
