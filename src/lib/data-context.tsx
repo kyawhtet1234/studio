@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup } from 'firebase/firestore';
 
-import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation } from '@/lib/types';
+import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType } from '@/lib/types';
 
 interface DataContextProps {
     products: Product[];
@@ -13,6 +13,7 @@ interface DataContextProps {
     suppliers: Supplier[];
     stores: Store[];
     customers: Customer[];
+    paymentTypes: PaymentType[];
     inventory: InventoryItem[];
     sales: SaleTransaction[];
     purchases: PurchaseTransaction[];
@@ -36,6 +37,9 @@ interface DataContextProps {
     addCustomer: (customer: Omit<Customer, 'id'>) => Promise<void>;
     updateCustomer: (customerId: string, customer: Partial<Omit<Customer, 'id'>>) => Promise<void>;
     deleteCustomer: (customerId: string) => Promise<void>;
+    addPaymentType: (paymentType: Omit<PaymentType, 'id'>) => Promise<void>;
+    updatePaymentType: (paymentTypeId: string, paymentType: Partial<Omit<PaymentType, 'id'>>) => Promise<void>;
+    deletePaymentType: (paymentTypeId: string) => Promise<void>;
     addSale: (sale: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => Promise<void>;
     voidSale: (saleId: string) => Promise<void>;
     addPurchase: (purchase: Omit<PurchaseTransaction, 'id' | 'date'>) => Promise<void>;
@@ -64,6 +68,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [stores, setStores] = useState<Store[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
+    const [paymentTypes, setPaymentTypes] = useState<PaymentType[]>([]);
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
     const [sales, setSales] = useState<SaleTransaction[]>([]);
     const [purchases, setPurchases] = useState<PurchaseTransaction[]>([]);
@@ -100,6 +105,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
             const customersSnap = await getDocs(query(collection(db, 'users', uid, 'customers')));
             const fetchedCustomers = customersSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Customer));
             setCustomers(fetchedCustomers);
+
+            const paymentTypesSnap = await getDocs(query(collection(db, 'users', uid, 'paymentTypes')));
+            const fetchedPaymentTypes = paymentTypesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as PaymentType));
+            setPaymentTypes(fetchedPaymentTypes);
 
             const inventorySnap = await getDocs(query(collection(db, 'users', uid, 'inventory')));
             const fetchedInventory = inventorySnap.docs.map(doc => {
@@ -155,6 +164,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setSuppliers([]);
             setStores([]);
             setCustomers([]);
+            setPaymentTypes([]);
             setInventory([]);
             setSales([]);
             setPurchases([]);
@@ -283,6 +293,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const deleteCustomer = async (customerId: string) => {
         if (!user) return;
         await deleteDoc(doc(db, 'users', user.uid, 'customers', customerId));
+        await fetchData(user.uid);
+    };
+
+    const addPaymentType = async (paymentTypeData: Omit<PaymentType, 'id'>) => {
+        if (!user) return;
+        await addDoc(collection(db, 'users', user.uid, 'paymentTypes'), paymentTypeData);
+        await fetchData(user.uid);
+    };
+
+    const updatePaymentType = async (paymentTypeId: string, paymentTypeData: Partial<Omit<PaymentType, 'id'>>) => {
+        if (!user) return;
+        const paymentTypeRef = doc(db, 'users', user.uid, 'paymentTypes', paymentTypeId);
+        await updateDoc(paymentTypeRef, paymentTypeData);
+        await fetchData(user.uid);
+    };
+    
+    const deletePaymentType = async (paymentTypeId: string) => {
+        if (!user) return;
+        await deleteDoc(doc(db, 'users', user.uid, 'paymentTypes', paymentTypeId));
         await fetchData(user.uid);
     };
 
@@ -615,6 +644,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             suppliers, addSupplier, updateSupplier, deleteSupplier,
             stores, addStore, updateStore, deleteStore,
             customers, addCustomer, updateCustomer, deleteCustomer,
+            paymentTypes, addPaymentType, updatePaymentType, deletePaymentType,
             inventory, updateInventory,
             sales, addSale, voidSale,
             purchases, addPurchase, deletePurchase,

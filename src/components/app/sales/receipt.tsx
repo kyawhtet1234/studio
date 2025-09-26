@@ -55,6 +55,11 @@ const ReceiptContent: React.FC<ReceiptProps & { logo: string | null }> = React.f
             <p>Total:</p>
             <p>MMK {sale.total.toLocaleString()}</p>
           </div>
+          <Separator className="my-1 bg-black/50 border-dashed" />
+           <div className="flex justify-between">
+            <p>Paid With:</p>
+            <p>{sale.paymentType}</p>
+          </div>
         </div>
         <Separator className="my-2 bg-black" />
         <p className="text-center mt-4">Thank you for your purchase!</p>

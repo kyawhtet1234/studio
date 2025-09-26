@@ -3,13 +3,13 @@
 import { PageHeader } from "@/components/app/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/app/products/data-table";
-import { productColumns, categoryColumns, supplierColumns, storeColumns, customerColumns } from "@/components/app/products/columns";
+import { productColumns, categoryColumns, supplierColumns, storeColumns, customerColumns, paymentTypeColumns } from "@/components/app/products/columns";
 import { AddEntitySheet } from "@/components/app/products/add-entity-sheet";
 import { EditEntitySheet } from "@/components/app/products/edit-entity-sheet";
-import { AddProductForm, AddCategoryForm, AddSupplierForm, AddStoreForm, AddCustomerForm } from "@/components/app/products/forms";
+import { AddProductForm, AddCategoryForm, AddSupplierForm, AddStoreForm, AddCustomerForm, AddPaymentTypeForm } from "@/components/app/products/forms";
 import { useState } from "react";
 import { useData } from "@/lib/data-context";
-import type { Product, Category, Supplier, Store, Customer } from "@/lib/types";
+import type { Product, Category, Supplier, Store, Customer, PaymentType } from "@/lib/types";
 
 type EditingState = 
   | { type: 'product', data: Product }
@@ -17,6 +17,7 @@ type EditingState =
   | { type: 'supplier', data: Supplier }
   | { type: 'store', data: Store }
   | { type: 'customer', data: Customer }
+  | { type: 'paymentType', data: PaymentType }
   | null;
 
 export default function ProductsPage() {
@@ -28,7 +29,8 @@ export default function ProductsPage() {
     categories, addCategory, updateCategory, deleteCategory,
     suppliers, addSupplier, updateSupplier, deleteSupplier,
     stores, addStore, updateStore, deleteStore,
-    customers, addCustomer, updateCustomer, deleteCustomer
+    customers, addCustomer, updateCustomer, deleteCustomer,
+    paymentTypes, addPaymentType, updatePaymentType, deletePaymentType
   } = useData();
 
   const renderAddButton = () => {
@@ -61,6 +63,12 @@ export default function ProductsPage() {
         return (
             <AddEntitySheet buttonText="Add Customer" title="Add a new customer" description="Enter the details for the new customer.">
                 {(onSuccess) => <AddCustomerForm onSave={addCustomer} onSuccess={onSuccess} />}
+            </AddEntitySheet>
+        );
+      case "paymentTypes":
+        return (
+            <AddEntitySheet buttonText="Add Payment Type" title="Add a new payment type" description="Enter the name for the new payment type.">
+                {(onSuccess) => <AddPaymentTypeForm onSave={addPaymentType} onSuccess={onSuccess} />}
             </AddEntitySheet>
         );
       default:
@@ -149,6 +157,21 @@ export default function ProductsPage() {
             />}
           </EditEntitySheet>
         );
+      case "paymentType":
+        return (
+          <EditEntitySheet
+            title="Edit Payment Type"
+            description="Update the name for this payment type."
+            isOpen={!!editingEntity}
+            onClose={() => setEditingEntity(null)}
+          >
+            {(onSuccess) => <AddPaymentTypeForm
+              onSave={(data) => updatePaymentType(editingEntity.data.id, data)}
+              onSuccess={onSuccess}
+              paymentType={editingEntity.data}
+            />}
+          </EditEntitySheet>
+        );
       default:
         return null;
     }
@@ -159,6 +182,7 @@ export default function ProductsPage() {
   const supplierCols = supplierColumns({ onEdit: (data) => setEditingEntity({ type: 'supplier', data }), onDelete: deleteSupplier });
   const storeCols = storeColumns({ onEdit: (data) => setEditingEntity({ type: 'store', data }), onDelete: deleteStore });
   const customerCols = customerColumns({ onEdit: (data) => setEditingEntity({ type: 'customer', data }), onDelete: deleteCustomer });
+  const paymentTypeCols = paymentTypeColumns({ onEdit: (data) => setEditingEntity({ type: 'paymentType', data }), onDelete: deletePaymentType });
 
 
   return (
@@ -172,6 +196,7 @@ export default function ProductsPage() {
                 <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
                 <TabsTrigger value="stores">Stores</TabsTrigger>
                 <TabsTrigger value="customers">Customers</TabsTrigger>
+                <TabsTrigger value="paymentTypes">Payment Types</TabsTrigger>
             </TabsList>
             <div>
               {renderAddButton()}
@@ -192,6 +217,9 @@ export default function ProductsPage() {
         </TabsContent>
         <TabsContent value="customers">
             <DataTable columns={customerCols} data={customers} filterColumnId="name" filterPlaceholder="Filter customers by name..."/>
+        </TabsContent>
+        <TabsContent value="paymentTypes">
+            <DataTable columns={paymentTypeCols} data={paymentTypes} filterColumnId="name" filterPlaceholder="Filter payment types by name..."/>
         </TabsContent>
       </Tabs>
       {renderEditSheet()}

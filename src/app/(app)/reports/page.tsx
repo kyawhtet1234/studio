@@ -184,6 +184,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt }: 
                 <TableHead>Date</TableHead>
                 <TableHead>Store</TableHead>
                 <TableHead>Customer</TableHead>
+                <TableHead>Payment</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Subtotal</TableHead>
                 <TableHead className="text-right">Discount</TableHead>
@@ -201,6 +202,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt }: 
                             <TableCell className="font-medium">{saleDate.toLocaleDateString()}</TableCell>
                             <TableCell>{stores.find(s => s.id === sale.storeId)?.name || 'NA'}</TableCell>
                             <TableCell>{customerName}</TableCell>
+                            <TableCell>{sale.paymentType}</TableCell>
                             <TableCell>
                                 {isVoided ? (
                                      <Badge variant="destructive">Voided</Badge>
@@ -236,7 +238,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt }: 
                 })}
                 {data.length === 0 && (
                     <TableRow>
-                        <TableCell colSpan={8} className="text-center h-24">
+                        <TableCell colSpan={9} className="text-center h-24">
                             No sales history found.
                         </TableCell>
                     </TableRow>

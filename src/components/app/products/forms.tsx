@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import type { Product, Category, Supplier, Store, Customer } from "@/lib/types";
+import type { Product, Category, Supplier, Store, Customer, PaymentType } from "@/lib/types";
 import { useEffect } from "react";
 
 const baseSchema = z.object({
@@ -192,6 +192,41 @@ export function AddCustomerForm({ onSave, onSuccess, customer }: FormProps<Omit<
             </form>
         </Form>
     );
+}
+
+export function AddPaymentTypeForm({ onSave, onSuccess, paymentType }: FormProps<Omit<PaymentType, 'id'>> & { paymentType?: PaymentType }) {
+  const form = useForm({ resolver: zodResolver(baseSchema), defaultValues: { name: paymentType?.name || "" } });
+  const { toast } = useToast();
+  const isEditMode = !!paymentType;
+
+  useEffect(() => {
+    if (paymentType) form.reset({ name: paymentType.name });
+  }, [paymentType, form]);
+
+  async function onSubmit(data: z.infer<typeof baseSchema>) {
+    await onSave(data);
+    toast({ title: `Payment Type ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
+    form.reset();
+    onSuccess();
+  }
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl><Input {...field} placeholder="e.g. Credit Card" /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Payment Type'}</Button>
+      </form>
+    </Form>
+  );
 }
 
 

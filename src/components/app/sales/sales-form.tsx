@@ -36,7 +36,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Trash2, PlusCircle, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { CartItem, SaleTransaction, Store, Product, Customer } from '@/lib/types';
+import type { CartItem, SaleTransaction, Store, Product, Customer, PaymentType } from '@/lib/types';
 import { useData } from "@/lib/data-context";
 import { Receipt } from "./receipt";
 import { AddCustomerForm } from "@/components/app/products/forms";
@@ -45,6 +45,7 @@ import { AddCustomerForm } from "@/components/app/products/forms";
 const formSchema = z.object({
   storeId: z.string().min(1, "Please select a store."),
   customerId: z.string().optional(),
+  paymentType: z.string().min(1, "Please select a payment type."),
   cart: z.array(
     z.object({
       productId: z.string(),
@@ -68,7 +69,7 @@ interface SalesFormProps {
 }
 
 export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFormProps) {
-  const { products, inventory } = useData();
+  const { products, inventory, paymentTypes } = useData();
   const { toast } = useToast();
   const [lastSale, setLastSale] = useState<SaleTransaction | null>(null);
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
@@ -85,6 +86,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     defaultValues: {
       storeId: "",
       customerId: "",
+      paymentType: "",
       cart: [],
       discount: 0,
     },
@@ -168,6 +170,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     const saleData: Omit<SaleTransaction, 'id' | 'date' | 'status'> = {
         storeId: data.storeId,
         customerId: data.customerId,
+        paymentType: data.paymentType,
         items: data.cart.map(item => ({
             productId: item.productId,
             name: item.name,
@@ -218,7 +221,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
              <CardTitle>Sale Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FormField
                     control={form.control}
                     name="storeId"
@@ -264,6 +267,28 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                             <UserPlus className="h-4 w-4" />
                         </Button>
                         </div>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="paymentType"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Payment Type</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Select a payment type" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {paymentTypes.map(pt => (
+                            <SelectItem key={pt.id} value={pt.name}>{pt.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
                         <FormMessage />
                     </FormItem>
                     )}

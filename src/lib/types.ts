@@ -23,6 +23,11 @@ export type Customer = {
   phone: string;
 };
 
+export type PaymentType = {
+  id: string;
+  name: string;
+};
+
 export type Product = {
   id: string;
   sku: string;
@@ -58,6 +63,7 @@ export type SaleTransaction = {
   discount: number;
   total: number;
   status: 'completed' | 'voided';
+  paymentType: string;
 };
 
 export type PurchaseTransaction = {
