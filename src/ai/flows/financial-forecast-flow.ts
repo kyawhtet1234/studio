@@ -20,7 +20,7 @@ const HistoricalEntrySchema = z.object({
 
 export const FinancialHistoryInputSchema = z.object({
   sales: z.array(HistoricalEntrySchema).describe("A list of historical sales records with date and amount."),
-  expenses: z.array(HistoricalEntryAclEntrySchema).describe("A list of historical expense records with date and amount."),
+  expenses: z.array(HistoricalEntrySchema).describe("A list of historical expense records with date and amount."),
 });
 export type FinancialHistoryInput = z.infer<typeof FinancialHistoryInputSchema>;
 
