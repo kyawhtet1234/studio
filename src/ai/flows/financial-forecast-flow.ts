@@ -18,7 +18,7 @@ const HistoricalEntrySchema = z.object({
     amount: z.number(),
 });
 
-export const FinancialHistoryInputSchema = z.object({
+const FinancialHistoryInputSchema = z.object({
   sales: z.array(HistoricalEntrySchema).describe("A list of historical sales records with date and amount."),
   expenses: z.array(HistoricalEntrySchema).describe("A list of historical expense records with date and amount."),
 });
@@ -30,7 +30,7 @@ const ForecastEntrySchema = z.object({
     forecastedExpenses: z.number().describe("The forecasted total expenses for the month."),
 });
 
-export const FinancialForecastOutputSchema = z.object({
+const FinancialForecastOutputSchema = z.object({
   forecast: z.array(ForecastEntrySchema).describe("An array of monthly forecasts for the next 6 months."),
   analysis: z.string().describe("A brief analysis of the forecast, including trends, seasonality, and key assumptions."),
 });
