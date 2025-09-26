@@ -17,6 +17,7 @@ import type { Expense, ExpenseCategory, CashAllocation } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CashFlowReport } from '@/components/app/finance/cash-flow-report';
 import { FinancialForecast } from '@/components/app/finance/financial-forecast';
+import { AffordabilityChecker } from '@/components/app/finance/affordability-checker';
 
 
 // Helper function to safely convert date
@@ -43,6 +44,7 @@ export default function FinancePage() {
     addCashAllocation,
     updateCashAllocation,
     deleteCashAllocation,
+    cashAccounts,
     loading 
   } = useData();
   const [activeTab, setActiveTab] = useState("overview");
@@ -192,7 +194,10 @@ export default function FinancePage() {
              <FinancialForecast sales={sales} expenses={expenses} />
         </TabsContent>
         <TabsContent value="allocations">
-             <DataTable columns={allocationCols} data={cashAllocations} filterColumnId="name" filterPlaceholder="Filter allocations by name..."/>
+            <div className="space-y-6">
+              <AffordabilityChecker sales={sales} expenses={expenses} cashAccounts={cashAccounts} />
+              <DataTable columns={allocationCols} data={cashAllocations} filterColumnId="name" filterPlaceholder="Filter allocations by name..."/>
+            </div>
         </TabsContent>
       </Tabs>
       <EditEntitySheet
