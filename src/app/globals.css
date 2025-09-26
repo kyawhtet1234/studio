@@ -8,10 +8,10 @@
     --foreground: 0 0% 20%; /* Dark Gray Text */
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
-    --card-1: 174 100% 96%; /* Lighter Teal */
-    --card-2: 350 100% 97%; /* Lighter Pink/Red */
-    --card-3: 45 100% 96%; /* Lighter Orange/Yellow */
-    --card-4: 210 100% 97%; /* Lighter Blue */
+    --card-1: 174 80% 90%; /* Saturated Teal */
+    --card-2: 350 90% 92%; /* Saturated Pink/Red */
+    --card-3: 45 95% 90%; /* Saturated Orange/Yellow */
+    --card-4: 210 90% 92%; /* Saturated Blue */
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
     --primary: 174 100% 33%; /* Deep Teal */
@@ -47,10 +47,10 @@
     --foreground: 0 0% 98%;
     --card: 260 20% 7%;
     --card-foreground: 0 0% 98%;
-    --card-1: 174 100% 10%; /* Darker Teal */
-    --card-2: 350 100% 12%; /* Darker Pink/Red */
-    --card-3: 45 100% 10%; /* Darker Orange/Yellow */
-    --card-4: 210 100% 12%; /* Darker Blue */
+    --card-1: 174 90% 15%; /* Saturated Darker Teal */
+    --card-2: 350 85% 18%; /* Saturated Darker Pink/Red */
+    --card-3: 45 90% 15%; /* Saturated Darker Orange/Yellow */
+    --card-4: 210 90% 18%; /* Saturated Darker Blue */
     --popover: 260 20% 5%;
     --popover-foreground: 0 0% 98%;
     --primary: 265 80% 60%;
