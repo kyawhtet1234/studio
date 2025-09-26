@@ -22,6 +22,7 @@ import {
   Settings,
   UserCircle,
   LogOut,
+  Landmark,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
@@ -35,6 +36,7 @@ const menuItems = [
   { href: '/inventory', label: 'Inventory', icon: Boxes },
   { href: '/transfer', label: 'Transfer', icon: ArrowRightLeft },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
+  { href: '/finance', label: 'Finance', icon: Landmark },
 ];
 
 export function AppSidebar() {

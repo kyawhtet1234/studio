@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup } from 'firebase/firestore';
 
-import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer } from '@/lib/types';
+import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense } from '@/lib/types';
 
 interface DataContextProps {
     products: Product[];
@@ -16,6 +16,7 @@ interface DataContextProps {
     inventory: InventoryItem[];
     sales: SaleTransaction[];
     purchases: PurchaseTransaction[];
+    expenses: Expense[];
     addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
     updateProduct: (productId: string, product: Partial<Omit<Product, 'id'>>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
@@ -35,6 +36,8 @@ interface DataContextProps {
     voidSale: (saleId: string) => Promise<void>;
     addPurchase: (purchase: Omit<PurchaseTransaction, 'id' | 'date'>) => Promise<void>;
     deletePurchase: (purchaseId: string) => Promise<void>;
+    addExpense: (expense: Omit<Expense, 'id'>) => Promise<void>;
+    deleteExpense: (expenseId: string) => Promise<void>;
     updateInventory: (newInventory: InventoryItem[]) => Promise<void>;
     loading: boolean;
 }
@@ -51,6 +54,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
     const [sales, setSales] = useState<SaleTransaction[]>([]);
     const [purchases, setPurchases] = useState<PurchaseTransaction[]>([]);
+    const [expenses, setExpenses] = useState<Expense[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async (uid: string) => {
@@ -95,6 +99,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 return { ...data, id: doc.id, date: (data.date as Timestamp).toDate() } as PurchaseTransaction
             }));
 
+            const expensesSnap = await getDocs(query(collection(db, 'users', uid, 'expenses')));
+            setExpenses(expensesSnap.docs.map(doc => {
+                const data = doc.data();
+                return { ...data, id: doc.id, date: (data.date as Timestamp).toDate() } as Expense
+            }));
+
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
@@ -115,6 +125,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setInventory([]);
             setSales([]);
             setPurchases([]);
+            setExpenses([]);
             setLoading(false);
         }
     }, [user, fetchData]);
@@ -422,6 +433,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await fetchData(user.uid);
     };
 
+    const addExpense = async (expenseData: Omit<Expense, 'id'>) => {
+        if (!user) return;
+        const expensePayload = {
+            ...expenseData,
+            date: Timestamp.fromDate(expenseData.date as Date)
+        };
+        await addDoc(collection(db, 'users', user.uid, 'expenses'), expensePayload);
+        await fetchData(user.uid);
+    };
+
+    const deleteExpense = async (expenseId: string) => {
+        if (!user) return;
+        await deleteDoc(doc(db, 'users', user.uid, 'expenses', expenseId));
+        await fetchData(user.uid);
+    };
+
     const updateInventory = async (updatedItems: InventoryItem[]) => {
         if (!user) return;
         const batch = writeBatch(db);
@@ -456,6 +483,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             inventory, updateInventory,
             sales, addSale, voidSale,
             purchases, addPurchase, deletePurchase,
+            expenses, addExpense, deleteExpense,
             loading
         }}>
             {children}
