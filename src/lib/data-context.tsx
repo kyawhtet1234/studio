@@ -46,6 +46,7 @@ interface DataContextProps {
     updateExpenseCategory: (categoryId: string, category: Partial<Omit<ExpenseCategory, 'id'>>) => Promise<void>;
     deleteExpenseCategory: (categoryId: string) => Promise<void>;
     addCashAccount: (account: Omit<CashAccount, 'id'>) => Promise<void>;
+    deleteCashAccount: (accountId: string) => Promise<void>;
     addCashTransaction: (transaction: Omit<CashTransaction, 'id' | 'date'>) => Promise<void>;
     addCashAllocation: (allocation: Omit<CashAllocation, 'id'>) => Promise<void>;
     updateCashAllocation: (allocationId: string, allocation: Partial<Omit<CashAllocation, 'id'>>) => Promise<void>;
@@ -510,6 +511,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await fetchData(user.uid);
     };
 
+    const deleteCashAccount = async (accountId: string) => {
+        if (!user) return;
+
+        const batch = writeBatch(db);
+        const accountRef = doc(db, 'users', user.uid, 'cashAccounts', accountId);
+        batch.delete(accountRef);
+
+        const q = query(collection(db, 'users', user.uid, 'cashTransactions'), where("accountId", "==", accountId));
+        const transactionsSnap = await getDocs(q);
+        transactionsSnap.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+        await fetchData(user.uid);
+    };
+
+
     const addCashTransaction = async (tx: Omit<CashTransaction, 'id' | 'date'>) => {
         if (!user) return;
          try {
@@ -601,7 +620,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             purchases, addPurchase, deletePurchase,
             expenses, addExpense, deleteExpense,
             expenseCategories, addExpenseCategory, updateExpenseCategory, deleteExpenseCategory,
-            cashAccounts, addCashAccount,
+            cashAccounts, addCashAccount, deleteCashAccount,
             cashTransactions, addCashTransaction,
             cashAllocations, addCashAllocation, updateCashAllocation, deleteCashAllocation,
             loading

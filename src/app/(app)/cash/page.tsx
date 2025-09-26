@@ -23,6 +23,16 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -130,8 +140,10 @@ function AdjustBalanceForm({ account, onSave, onSuccess }: { account: CashAccoun
 
 
 export default function CashPage() {
-  const { cashAccounts, cashTransactions, addCashAccount, addCashTransaction, loading } = useData();
+  const { cashAccounts, cashTransactions, addCashAccount, addCashTransaction, deleteCashAccount, loading } = useData();
   const [adjustingAccount, setAdjustingAccount] = useState<CashAccount | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<CashAccount | null>(null);
+  const { toast } = useToast();
 
   const { totalCash, totalBank } = useMemo(() => {
     return cashAccounts.reduce((acc, account) => {
@@ -147,6 +159,14 @@ export default function CashPage() {
   const sortedTransactions = useMemo(() => {
     return [...cashTransactions].sort((a,b) => (b.date as Date).getTime() - (a.date as Date).getTime());
   }, [cashTransactions]);
+  
+  const handleDelete = async () => {
+    if (deleteCandidate) {
+      await deleteCashAccount(deleteCandidate.id);
+      toast({ title: 'Account Deleted', description: `${deleteCandidate.name} has been successfully deleted.` });
+      setDeleteCandidate(null);
+    }
+  };
 
   return (
     <div>
@@ -203,6 +223,9 @@ export default function CashPage() {
                               <DropdownMenuContent align="end">
                                   <DropdownMenuItem onClick={() => setAdjustingAccount(account)}>
                                       Adjust Balance
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-destructive" onClick={() => setDeleteCandidate(account)}>
+                                      Delete
                                   </DropdownMenuItem>
                               </DropdownMenuContent>
                           </DropdownMenu>
@@ -274,6 +297,22 @@ export default function CashPage() {
           )}
         </DialogContent>
       </Dialog>
+      <AlertDialog open={!!deleteCandidate} onOpenChange={() => setDeleteCandidate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the account <strong>{deleteCandidate?.name}</strong> and all of its associated transactions.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
