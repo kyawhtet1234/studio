@@ -15,6 +15,7 @@ import { EditEntitySheet } from "@/components/app/products/edit-entity-sheet";
 import { AddExpenseForm, AddExpenseCategoryForm } from "@/components/app/finance/forms";
 import type { Expense, ExpenseCategory } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CashFlowReport } from '@/components/app/finance/cash-flow-report';
 
 
 // Helper function to safely convert date
@@ -30,6 +31,7 @@ export default function FinancePage() {
     sales, 
     products, 
     expenses, 
+    purchases,
     addExpense, 
     deleteExpense, 
     expenseCategories,
@@ -111,6 +113,7 @@ export default function FinancePage() {
         <div className="flex justify-between items-center mb-4">
             <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="cashFlow">Cash Flow</TabsTrigger>
                 <TabsTrigger value="netProfit">Net Profit</TabsTrigger>
                 <TabsTrigger value="expenses">Expenses</TabsTrigger>
                 <TabsTrigger value="expenseCategories">Expense Categories</TabsTrigger>
@@ -148,6 +151,9 @@ export default function FinancePage() {
                   loading={loading}
                 />
             </div>
+        </TabsContent>
+        <TabsContent value="cashFlow">
+           <CashFlowReport sales={sales} purchases={purchases} expenses={expenses} />
         </TabsContent>
          <TabsContent value="netProfit">
             <Card>
