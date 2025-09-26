@@ -96,3 +96,19 @@ export type Expense = {
     description: string;
     amount: number;
 };
+
+export type CashAccount = {
+  id: string;
+  name: string;
+  type: 'cash' | 'bank';
+  balance: number;
+};
+
+export type CashTransaction = {
+  id: string;
+  date: Date | Timestamp;
+  accountId: string;
+  type: 'deposit' | 'withdrawal' | 'adjustment';
+  amount: number;
+  description: string;
+};

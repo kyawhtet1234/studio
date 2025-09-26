@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup } from 'firebase/firestore';
 
-import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory } from '@/lib/types';
+import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction } from '@/lib/types';
 
 interface DataContextProps {
     products: Product[];
@@ -18,6 +18,8 @@ interface DataContextProps {
     purchases: PurchaseTransaction[];
     expenses: Expense[];
     expenseCategories: ExpenseCategory[];
+    cashAccounts: CashAccount[];
+    cashTransactions: CashTransaction[];
     addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
     updateProduct: (productId: string, product: Partial<Omit<Product, 'id'>>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
@@ -42,6 +44,8 @@ interface DataContextProps {
     addExpenseCategory: (category: Omit<ExpenseCategory, 'id'>) => Promise<void>;
     updateExpenseCategory: (categoryId: string, category: Partial<Omit<ExpenseCategory, 'id'>>) => Promise<void>;
     deleteExpenseCategory: (categoryId: string) => Promise<void>;
+    addCashAccount: (account: Omit<CashAccount, 'id'>) => Promise<void>;
+    addCashTransaction: (transaction: Omit<CashTransaction, 'id' | 'date'>) => Promise<void>;
     updateInventory: (newInventory: InventoryItem[]) => Promise<void>;
     loading: boolean;
 }
@@ -60,6 +64,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [purchases, setPurchases] = useState<PurchaseTransaction[]>([]);
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
+    const [cashAccounts, setCashAccounts] = useState<CashAccount[]>([]);
+    const [cashTransactions, setCashTransactions] = useState<CashTransaction[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async (uid: string) => {
@@ -114,6 +120,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 return { ...data, id: doc.id, date: (data.date as Timestamp).toDate() } as Expense
             }));
 
+            const cashAccountsSnap = await getDocs(query(collection(db, 'users', uid, 'cashAccounts')));
+            setCashAccounts(cashAccountsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as CashAccount)));
+
+            const cashTransactionsSnap = await getDocs(query(collection(db, 'users', uid, 'cashTransactions')));
+            setCashTransactions(cashTransactionsSnap.docs.map(doc => {
+                const data = doc.data();
+                return { ...data, id: doc.id, date: (data.date as Timestamp).toDate() } as CashTransaction
+            }));
+
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
@@ -136,6 +151,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setPurchases([]);
             setExpenses([]);
             setExpenseCategories([]);
+            setCashAccounts([]);
+            setCashTransactions([]);
             setLoading(false);
         }
     }, [user, fetchData]);
@@ -478,6 +495,48 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await fetchData(user.uid);
     };
 
+    const addCashAccount = async (account: Omit<CashAccount, 'id'>) => {
+        if (!user) return;
+        await addDoc(collection(db, 'users', user.uid, 'cashAccounts'), account);
+        await fetchData(user.uid);
+    };
+
+    const addCashTransaction = async (tx: Omit<CashTransaction, 'id' | 'date'>) => {
+        if (!user) return;
+         try {
+            await runTransaction(db, async (transaction) => {
+                const accountRef = doc(db, 'users', user.uid, 'cashAccounts', tx.accountId);
+                const accountSnap = await transaction.get(accountRef);
+
+                if (!accountSnap.exists()) {
+                    throw new Error("Cash account not found.");
+                }
+
+                const currentBalance = accountSnap.data().balance;
+                let newBalance;
+
+                if (tx.type === 'adjustment') {
+                    newBalance = tx.amount;
+                } else {
+                    newBalance = tx.type === 'deposit' 
+                        ? currentBalance + tx.amount 
+                        : currentBalance - tx.amount;
+                }
+
+                transaction.update(accountRef, { balance: newBalance });
+
+                const newTxRef = doc(collection(db, 'users', user.uid, 'cashTransactions'));
+                transaction.set(newTxRef, { ...tx, date: Timestamp.now() });
+            });
+        } catch (e) {
+            console.error("Cash transaction failed: ", e);
+            throw e;
+        }
+
+        await fetchData(user.uid);
+    };
+
+
     const updateInventory = async (updatedItems: InventoryItem[]) => {
         if (!user) return;
         const batch = writeBatch(db);
@@ -514,6 +573,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
             purchases, addPurchase, deletePurchase,
             expenses, addExpense, deleteExpense,
             expenseCategories, addExpenseCategory, updateExpenseCategory, deleteExpenseCategory,
+            cashAccounts, addCashAccount,
+            cashTransactions, addCashTransaction,
             loading
         }}>
             {children}
