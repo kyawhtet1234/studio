@@ -18,6 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { CashFlowReport } from '@/components/app/finance/cash-flow-report';
 import { FinancialForecast } from '@/components/app/finance/financial-forecast';
 import { AffordabilityChecker } from '@/components/app/finance/affordability-checker';
+import { ExpenseBreakdownChart } from '@/components/app/finance/expense-breakdown-chart';
 
 
 // Helper function to safely convert date
@@ -146,29 +147,32 @@ export default function FinancePage() {
         </div>
 
         <TabsContent value="overview">
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <StatCard 
-                  title="This Month's Sales"
-                  value={`MMK ${monthSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                  icon={DollarSign}
-                  description="Total sales recorded this month."
-                  loading={loading}
-                />
-                <StatCard 
-                  title="This Month's Profit"
-                  value={`MMK ${netProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                  icon={TrendingUp}
-                  description="Net Profit (Sales - COGS - Expenses)."
-                  loading={loading}
-                />
-                 <StatCard 
-                  title="This Month's Expenses"
-                  value={`MMK ${monthExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                  icon={TrendingDown}
-                  description="Total expenses recorded this month."
-                  loading={loading}
-                />
-            </div>
+            <div className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <StatCard 
+                    title="This Month's Sales"
+                    value={`MMK ${monthSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    icon={DollarSign}
+                    description="Total sales recorded this month."
+                    loading={loading}
+                    />
+                    <StatCard 
+                    title="This Month's Profit"
+                    value={`MMK ${netProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    icon={TrendingUp}
+                    description="Net Profit (Sales - COGS - Expenses)."
+                    loading={loading}
+                    />
+                    <StatCard 
+                    title="This Month's Expenses"
+                    value={`MMK ${monthExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    icon={TrendingDown}
+                    description="Total expenses recorded this month."
+                    loading={loading}
+                    />
+                </div>
+                <ExpenseBreakdownChart expenses={expenses} expenseCategories={expenseCategories} />
+             </div>
         </TabsContent>
         <TabsContent value="cashFlow">
            <CashFlowReport sales={sales} purchases={purchases} expenses={expenses} />
