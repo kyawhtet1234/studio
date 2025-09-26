@@ -10,7 +10,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -24,20 +23,25 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import type { Expense } from "@/lib/types";
+import type { Expense, ExpenseCategory } from "@/lib/types";
 import { format } from 'date-fns';
 
 interface DeletableRow {
   id: string;
+  name?: string;
   description?: string;
 }
 
 const ActionsCell = <TData extends DeletableRow>({
   row,
+  onEdit,
   onDelete,
+  deleteConfirmationText
 }: {
   row: any,
-  onDelete?: (id: string) => void
+  onEdit?: (item: TData) => void,
+  onDelete?: (id: string) => void,
+  deleteConfirmationText?: string
 }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const item = row.original as TData;
@@ -48,7 +52,7 @@ const ActionsCell = <TData extends DeletableRow>({
       onDelete(item.id);
       toast({
         title: "Success",
-        description: `Expense has been deleted.`,
+        description: `${item.name || 'Item'} has been deleted.`,
       });
     }
     setIsDeleteDialogOpen(false);
@@ -65,6 +69,7 @@ const ActionsCell = <TData extends DeletableRow>({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
+           {onEdit && <DropdownMenuItem onClick={() => onEdit(item)}>Edit</DropdownMenuItem>}
           {onDelete && (
             <DropdownMenuItem
               className="text-destructive"
@@ -80,7 +85,7 @@ const ActionsCell = <TData extends DeletableRow>({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the expense record.
+              {deleteConfirmationText || `This action cannot be undone. This will permanently delete the item.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -95,13 +100,17 @@ const ActionsCell = <TData extends DeletableRow>({
   );
 };
 
-export const expenseColumns = ({ onDelete }: { onDelete: (id: string) => void }): ColumnDef<Expense>[] => [
+export const expenseColumns = ({ onDelete, categories }: { onDelete: (id: string) => void, categories: ExpenseCategory[] }): ColumnDef<Expense>[] => [
   { 
     accessorKey: "date", 
     header: "Date",
     cell: ({ row }) => format(row.original.date as Date, 'PPP')
   },
-  { accessorKey: "category", header: "Category" },
+  { 
+    accessorKey: "categoryId", 
+    header: "Category",
+    cell: ({ row }) => categories.find(c => c.id === row.original.categoryId)?.name || row.original.categoryId
+  },
   { accessorKey: "description", header: "Description" },
   { accessorKey: "amount", header: "Amount", cell: ({ row }) => `MMK ${row.original.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
   {
@@ -110,7 +119,22 @@ export const expenseColumns = ({ onDelete }: { onDelete: (id: string) => void })
       <ActionsCell
         row={row}
         onDelete={onDelete}
+        deleteConfirmationText="This will permanently delete the expense record."
       />
     ),
+  },
+];
+
+
+export const expenseCategoryColumns = ({ onEdit, onDelete }: { onEdit: (item: ExpenseCategory) => void, onDelete: (id: string) => void }): ColumnDef<ExpenseCategory>[] => [
+  { accessorKey: "name", header: "Name" },
+  { 
+    id: "actions",
+    cell: ({ row }) => <ActionsCell 
+      row={row}
+      onEdit={onEdit}
+      onDelete={onDelete}
+      deleteConfirmationText={`This will permanently delete the category "${row.original.name}".`}
+    />
   },
 ];

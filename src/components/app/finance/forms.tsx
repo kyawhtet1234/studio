@@ -26,16 +26,20 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { Expense } from "@/lib/types";
+import type { Expense, ExpenseCategory } from "@/lib/types";
+import { useEffect } from "react";
+
 
 const expenseSchema = z.object({
   date: z.date(),
-  category: z.string().min(1, "Please select a category."),
+  categoryId: z.string().min(1, "Please select a category."),
   description: z.string().min(2, "Description must be at least 2 characters."),
   amount: z.coerce.number().positive("Amount must be a positive number."),
 });
 
-const expenseCategories = ["Rent", "Utilities", "Salaries", "Supplies", "Marketing", "Miscellaneous"];
+const expenseCategorySchema = z.object({
+    name: z.string().min(2, "Name must be at least 2 characters."),
+});
 
 interface FormProps<T> {
   onSave: (data: T) => Promise<void>;
@@ -43,12 +47,12 @@ interface FormProps<T> {
   entity?: any;
 }
 
-export function AddExpenseForm({ onSave, onSuccess }: FormProps<Omit<Expense, 'id'>>) {
+export function AddExpenseForm({ onSave, onSuccess, categories }: FormProps<Omit<Expense, 'id'>> & { categories: ExpenseCategory[] }) {
   const form = useForm({ 
     resolver: zodResolver(expenseSchema), 
     defaultValues: { 
         date: new Date(), 
-        category: "",
+        categoryId: "",
         description: "",
         amount: 0,
     } 
@@ -106,12 +110,12 @@ export function AddExpenseForm({ onSave, onSuccess }: FormProps<Omit<Expense, 'i
             </FormItem>
           )}
         />
-        <FormField control={form.control} name="category" render={({ field }) => (
+        <FormField control={form.control} name="categoryId" render={({ field }) => (
           <FormItem>
             <FormLabel>Category</FormLabel>
             <Select onValueChange={field.onChange} value={field.value}>
               <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
-              <SelectContent>{expenseCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
             <FormMessage />
           </FormItem>
@@ -127,3 +131,39 @@ export function AddExpenseForm({ onSave, onSuccess }: FormProps<Omit<Expense, 'i
     </Form>
   );
 }
+
+export function AddExpenseCategoryForm({ onSave, onSuccess, category }: FormProps<Omit<ExpenseCategory, 'id'>> & { category?: ExpenseCategory }) {
+  const form = useForm({ resolver: zodResolver(expenseCategorySchema), defaultValues: { name: category?.name || "" } });
+  const { toast } = useToast();
+  const isEditMode = !!category;
+
+  useEffect(() => {
+    if (category) form.reset({ name: category.name });
+  }, [category, form]);
+
+  async function onSubmit(data: z.infer<typeof expenseCategorySchema>) {
+    await onSave(data);
+    toast({ title: `Category ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
+    form.reset();
+    onSuccess();
+  }
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl><Input {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Category'}</Button>
+      </form>
+    </Form>
+  );
+}
+

@@ -84,10 +84,15 @@ export type TransferLog = {
   }[];
 };
 
+export type ExpenseCategory = {
+  id: string;
+  name: string;
+};
+
 export type Expense = {
     id: string;
     date: Date | Timestamp;
-    category: string;
+    categoryId: string;
     description: string;
     amount: number;
 };

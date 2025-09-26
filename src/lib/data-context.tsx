@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup } from 'firebase/firestore';
 
-import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense } from '@/lib/types';
+import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory } from '@/lib/types';
 
 interface DataContextProps {
     products: Product[];
@@ -17,6 +17,7 @@ interface DataContextProps {
     sales: SaleTransaction[];
     purchases: PurchaseTransaction[];
     expenses: Expense[];
+    expenseCategories: ExpenseCategory[];
     addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
     updateProduct: (productId: string, product: Partial<Omit<Product, 'id'>>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
@@ -38,6 +39,9 @@ interface DataContextProps {
     deletePurchase: (purchaseId: string) => Promise<void>;
     addExpense: (expense: Omit<Expense, 'id'>) => Promise<void>;
     deleteExpense: (expenseId: string) => Promise<void>;
+    addExpenseCategory: (category: Omit<ExpenseCategory, 'id'>) => Promise<void>;
+    updateExpenseCategory: (categoryId: string, category: Partial<Omit<ExpenseCategory, 'id'>>) => Promise<void>;
+    deleteExpenseCategory: (categoryId: string) => Promise<void>;
     updateInventory: (newInventory: InventoryItem[]) => Promise<void>;
     loading: boolean;
 }
@@ -55,6 +59,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [sales, setSales] = useState<SaleTransaction[]>([]);
     const [purchases, setPurchases] = useState<PurchaseTransaction[]>([]);
     const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async (uid: string) => {
@@ -67,6 +72,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
             const categoriesSnap = await getDocs(query(collection(db, 'users', uid, 'categories')));
             const fetchedCategories = categoriesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Category));
             setCategories(fetchedCategories);
+            
+            const expenseCategoriesSnap = await getDocs(query(collection(db, 'users', uid, 'expenseCategories')));
+            const fetchedExpenseCategories = expenseCategoriesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as ExpenseCategory));
+            setExpenseCategories(fetchedExpenseCategories);
 
             const suppliersSnap = await getDocs(query(collection(db, 'users', uid, 'suppliers')));
             const fetchedSuppliers = suppliersSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Supplier));
@@ -126,6 +135,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setSales([]);
             setPurchases([]);
             setExpenses([]);
+            setExpenseCategories([]);
             setLoading(false);
         }
     }, [user, fetchData]);
@@ -449,6 +459,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await fetchData(user.uid);
     };
 
+    const addExpenseCategory = async (categoryData: Omit<ExpenseCategory, 'id'>) => {
+        if (!user) return;
+        await addDoc(collection(db, 'users', user.uid, 'expenseCategories'), categoryData);
+        await fetchData(user.uid);
+    };
+
+    const updateExpenseCategory = async (categoryId: string, categoryData: Partial<Omit<ExpenseCategory, 'id'>>) => {
+        if (!user) return;
+        const categoryRef = doc(db, 'users', user.uid, 'expenseCategories', categoryId);
+        await updateDoc(categoryRef, categoryData);
+        await fetchData(user.uid);
+    };
+
+    const deleteExpenseCategory = async (categoryId: string) => {
+        if (!user) return;
+        await deleteDoc(doc(db, 'users', user.uid, 'expenseCategories', categoryId));
+        await fetchData(user.uid);
+    };
+
     const updateInventory = async (updatedItems: InventoryItem[]) => {
         if (!user) return;
         const batch = writeBatch(db);
@@ -484,6 +513,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             sales, addSale, voidSale,
             purchases, addPurchase, deletePurchase,
             expenses, addExpense, deleteExpense,
+            expenseCategories, addExpenseCategory, updateExpenseCategory, deleteExpenseCategory,
             loading
         }}>
             {children}
