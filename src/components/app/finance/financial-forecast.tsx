@@ -38,8 +38,8 @@ export function FinancialForecast({ sales, expenses }: FinancialForecastProps) {
     setIsLoading(true);
     setForecast(null);
     try {
-      const historicalSales = sales.map(s => ({ date: toDate(s.date), amount: s.total }));
-      const historicalExpenses = expenses.map(e => ({ date: toDate(e.date), amount: e.amount }));
+      const historicalSales = sales.map(s => ({ date: toDate(s.date).toISOString(), amount: s.total }));
+      const historicalExpenses = expenses.map(e => ({ date: toDate(e.date).toISOString(), amount: e.amount }));
 
       const result = await generateFinancialForecast({ sales: historicalSales, expenses: historicalExpenses });
       setForecast(result);
