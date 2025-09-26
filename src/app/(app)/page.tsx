@@ -59,6 +59,7 @@ export default function DashboardPage() {
           icon={DollarSign}
           description="Total sales recorded today."
           loading={loading}
+          className="bg-card-1"
         />
         <StatCard 
           title="Today's Profit"
@@ -66,11 +67,12 @@ export default function DashboardPage() {
           icon={TrendingUp}
           description="Gross profit (Sales - COGS)."
           loading={loading}
+          className="bg-card-2"
         />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-        <SalesChart sales={sales} />
-        <BestSellers sales={sales} products={products} />
+        <SalesChart sales={sales} className="bg-card-3" />
+        <BestSellers sales={sales} products={products} className="bg-card-4" />
       </div>
     </div>
   );

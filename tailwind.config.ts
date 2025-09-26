@@ -28,6 +28,10 @@ export default {
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
+          '1': 'hsl(var(--card-1))',
+          '2': 'hsl(var(--card-2))',
+          '3': 'hsl(var(--card-3))',
+          '4': 'hsl(var(--card-4))',
         },
         popover: {
           DEFAULT: 'hsl(var(--popover))',

@@ -7,6 +7,7 @@ import { BarChart, Bar, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from 
 import { useMemo } from "react";
 import type { SaleTransaction } from "@/lib/types";
 import type { Timestamp } from 'firebase/firestore';
+import { cn } from "@/lib/utils";
 
 const chartConfig = {
   sales: {
@@ -22,7 +23,7 @@ const toDate = (date: Date | Timestamp): Date => {
   return (date as Timestamp).toDate();
 };
 
-export function SalesChart({ sales }: { sales: SaleTransaction[]}) {
+export function SalesChart({ sales, className }: { sales: SaleTransaction[], className?: string}) {
   const { monthlySales, hasSales } = useMemo(() => {
     const data = new Array(30).fill(0).map((_, i) => {
       const date = new Date();
@@ -54,7 +55,7 @@ export function SalesChart({ sales }: { sales: SaleTransaction[]}) {
   }, [sales]);
 
   return (
-    <Card>
+    <Card className={cn(className)}>
       <CardHeader>
         <CardTitle>Sales of the Month</CardTitle>
         <CardDescription>Showing sales data for the last 30 days.</CardDescription>

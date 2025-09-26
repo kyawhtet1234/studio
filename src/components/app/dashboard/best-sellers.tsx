@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { SaleTransaction, Product } from "@/lib/types";
 import type { Timestamp } from 'firebase/firestore';
+import { cn } from "@/lib/utils";
 
 const toDate = (date: Date | Timestamp): Date => {
   if (date instanceof Date) {
@@ -11,7 +12,7 @@ const toDate = (date: Date | Timestamp): Date => {
   return (date as Timestamp).toDate();
 };
 
-export function BestSellers({ sales, products }: { sales: SaleTransaction[], products: Product[] }) {
+export function BestSellers({ sales, products, className }: { sales: SaleTransaction[], products: Product[], className?: string }) {
   const bestSellingItems = (() => {
     const itemSales: { [key: string]: { name: string, quantity: number, total: number } } = {};
 
@@ -46,7 +47,7 @@ export function BestSellers({ sales, products }: { sales: SaleTransaction[], pro
   })();
 
   return (
-    <Card>
+    <Card className={cn(className)}>
       <CardHeader>
         <CardTitle>Best Selling Items</CardTitle>
         <CardDescription>Top 5 best selling items this month by quantity.</CardDescription>
