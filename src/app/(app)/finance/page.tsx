@@ -9,11 +9,11 @@ import { DollarSign, TrendingUp, TrendingDown } from "lucide-react";
 import type { Timestamp } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/app/products/data-table";
-import { expenseColumns, expenseCategoryColumns } from "@/components/app/finance/columns";
+import { expenseColumns, expenseCategoryColumns, cashAllocationColumns } from "@/components/app/finance/columns";
 import { AddEntitySheet } from "@/components/app/products/add-entity-sheet";
 import { EditEntitySheet } from "@/components/app/products/edit-entity-sheet";
-import { AddExpenseForm, AddExpenseCategoryForm } from "@/components/app/finance/forms";
-import type { Expense, ExpenseCategory } from '@/lib/types';
+import { AddExpenseForm, AddExpenseCategoryForm, AddCashAllocationForm } from "@/components/app/finance/forms";
+import type { Expense, ExpenseCategory, CashAllocation } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CashFlowReport } from '@/components/app/finance/cash-flow-report';
 
@@ -38,10 +38,15 @@ export default function FinancePage() {
     addExpenseCategory,
     updateExpenseCategory,
     deleteExpenseCategory,
+    cashAllocations,
+    addCashAllocation,
+    updateCashAllocation,
+    deleteCashAllocation,
     loading 
   } = useData();
   const [activeTab, setActiveTab] = useState("overview");
   const [editingCategory, setEditingCategory] = useState<ExpenseCategory | null>(null);
+  const [editingAllocation, setEditingAllocation] = useState<CashAllocation | null>(null);
 
   const getFinancialMetrics = () => {
     const today = new Date();
@@ -84,6 +89,10 @@ export default function FinancePage() {
     onEdit: (data) => setEditingCategory(data), 
     onDelete: deleteExpenseCategory 
   });
+  const allocationCols = cashAllocationColumns({
+    onEdit: (data) => setEditingAllocation(data),
+    onDelete: deleteCashAllocation,
+  });
 
   const renderAddButton = () => {
      switch (activeTab) {
@@ -97,6 +106,12 @@ export default function FinancePage() {
          return (
           <AddEntitySheet buttonText="Add Category" title="Add a new expense category" description="Enter a name for the new category.">
             {(onSuccess) => <AddExpenseCategoryForm onSave={addExpenseCategory} onSuccess={onSuccess} />}
+          </AddEntitySheet>
+        );
+       case 'allocations':
+        return (
+          <AddEntitySheet buttonText="New Allocation" title="Create a new cash allocation" description="Define a name and a target amount for your goal.">
+            {(onSuccess) => <AddCashAllocationForm onSave={addCashAllocation} onSuccess={onSuccess} />}
           </AddEntitySheet>
         );
       default:
@@ -120,7 +135,7 @@ export default function FinancePage() {
                 <TabsTrigger value="forecast">Forecast</TabsTrigger>
                 <TabsTrigger value="allocations">Cash Allocations</TabsTrigger>
             </TabsList>
-             {['expenses', 'expenseCategories'].includes(activeTab) && (
+             {['expenses', 'expenseCategories', 'allocations'].includes(activeTab) && (
                 <div>
                   {renderAddButton()}
                 </div>
@@ -184,15 +199,7 @@ export default function FinancePage() {
             </Card>
         </TabsContent>
         <TabsContent value="allocations">
-             <Card>
-                <CardHeader>
-                    <CardTitle>Cash Allocations</CardTitle>
-                    <CardDescription>Manage funds for new projects or hiring. Coming soon!</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground">This section will provide tools to allocate your cash effectively.</p>
-                </CardContent>
-            </Card>
+             <DataTable columns={allocationCols} data={cashAllocations} filterColumnId="name" filterPlaceholder="Filter allocations by name..."/>
         </TabsContent>
       </Tabs>
       <EditEntitySheet
@@ -205,6 +212,18 @@ export default function FinancePage() {
             onSave={(data) => updateExpenseCategory(editingCategory!.id, data)}
             onSuccess={onSuccess} 
             category={editingCategory!}
+            />}
+      </EditEntitySheet>
+      <EditEntitySheet
+        title="Edit Cash Allocation"
+        description="Update the details for this allocation."
+        isOpen={!!editingAllocation}
+        onClose={() => setEditingAllocation(null)}
+      >
+        {(onSuccess) => <AddCashAllocationForm
+            onSave={(data) => updateCashAllocation(editingAllocation!.id, data)}
+            onSuccess={onSuccess}
+            allocation={editingAllocation!}
             />}
       </EditEntitySheet>
     </div>

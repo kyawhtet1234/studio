@@ -23,8 +23,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import type { Expense, ExpenseCategory } from "@/lib/types";
+import type { Expense, ExpenseCategory, CashAllocation } from "@/lib/types";
 import { format } from 'date-fns';
+import { Progress } from "@/components/ui/progress";
 
 interface DeletableRow {
   id: string;
@@ -135,6 +136,43 @@ export const expenseCategoryColumns = ({ onEdit, onDelete }: { onEdit: (item: Ex
       onEdit={onEdit}
       onDelete={onDelete}
       deleteConfirmationText={`This will permanently delete the category "${row.original.name}".`}
+    />
+  },
+];
+
+export const cashAllocationColumns = ({ onEdit, onDelete }: { onEdit: (item: CashAllocation) => void, onDelete: (id: string) => void }): ColumnDef<CashAllocation>[] => [
+  { accessorKey: "name", header: "Name" },
+  { 
+    accessorKey: "currentAmount", 
+    header: "Current Amount",
+    cell: ({ row }) => `MMK ${row.original.currentAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  },
+  { 
+    accessorKey: "targetAmount", 
+    header: "Target Amount",
+    cell: ({ row }) => `MMK ${row.original.targetAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  },
+  {
+    accessorKey: "progress",
+    header: "Progress",
+    cell: ({ row }) => {
+      const allocation = row.original;
+      const progress = (allocation.currentAmount / allocation.targetAmount) * 100;
+      return (
+        <div className="flex items-center gap-2">
+          <Progress value={progress} className="w-full" />
+          <span className="text-xs text-muted-foreground">{Math.round(progress)}%</span>
+        </div>
+      )
+    }
+  },
+  { 
+    id: "actions",
+    cell: ({ row }) => <ActionsCell 
+      row={row}
+      onEdit={onEdit}
+      onDelete={onDelete}
+      deleteConfirmationText={`This will permanently delete the allocation "${row.original.name}".`}
     />
   },
 ];

@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup } from 'firebase/firestore';
 
-import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction } from '@/lib/types';
+import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation } from '@/lib/types';
 
 interface DataContextProps {
     products: Product[];
@@ -20,6 +20,7 @@ interface DataContextProps {
     expenseCategories: ExpenseCategory[];
     cashAccounts: CashAccount[];
     cashTransactions: CashTransaction[];
+    cashAllocations: CashAllocation[];
     addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
     updateProduct: (productId: string, product: Partial<Omit<Product, 'id'>>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
@@ -46,6 +47,9 @@ interface DataContextProps {
     deleteExpenseCategory: (categoryId: string) => Promise<void>;
     addCashAccount: (account: Omit<CashAccount, 'id'>) => Promise<void>;
     addCashTransaction: (transaction: Omit<CashTransaction, 'id' | 'date'>) => Promise<void>;
+    addCashAllocation: (allocation: Omit<CashAllocation, 'id'>) => Promise<void>;
+    updateCashAllocation: (allocationId: string, allocation: Partial<Omit<CashAllocation, 'id'>>) => Promise<void>;
+    deleteCashAllocation: (allocationId: string) => Promise<void>;
     updateInventory: (newInventory: InventoryItem[]) => Promise<void>;
     loading: boolean;
 }
@@ -66,6 +70,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
     const [cashAccounts, setCashAccounts] = useState<CashAccount[]>([]);
     const [cashTransactions, setCashTransactions] = useState<CashTransaction[]>([]);
+    const [cashAllocations, setCashAllocations] = useState<CashAllocation[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async (uid: string) => {
@@ -129,6 +134,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 return { ...data, id: doc.id, date: (data.date as Timestamp).toDate() } as CashTransaction
             }));
 
+            const cashAllocationsSnap = await getDocs(query(collection(db, 'users', uid, 'cashAllocations')));
+            setCashAllocations(cashAllocationsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as CashAllocation)));
+
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
@@ -153,6 +161,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setExpenseCategories([]);
             setCashAccounts([]);
             setCashTransactions([]);
+            setCashAllocations([]);
             setLoading(false);
         }
     }, [user, fetchData]);
@@ -535,6 +544,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         await fetchData(user.uid);
     };
+    
+    const addCashAllocation = async (allocation: Omit<CashAllocation, 'id'>) => {
+        if (!user) return;
+        await addDoc(collection(db, 'users', user.uid, 'cashAllocations'), allocation);
+        await fetchData(user.uid);
+    };
+
+    const updateCashAllocation = async (allocationId: string, allocation: Partial<Omit<CashAllocation, 'id'>>) => {
+        if (!user) return;
+        const allocationRef = doc(db, 'users', user.uid, 'cashAllocations', allocationId);
+        await updateDoc(allocationRef, allocation);
+        await fetchData(user.uid);
+    };
+
+    const deleteCashAllocation = async (allocationId: string) => {
+        if (!user) return;
+        await deleteDoc(doc(db, 'users', user.uid, 'cashAllocations', allocationId));
+        await fetchData(user.uid);
+    };
 
 
     const updateInventory = async (updatedItems: InventoryItem[]) => {
@@ -575,6 +603,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             expenseCategories, addExpenseCategory, updateExpenseCategory, deleteExpenseCategory,
             cashAccounts, addCashAccount,
             cashTransactions, addCashTransaction,
+            cashAllocations, addCashAllocation, updateCashAllocation, deleteCashAllocation,
             loading
         }}>
             {children}

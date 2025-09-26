@@ -112,3 +112,10 @@ export type CashTransaction = {
   amount: number;
   description: string;
 };
+
+export type CashAllocation = {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+};

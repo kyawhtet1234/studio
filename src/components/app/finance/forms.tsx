@@ -26,7 +26,7 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { Expense, ExpenseCategory } from "@/lib/types";
+import type { Expense, ExpenseCategory, CashAllocation } from "@/lib/types";
 import { useEffect } from "react";
 
 
@@ -39,6 +39,12 @@ const expenseSchema = z.object({
 
 const expenseCategorySchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters."),
+});
+
+const cashAllocationSchema = z.object({
+    name: z.string().min(2, "Name must be at least 2 characters."),
+    targetAmount: z.coerce.number().positive("Target amount must be a positive number."),
+    currentAmount: z.coerce.number().min(0).optional().default(0),
 });
 
 interface FormProps<T> {
@@ -167,3 +173,69 @@ export function AddExpenseCategoryForm({ onSave, onSuccess, category }: FormProp
   );
 }
 
+export function AddCashAllocationForm({ onSave, onSuccess, allocation }: FormProps<Omit<CashAllocation, 'id'>> & { allocation?: CashAllocation }) {
+  const form = useForm({
+    resolver: zodResolver(cashAllocationSchema),
+    defaultValues: {
+      name: allocation?.name || "",
+      targetAmount: allocation?.targetAmount || 0,
+      currentAmount: allocation?.currentAmount || 0,
+    }
+  });
+  const { toast } = useToast();
+  const isEditMode = !!allocation;
+
+  useEffect(() => {
+    if (allocation) form.reset(allocation);
+  }, [allocation, form]);
+
+  async function onSubmit(data: z.infer<typeof cashAllocationSchema>) {
+    await onSave(data);
+    toast({ title: `Allocation ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
+    form.reset();
+    onSuccess();
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Allocation Name</FormLabel>
+              <FormControl><Input {...field} placeholder="e.g. New Equipment Fund" /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="targetAmount"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Target Amount</FormLabel>
+              <FormControl><Input type="number" step="1000" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        {isEditMode && (
+          <FormField
+            control={form.control}
+            name="currentAmount"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Current Amount</FormLabel>
+                    <FormControl><Input type="number" step="1000" {...field} /></FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
+            />
+        )}
+        <Button type="submit">{isEditMode ? 'Save Changes' : 'Create Allocation'}</Button>
+      </form>
+    </Form>
+  );
+}
