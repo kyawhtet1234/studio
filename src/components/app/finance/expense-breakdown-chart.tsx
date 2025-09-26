@@ -4,7 +4,7 @@
 import { useMemo } from 'react';
 import { PieChart, Pie, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ChartContainer, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import type { Expense, ExpenseCategory } from '@/lib/types';
 import type { Timestamp } from 'firebase/firestore';
 
