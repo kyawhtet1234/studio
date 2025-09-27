@@ -39,7 +39,7 @@ export default function ProductsPage() {
       case "items":
         return (
           <AddEntitySheet buttonText="Add Item" title="Add a new item" description="Fill in the details for the new product.">
-            {(onSuccess) => <AddProductForm onSave={addProduct} categories={categories} suppliers={suppliers} onSuccess={onSuccess} />}
+            {(onSuccess) => <AddProductForm onSave={addProduct} categories={categories} suppliers={suppliers} onSuccess={onSuccess} allProducts={products} />}
           </AddEntitySheet>
         );
       case "categories":
@@ -83,6 +83,7 @@ export default function ProductsPage() {
               suppliers={suppliers} 
               onSuccess={onSuccess} 
               product={editingEntity.data}
+              allProducts={products}
             />}
           </EditEntitySheet>
         );
@@ -146,7 +147,7 @@ export default function ProductsPage() {
     <div>
       <PageHeader title="Products" />
       <Tabs defaultValue="items" onValueChange={setActiveTab} value={activeTab}>
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
             <TabsList>
                 <TabsTrigger value="items">Items</TabsTrigger>
                 <TabsTrigger value="categories">Categories</TabsTrigger>

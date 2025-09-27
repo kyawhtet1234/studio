@@ -233,10 +233,11 @@ export function AddPaymentTypeForm({ onSave, onSuccess, paymentType }: FormProps
 interface AddProductFormProps extends FormProps<Omit<Product, 'id' | 'createdAt'>> {
   categories: Category[];
   suppliers: Supplier[];
+  allProducts: Product[];
   product?: Product;
 }
 
-export function AddProductForm({ onSave, categories, suppliers, onSuccess, product }: AddProductFormProps) {
+export function AddProductForm({ onSave, categories, suppliers, allProducts, onSuccess, product }: AddProductFormProps) {
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
     defaultValues: product ? {
@@ -254,7 +255,17 @@ export function AddProductForm({ onSave, categories, suppliers, onSuccess, produ
       }
   }, [product, form]);
 
-  async function onSubmit(data: z.infer<typeof productSchema>) { 
+  async function onSubmit(data: z.infer<typeof productSchema>) {
+      if (!isEditMode) {
+        const skuExists = allProducts.some(p => p.sku === data.sku);
+        if (skuExists) {
+            form.setError("sku", {
+                type: "manual",
+                message: "This SKU already exists. Please use a unique SKU.",
+            });
+            return;
+        }
+    }
       await onSave(data);
       toast({ title: `Product ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
       form.reset();
