@@ -24,13 +24,13 @@ export default {
         code: ['monospace'],
       },
       boxShadow: {
-        emboss: '9px 9px 16px #bebebe, -9px -9px 16px #ffffff',
+        'drop-shadow-black': '0 10px 20px rgba(0, 0, 0, 0.2), 0 6px 6px rgba(0, 0, 0, 0.23)',
       },
       backgroundImage: {
-        'shiny-1': 'radial-gradient(ellipse at top left, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 40%), hsl(var(--card-1))',
-        'shiny-2': 'radial-gradient(ellipse at top left, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 40%), hsl(var(--card-2))',
-        'shiny-3': 'radial-gradient(ellipse at top left, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 40%), hsl(var(--card-3))',
-        'shiny-4': 'radial-gradient(ellipse at top left, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 40%), hsl(var(--card-4))',
+        'shiny-1': 'linear-gradient(135deg, hsl(var(--card-1)) 0%, hsl(var(--chart-1)) 100%)',
+        'shiny-2': 'linear-gradient(135deg, hsl(var(--card-2)) 0%, hsl(var(--chart-2)) 100%)',
+        'shiny-3': 'linear-gradient(135deg, hsl(var(--card-3)) 0%, hsl(var(--chart-3)) 100%)',
+        'shiny-4': 'linear-gradient(135deg, hsl(var(--card-4)) 0%, hsl(var(--chart-4)) 100%)',
       },
       colors: {
         background: 'hsl(var(--background))',
