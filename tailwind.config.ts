@@ -24,7 +24,7 @@ export default {
         code: ['monospace'],
       },
       boxShadow: {
-        emboss: '5px 5px 10px #bebebe, -5px -5px 10px #ffffff',
+        emboss: '9px 9px 16px #bebebe, -9px -9px 16px #ffffff',
       },
       colors: {
         background: 'hsl(var(--background))',
