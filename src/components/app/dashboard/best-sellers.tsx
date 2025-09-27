@@ -4,6 +4,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { SaleTransaction, Product } from "@/lib/types";
 import type { Timestamp } from 'firebase/firestore';
 import { cn } from "@/lib/utils";
+import { useMemo } from 'react';
+import { PieChart, Pie, ResponsiveContainer, Cell } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
+
 
 const toDate = (date: Date | Timestamp): Date => {
   if (date instanceof Date) {
@@ -12,8 +16,16 @@ const toDate = (date: Date | Timestamp): Date => {
   return (date as Timestamp).toDate();
 };
 
+const CHART_COLORS = [
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
+];
+
 export function BestSellers({ sales, products, className }: { sales: SaleTransaction[], products: Product[], className?: string }) {
-  const bestSellingItems = (() => {
+  const { bestSellingItems, chartConfig } = useMemo(() => {
     const itemSales: { [key: string]: { name: string, quantity: number, total: number } } = {};
 
     sales.forEach(sale => {
@@ -30,7 +42,6 @@ export function BestSellers({ sales, products, className }: { sales: SaleTransac
             itemSales[item.productId] = { name: product?.name || 'Unknown', quantity: 0, total: 0 };
           }
           
-          // Calculate the portion of the discount for this item
           const discountRatio = sale.subtotal > 0 ? item.total / sale.subtotal : 0;
           const itemDiscount = sale.discount * discountRatio;
           const salesAfterDiscount = item.total - itemDiscount;
@@ -41,10 +52,22 @@ export function BestSellers({ sales, products, className }: { sales: SaleTransac
       }
     });
 
-    return Object.values(itemSales)
+    const sortedItems = Object.values(itemSales)
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 5);
-  })();
+      
+    const config = sortedItems.reduce((acc, item, index) => {
+        const key = item.name;
+        acc[key] = {
+            label: item.name,
+            color: `hsl(var(--chart-${index + 1}))`,
+        };
+        return acc;
+    }, {} as any);
+
+    return { bestSellingItems: sortedItems, chartConfig: config };
+  }, [sales, products]);
+
 
   return (
     <Card className={cn(className)}>
@@ -53,30 +76,61 @@ export function BestSellers({ sales, products, className }: { sales: SaleTransac
         <CardDescription>Top 5 best selling items this month by quantity.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Item</TableHead>
-              <TableHead className="text-right">Quantity Sold</TableHead>
-              <TableHead className="text-right">Total Sales (After Discount)</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-             {bestSellingItems.length > 0 ? (
-                bestSellingItems.map((item, index) => (
-                <TableRow key={index}>
-                    <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell className="text-right">{item.quantity}</TableCell>
-                    <TableCell className="text-right">MMK {item.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                </TableRow>
-                ))
-            ) : (
-                <TableRow>
-                    <TableCell colSpan={3} className="text-center h-24">No best sellers this month.</TableCell>
-                </TableRow>
-            )}
-          </TableBody>
-        </Table>
+         {bestSellingItems.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                    <ChartTooltip
+                        cursor={false}
+                        content={<ChartTooltipContent
+                            hideLabel
+                            formatter={(value, name) => [`${value} units sold`, name]}
+                        />}
+                    />
+                    <Pie
+                        data={bestSellingItems}
+                        dataKey="quantity"
+                        nameKey="name"
+                        innerRadius={50}
+                        strokeWidth={5}
+                        labelLine={false}
+                        label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                    >
+                         {bestSellingItems.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                        ))}
+                    </Pie>
+                    </PieChart>
+                </ResponsiveContainer>
+            </ChartContainer>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Item</TableHead>
+                    <TableHead className="text-right">Qty</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {bestSellingItems.map((item, index) => (
+                  <TableRow key={index}>
+                      <TableCell className="font-medium flex items-center gap-2">
+                        <div className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
+                        {item.name}
+                      </TableCell>
+                      <TableCell className="text-right">{item.quantity}</TableCell>
+                  </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        ) : (
+            <div className="h-[300px] flex items-center justify-center">
+                <p className="text-muted-foreground">No best sellers this month.</p>
+            </div>
+        )}
       </CardContent>
     </Card>
   );
