@@ -471,7 +471,7 @@ export default function ReportsPage() {
         </div>
       </PageHeader>
       <Tabs defaultValue="daily" onValueChange={setActiveTab}>
-        <TabsList className="overflow-x-auto self-start">
+        <TabsList className="overflow-x-auto self-start h-auto">
             <TabsTrigger value="daily">Daily</TabsTrigger>
             <TabsTrigger value="monthly">Monthly</TabsTrigger>
             <TabsTrigger value="salesByCustomer">Sales By Customer</TabsTrigger>

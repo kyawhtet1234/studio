@@ -12,7 +12,7 @@ export function PageHeader({ title, children, className }: PageHeaderProps) {
       <h1 className="text-3xl font-bold tracking-tight text-foreground font-headline">
         {title}
       </h1>
-      {children && <div className="flex w-full md:w-auto items-center gap-2">{children}</div>}
+      {children && <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">{children}</div>}
     </div>
   );
 }

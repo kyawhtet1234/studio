@@ -148,7 +148,7 @@ export default function ProductsPage() {
       <PageHeader title="Products" />
       <Tabs defaultValue="items" onValueChange={setActiveTab} value={activeTab}>
         <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-            <TabsList>
+            <TabsList className="h-auto">
                 <TabsTrigger value="items">Items</TabsTrigger>
                 <TabsTrigger value="categories">Categories</TabsTrigger>
                 <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
