@@ -7,6 +7,9 @@ import { SalesChart } from "@/components/app/dashboard/sales-chart";
 import { BestSellers } from "@/components/app/dashboard/best-sellers";
 import { DollarSign, TrendingUp } from "lucide-react";
 import type { Timestamp } from 'firebase/firestore';
+import { useMemo, useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { SaleTransaction } from '@/lib/types';
 
 // Helper function to safely convert date
 const toDate = (date: Date | Timestamp): Date => {
@@ -17,16 +20,25 @@ const toDate = (date: Date | Timestamp): Date => {
 };
 
 export default function DashboardPage() {
-  const { sales, products, loading } = useData();
+  const { sales, products, loading, stores } = useData();
+  const [selectedStore, setSelectedStore] = useState<string>('all');
 
-  const getTodayMetrics = () => {
+  const filteredSales = useMemo(() => {
+    if (selectedStore === 'all') {
+      return sales;
+    }
+    return sales.filter(sale => sale.storeId === selectedStore);
+  }, [sales, selectedStore]);
+
+
+  const getTodayMetrics = (salesData: SaleTransaction[]) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
   
     let todaySales = 0;
     let todayCogs = 0;
   
-    sales.forEach(sale => {
+    salesData.forEach(sale => {
       if (sale.status === 'voided') return;
 
       const saleDate = toDate(sale.date);
@@ -47,11 +59,23 @@ export default function DashboardPage() {
     return { todaySales, todayProfit };
   }
 
-  const { todaySales, todayProfit } = getTodayMetrics();
+  const { todaySales, todayProfit } = useMemo(() => getTodayMetrics(filteredSales), [filteredSales, products]);
 
   return (
     <div>
-      <PageHeader title="Dashboard" />
+      <PageHeader title="Dashboard">
+         <Select onValueChange={setSelectedStore} value={selectedStore}>
+            <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by store" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All Stores</SelectItem>
+                {stores.map(store => (
+                    <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+      </PageHeader>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
           title="Today's Sales"
@@ -71,8 +95,8 @@ export default function DashboardPage() {
         />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-        <SalesChart sales={sales} className="bg-card-3" />
-        <BestSellers sales={sales} products={products} className="bg-card-4" />
+        <SalesChart sales={filteredSales} className="bg-card-3" />
+        <BestSellers sales={filteredSales} products={products} className="bg-card-4" />
       </div>
     </div>
   );
