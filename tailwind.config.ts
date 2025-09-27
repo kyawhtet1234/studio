@@ -26,6 +26,12 @@ export default {
       boxShadow: {
         emboss: '9px 9px 16px #bebebe, -9px -9px 16px #ffffff',
       },
+      backgroundImage: {
+        'shiny-1': 'radial-gradient(ellipse at top left, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 40%), hsl(var(--card-1))',
+        'shiny-2': 'radial-gradient(ellipse at top left, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 40%), hsl(var(--card-2))',
+        'shiny-3': 'radial-gradient(ellipse at top left, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 40%), hsl(var(--card-3))',
+        'shiny-4': 'radial-gradient(ellipse at top left, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 40%), hsl(var(--card-4))',
+      },
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
