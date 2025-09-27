@@ -47,6 +47,7 @@ export default function InventoryPage() {
   const { toast } = useToast();
   const [selectedStore, setSelectedStore] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("sku");
   const [adjustmentItem, setAdjustmentItem] = useState<AdjustmentItem | null>(null);
   const [newStock, setNewStock] = useState<number>(0);
 
@@ -66,8 +67,17 @@ export default function InventoryPage() {
             };
         })
         .filter(item => selectedStore === 'all' || item.storeId === selectedStore)
-        .filter(item => selectedCategory === 'all' || item.categoryId === selectedCategory);
-  }, [inventory, selectedStore, selectedCategory, products, stores, categories]);
+        .filter(item => selectedCategory === 'all' || item.categoryId === selectedCategory)
+        .sort((a, b) => {
+            if (sortBy === 'sku') {
+                return (a.sku || '').localeCompare(b.sku || '');
+            }
+            if (sortBy === 'category') {
+                return (a.categoryName || '').localeCompare(b.categoryName || '');
+            }
+            return 0;
+        });
+  }, [inventory, selectedStore, selectedCategory, products, stores, categories, sortBy]);
 
   const handleOpenAdjustDialog = (item: { productId: string; storeId: string; productName?: string; storeName?: string, stock: number }) => {
     setAdjustmentItem({
@@ -97,6 +107,15 @@ export default function InventoryPage() {
     <div>
       <PageHeader title="Inventory">
         <div className="flex items-center gap-2">
+            <Select onValueChange={setSortBy} value={sortBy}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="sku">Sort by SKU</SelectItem>
+                    <SelectItem value="category">Sort by Category</SelectItem>
+                </SelectContent>
+            </Select>
             <Select onValueChange={setSelectedCategory} value={selectedCategory}>
                 <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Filter by category" />
