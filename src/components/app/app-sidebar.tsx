@@ -59,7 +59,7 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar className="border-r" side="left" collapsible="icon">
+    <Sidebar className="border-r bg-sidebar-gradient" side="left" collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2 p-2">
           <Building2 className="w-8 h-8 text-primary" />

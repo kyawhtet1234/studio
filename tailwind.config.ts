@@ -31,6 +31,7 @@ export default {
         'shiny-2': 'linear-gradient(135deg, hsl(var(--card-2)) 0%, hsl(var(--chart-2)) 100%)',
         'shiny-3': 'linear-gradient(135deg, hsl(var(--card-3)) 0%, hsl(var(--chart-3)) 100%)',
         'shiny-4': 'linear-gradient(135deg, hsl(var(--card-4)) 0%, hsl(var(--chart-4)) 100%)',
+        'sidebar-gradient': 'linear-gradient(180deg, hsl(var(--sidebar-background)) 0%, hsl(var(--sidebar-accent)) 100%)',
       },
       colors: {
         background: 'hsl(var(--background))',
