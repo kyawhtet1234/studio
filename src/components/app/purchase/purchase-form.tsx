@@ -226,25 +226,25 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                     )}
                 />
             </div>
-            <div className={cn("grid grid-cols-1 md:grid-cols-12 gap-4 items-end pt-4 border-t", !watchSupplierId && "opacity-50 pointer-events-none")}>
-              <div className="md:col-span-3 relative space-y-2">
+            <div className={cn("flex flex-wrap items-end gap-4 pt-4 border-t", !watchSupplierId && "opacity-50 pointer-events-none")}>
+              <div className="flex-grow min-w-[120px] space-y-2">
                 <Label htmlFor="sku-input">SKU</Label>
                 <Input id="sku-input" placeholder="Enter SKU..." value={sku} onChange={(e) => setSku(e.target.value)} />
               </div>
-              <div className="md:col-span-4 space-y-2">
+              <div className="flex-grow min-w-[150px] space-y-2">
                 <Label htmlFor="itemName-input">Item Name</Label>
                 <Input id="itemName-input" placeholder="Item name" value={itemName} onChange={(e) => setItemName(e.target.value)} />
               </div>
-              <div className="md:col-span-2 space-y-2">
+              <div className="flex-grow min-w-[100px] space-y-2">
                 <Label htmlFor="buyPrice-input">Purchase Price</Label>
                 <Input id="buyPrice-input" type="number" step="0.01" value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} />
               </div>
-              <div className="md:col-span-1 space-y-2">
+              <div className="w-20 space-y-2">
                 <Label htmlFor="quantity-input">Qty</Label>
                 <Input id="quantity-input" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
               </div>
-              <div className="md:col-span-2">
-                <Button type="button" className="w-full" onClick={addToCart}>
+              <div>
+                <Button type="button" className="w-full sm:w-auto" onClick={addToCart}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Add to Cart
                 </Button>
               </div>

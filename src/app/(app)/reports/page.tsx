@@ -371,9 +371,9 @@ export default function ReportsPage() {
   return (
     <div>
       <PageHeader title="Reports">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
             <Select onValueChange={setSelectedStore} value={selectedStore}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Filter by store" />
                 </SelectTrigger>
                 <SelectContent>
@@ -390,7 +390,7 @@ export default function ReportsPage() {
         </div>
       </PageHeader>
       <Tabs defaultValue="daily">
-        <TabsList>
+        <TabsList className="overflow-x-auto self-start">
             <TabsTrigger value="daily">Daily</TabsTrigger>
             <TabsTrigger value="monthly">Monthly</TabsTrigger>
             <TabsTrigger value="salesByCustomer">Sales By Customer</TabsTrigger>

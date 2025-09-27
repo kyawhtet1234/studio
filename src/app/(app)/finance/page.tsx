@@ -129,8 +129,8 @@ export default function FinancePage() {
       <PageHeader title="Finance" />
 
       <Tabs defaultValue="overview" onValueChange={setActiveTab} value={activeTab}>
-        <div className="flex justify-between items-center mb-4">
-            <TabsList>
+        <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+            <TabsList className="overflow-x-auto self-start">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="cashFlow">Cash Flow</TabsTrigger>
                 <TabsTrigger value="netProfit">Net Profit</TabsTrigger>
@@ -148,7 +148,7 @@ export default function FinancePage() {
 
         <TabsContent value="overview">
             <div className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-3">
                     <StatCard 
                     title="This Month's Sales"
                     value={`MMK ${monthSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}

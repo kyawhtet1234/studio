@@ -76,7 +76,7 @@ export default function DashboardPage() {
             </SelectContent>
         </Select>
       </PageHeader>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2">
         <StatCard 
           title="Today's Sales"
           value={`MMK ${todaySales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}

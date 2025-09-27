@@ -294,8 +294,8 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     )}
                 />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end pt-4 border-t">
-              <div className="md:col-span-3 relative space-y-2">
+            <div className="flex flex-wrap items-end gap-4 pt-4 border-t">
+              <div className="flex-grow min-w-[120px] space-y-2">
                   <Label htmlFor="sku-input">SKU</Label>
                   <Input 
                     id="sku-input" 
@@ -304,7 +304,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     onChange={(e) => setSku(e.target.value)} 
                   />
               </div>
-              <div className="md:col-span-4 space-y-2">
+              <div className="flex-grow min-w-[150px] space-y-2">
                   <Label htmlFor="itemName-input">Item Name</Label>
                   <Input 
                     id="itemName-input"
@@ -313,7 +313,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     readOnly
                   />
               </div>
-              <div className="md:col-span-2 space-y-2">
+              <div className="flex-grow min-w-[100px] space-y-2">
                   <Label htmlFor="sellPrice-input">Sell Price</Label>
                   <Input
                     id="sellPrice-input"
@@ -323,7 +323,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     readOnly
                   />
               </div>
-              <div className="md:col-span-1 space-y-2">
+              <div className="w-20 space-y-2">
                   <Label htmlFor="quantity-input">Qty</Label>
                   <Input 
                     id="quantity-input"
@@ -332,7 +332,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     onChange={(e) => setQuantity(e.target.value)}
                   />
               </div>
-              <div className="md:col-span-2">
+              <div className="flex-grow sm:flex-grow-0">
                 <Button type="button" className="w-full" onClick={addToCart}>
                   <PlusCircle className="mr-2" /> Add to Cart
                 </Button>

@@ -176,7 +176,7 @@ export default function CashPage() {
           </AddEntitySheet>
       </PageHeader>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+      <div className="grid gap-4 md:grid-cols-2 mb-6">
         <StatCard 
           title="Total In Hand"
           value={`MMK ${totalCash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
