@@ -50,6 +50,13 @@ export function AppSidebar() {
     await logOut();
     router.push('/login');
   };
+  
+  const isItemActive = (href: string) => {
+    if (href === '/') {
+        return pathname === '/';
+    }
+    return pathname.startsWith(href);
+  }
 
   return (
     <Sidebar className="border-r" side="left" collapsible="icon">
@@ -66,7 +73,7 @@ export function AppSidebar() {
               <Link href={item.href} passHref>
                 <SidebarMenuButton
                   as="a"
-                  isActive={pathname === item.href}
+                  isActive={isItemActive(item.href)}
                   tooltip={item.label}
                 >
                   <item.icon />
