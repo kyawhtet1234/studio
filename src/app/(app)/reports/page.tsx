@@ -10,7 +10,7 @@ import { FileDown, MoreHorizontal, Printer, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { PurchaseTransaction, SaleTransaction, Store, Customer } from "@/lib/types";
 import type { Timestamp } from 'firebase/firestore';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,11 @@ import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Receipt } from "@/components/app/sales/receipt";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+import jsPDF from "jspdf";
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+
 
 const toDate = (date: Date | Timestamp): Date => {
   if (date instanceof Date) {
@@ -279,6 +284,7 @@ export default function ReportsPage() {
   const { sales, products, purchases, stores, suppliers, customers, voidSale, deletePurchase } = useData();
   const [receiptToPrint, setReceiptToPrint] = useState<SaleTransaction | null>(null);
   const [selectedStore, setSelectedStore] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState('daily');
 
   const filteredSales = useMemo(() => {
     if (selectedStore === 'all') return sales;
@@ -368,6 +374,73 @@ export default function ReportsPage() {
   }, [filteredSales]);
 
 
+  const getActiveReportData = () => {
+    switch (activeTab) {
+      case 'daily':
+        return { 
+          data: dailyReports.map(r => ({ Period: r.date, Sales: r.sales, Profit: r.profit })),
+          title: 'Daily Sales Report'
+        };
+      case 'monthly':
+        return {
+          data: monthlyReports.map(r => ({ Period: r.date, Sales: r.sales, Profit: r.profit })),
+          title: 'Monthly Sales Report'
+        };
+      case 'salesByCustomer':
+        return {
+          data: salesByCustomer.map(r => ({ Customer: r.customerName, 'Total Sales': r.totalSales })),
+          title: 'Sales By Customer'
+        };
+      case 'sales':
+        return {
+          data: salesHistory.map(s => ({
+            Date: toDate(s.date).toLocaleDateString(),
+            Store: stores.find(st => st.id === s.storeId)?.name || 'N/A',
+            Customer: customers.find(c => c.id === s.customerId)?.name || 'N/A',
+            Payment: s.paymentType,
+            Status: s.status,
+            Subtotal: s.subtotal,
+            Discount: s.discount,
+            Total: s.total
+          })),
+          title: 'Sales History'
+        };
+      case 'purchase':
+        return {
+          data: purchaseHistory.map(p => ({
+            Date: toDate(p.date).toLocaleDateString(),
+            Store: stores.find(s => s.id === p.storeId)?.name || 'N/A',
+            Supplier: suppliers.find(s => s.id === p.supplierId)?.name || 'N/A',
+            Total: p.total
+          })),
+          title: 'Purchase History'
+        };
+      default:
+        return { data: [], title: 'Report' };
+    }
+  };
+
+  const handleExport = (format: 'pdf' | 'excel') => {
+    const { data, title } = getActiveReportData();
+    if (data.length === 0) return;
+
+    if (format === 'pdf') {
+      const doc = new jsPDF();
+      doc.text(title, 14, 16);
+      autoTable(doc, {
+        head: [Object.keys(data[0])],
+        body: data.map(row => Object.values(row)),
+        startY: 20,
+      });
+      doc.save(`${title.replace(/ /g, '_')}.pdf`);
+    } else if (format === 'excel') {
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
+      XLSX.writeFile(workbook, `${title.replace(/ /g, '_')}.xlsx`);
+    }
+  };
+
   return (
     <div>
       <PageHeader title="Reports">
@@ -383,13 +456,21 @@ export default function ReportsPage() {
                     ))}
                 </SelectContent>
             </Select>
-            <Button variant="outline">
-                <FileDown className="mr-2 h-4 w-4" />
-                Export
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleExport('pdf')}>Export as PDF</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('excel')}>Export as Excel</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
         </div>
       </PageHeader>
-      <Tabs defaultValue="daily">
+      <Tabs defaultValue="daily" onValueChange={setActiveTab}>
         <TabsList className="overflow-x-auto self-start">
             <TabsTrigger value="daily">Daily</TabsTrigger>
             <TabsTrigger value="monthly">Monthly</TabsTrigger>
