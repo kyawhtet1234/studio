@@ -55,6 +55,8 @@ export default function InventoryPage() {
     return inventory
         .map(item => {
             const product = products.find(p => p.id === item.productId);
+            if (!product) return null; // If product doesn't exist, don't include it.
+
             const store = stores.find(s => s.id === item.storeId);
             const category = categories.find(c => c.id === product?.categoryId);
             return {
@@ -66,6 +68,7 @@ export default function InventoryPage() {
                 storeName: store?.name,
             };
         })
+        .filter((item): item is NonNullable<typeof item> => item !== null) // Filter out the null items
         .filter(item => selectedStore === 'all' || item.storeId === selectedStore)
         .filter(item => selectedCategory === 'all' || item.categoryId === selectedCategory)
         .sort((a, b) => {
