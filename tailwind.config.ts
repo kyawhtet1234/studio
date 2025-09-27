@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 import { fontFamily } from "tailwindcss/defaultTheme";
 
@@ -21,6 +22,9 @@ export default {
         sans: ["var(--font-sans)", ...fontFamily.sans],
         headline: ["var(--font-sans)", ...fontFamily.sans],
         code: ['monospace'],
+      },
+      boxShadow: {
+        emboss: '5px 5px 10px #bebebe, -5px -5px 10px #ffffff',
       },
       colors: {
         background: 'hsl(var(--background))',
