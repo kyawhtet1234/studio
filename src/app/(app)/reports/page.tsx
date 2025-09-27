@@ -5,7 +5,7 @@ import { useData } from "@/lib/data-context";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { FileDown, MoreHorizontal, Printer, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { PurchaseTransaction, SaleTransaction, Store, Customer } from "@/lib/types";
@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Receipt } from "@/components/app/sales/receipt";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const toDate = (date: Date | Timestamp): Date => {
   if (date instanceof Date) {
@@ -25,7 +26,7 @@ const toDate = (date: Date | Timestamp): Date => {
   return (date as Timestamp).toDate();
 };
 
-const ReportTable = ({ data, periodLabel }: { data: any[], periodLabel: string }) => (
+const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales: number, profit: number }, periodLabel: string }) => (
     <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -51,6 +52,13 @@ const ReportTable = ({ data, periodLabel }: { data: any[], periodLabel: string }
                 </TableRow>
             )}
           </TableBody>
+          <TableFooter>
+            <TableRow>
+              <TableCell className="font-bold">Total</TableCell>
+              <TableCell className="text-right font-bold">MMK {total.sales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+              <TableCell className="text-right font-bold">MMK {total.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+            </TableRow>
+          </TableFooter>
         </Table>
     </div>
 );
@@ -270,11 +278,23 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt }: 
 export default function ReportsPage() {
   const { sales, products, purchases, stores, suppliers, customers, voidSale, deletePurchase } = useData();
   const [receiptToPrint, setReceiptToPrint] = useState<SaleTransaction | null>(null);
+  const [selectedStore, setSelectedStore] = useState<string>('all');
+
+  const filteredSales = useMemo(() => {
+    if (selectedStore === 'all') return sales;
+    return sales.filter(sale => sale.storeId === selectedStore);
+  }, [sales, selectedStore]);
+
+  const filteredPurchases = useMemo(() => {
+    if (selectedStore === 'all') return purchases;
+    return purchases.filter(purchase => purchase.storeId === selectedStore);
+  }, [purchases, selectedStore]);
+
 
   const getReportData = (period: 'daily' | 'monthly') => {
     const reports: { [key: string]: { date: string, sales: number, cogs: number, profit: number } } = {};
     
-    sales.forEach(sale => {
+    filteredSales.forEach(sale => {
         if(sale.status === 'voided') return;
         
         const d = toDate(sale.date);
@@ -296,13 +316,20 @@ export default function ReportsPage() {
         reports[key].profit = reports[key].sales - reports[key].cogs;
     });
 
-    return Object.values(reports).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const data = Object.values(reports).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const total = data.reduce((acc, report) => {
+        acc.sales += report.sales;
+        acc.profit += report.profit;
+        return acc;
+    }, { sales: 0, profit: 0 });
+
+    return { data, total };
   };
 
   const getSalesByCustomerData = () => {
     const customerSales: { [key: string]: { customerId: string, customerName: string, totalSales: number } } = {};
 
-    sales.forEach(sale => {
+    filteredSales.forEach(sale => {
         if (sale.status === 'voided' || !sale.customerId) return;
 
         if (!customerSales[sale.customerId]) {
@@ -320,34 +347,47 @@ export default function ReportsPage() {
   };
 
 
-  const dailyReports = useMemo(() => getReportData('daily'), [sales, products]);
-  const monthlyReports = useMemo(() => getReportData('monthly'), [sales, products]);
-  const salesByCustomer = useMemo(() => getSalesByCustomerData(), [sales, customers]);
+  const { data: dailyReports, total: dailyTotal } = useMemo(() => getReportData('daily'), [filteredSales, products]);
+  const { data: monthlyReports, total: monthlyTotal } = useMemo(() => getReportData('monthly'), [filteredSales, products]);
+  const salesByCustomer = useMemo(() => getSalesByCustomerData(), [filteredSales, customers]);
   
   const purchaseHistory = useMemo(() => {
-      return [...purchases].sort((a, b) => {
+      return [...filteredPurchases].sort((a, b) => {
         const dateA = toDate(a.date);
         const dateB = toDate(b.date);
         return dateB.getTime() - dateA.getTime();
       });
-  }, [purchases]);
+  }, [filteredPurchases]);
 
   const salesHistory = useMemo(() => {
-      return [...sales].sort((a, b) => {
+      return [...filteredSales].sort((a, b) => {
         const dateA = toDate(a.date);
         const dateB = toDate(b.date);
         return dateB.getTime() - dateA.getTime();
       });
-  }, [sales]);
+  }, [filteredSales]);
 
 
   return (
     <div>
       <PageHeader title="Reports">
-        <Button variant="outline">
-            <FileDown className="mr-2 h-4 w-4" />
-            Export
-        </Button>
+        <div className="flex items-center gap-2">
+            <Select onValueChange={setSelectedStore} value={selectedStore}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by store" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Stores</SelectItem>
+                    {stores.map(store => (
+                        <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Button variant="outline">
+                <FileDown className="mr-2 h-4 w-4" />
+                Export
+            </Button>
+        </div>
       </PageHeader>
       <Tabs defaultValue="daily">
         <TabsList>
@@ -358,10 +398,10 @@ export default function ReportsPage() {
             <TabsTrigger value="purchase">Purchase History</TabsTrigger>
         </TabsList>
         <TabsContent value="daily">
-            <ReportTable data={dailyReports} periodLabel="Date" />
+            <ReportTable data={dailyReports} total={dailyTotal} periodLabel="Date" />
         </TabsContent>
         <TabsContent value="monthly">
-            <ReportTable data={monthlyReports} period-label="Month" />
+            <ReportTable data={monthlyReports} total={monthlyTotal} period-label="Month" />
         </TabsContent>
         <TabsContent value="salesByCustomer">
             <SalesByCustomerTable data={salesByCustomer} />
@@ -389,3 +429,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+    
