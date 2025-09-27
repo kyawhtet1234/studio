@@ -7,9 +7,10 @@ import { productColumns, categoryColumns, supplierColumns, customerColumns } fro
 import { AddEntitySheet } from "@/components/app/products/add-entity-sheet";
 import { EditEntitySheet } from "@/components/app/products/edit-entity-sheet";
 import { AddProductForm, AddCategoryForm, AddSupplierForm, AddCustomerForm } from "@/components/app/products/forms";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useData } from "@/lib/data-context";
 import type { Product, Category, Supplier, Customer } from "@/lib/types";
+import { toDate } from "@/lib/utils";
 
 type EditingState = 
   | { type: 'product', data: Product }
@@ -28,6 +29,10 @@ export default function ProductsPage() {
     suppliers, addSupplier, updateSupplier, deleteSupplier,
     customers, addCustomer, updateCustomer, deleteCustomer,
   } = useData();
+
+  const sortedProducts = useMemo(() => {
+    return [...products].sort((a, b) => toDate(b.createdAt).getTime() - toDate(a.createdAt).getTime());
+  }, [products]);
 
   const renderAddButton = () => {
     switch (activeTab) {
@@ -154,7 +159,7 @@ export default function ProductsPage() {
         </div>
 
         <TabsContent value="items">
-          <DataTable columns={productCols} data={products} filterColumnId="name" filterPlaceholder="Filter items by name..."/>
+          <DataTable columns={productCols} data={sortedProducts} filterColumnId="name" filterPlaceholder="Filter items by name..."/>
         </TabsContent>
         <TabsContent value="categories">
           <DataTable columns={categoryCols} data={categories} filterColumnId="name" filterPlaceholder="Filter categories by name..."/>

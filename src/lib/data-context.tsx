@@ -22,7 +22,7 @@ interface DataContextProps {
     cashAccounts: CashAccount[];
     cashTransactions: CashTransaction[];
     cashAllocations: CashAllocation[];
-    addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
+    addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<void>;
     updateProduct: (productId: string, product: Partial<Omit<Product, 'id'>>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
     addCategory: (category: Omit<Category, 'id'>) => Promise<void>;
@@ -83,7 +83,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setLoading(true);
         try {
             const productsSnap = await getDocs(query(collection(db, 'users', uid, 'products')));
-            const fetchedProducts = productsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Product));
+            const fetchedProducts = productsSnap.docs.map(doc => {
+              const data = doc.data();
+              return { 
+                ...data,
+                id: doc.id,
+                createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : new Date(0) // Handle legacy data
+              } as Product
+            });
             setProducts(fetchedProducts);
 
             const categoriesSnap = await getDocs(query(collection(db, 'users', uid, 'categories')));
@@ -177,9 +184,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
     }, [user, fetchData]);
 
-    const addProduct = async (productData: Omit<Product, 'id'>) => {
+    const addProduct = async (productData: Omit<Product, 'id' | 'createdAt'>) => {
         if (!user) return;
-        await addDoc(collection(db, 'users', user.uid, 'products'), productData);
+        const newProductData = { ...productData, createdAt: Timestamp.now() };
+        await addDoc(collection(db, 'users', user.uid, 'products'), newProductData);
         await fetchData(user.uid);
     };
 

@@ -36,6 +36,7 @@ export type Product = {
   supplierId: string;
   sellPrice: number;
   buyPrice: number;
+  createdAt: Date | Timestamp;
 };
 
 export type InventoryItem = {

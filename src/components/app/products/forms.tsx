@@ -230,7 +230,7 @@ export function AddPaymentTypeForm({ onSave, onSuccess, paymentType }: FormProps
 }
 
 
-interface AddProductFormProps extends FormProps<Omit<Product, 'id'>> {
+interface AddProductFormProps extends FormProps<Omit<Product, 'id' | 'createdAt'>> {
   categories: Category[];
   suppliers: Supplier[];
   product?: Product;
