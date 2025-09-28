@@ -39,13 +39,33 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
     const documentTitle = type === 'invoice' ? 'INVOICE' : 'QUOTATION';
     const documentId = type === 'invoice' ? sale.id.slice(-6).toUpperCase() : `QUO-${sale.id.slice(-6).toUpperCase()}`;
 
+    const isQuotation = type === 'quotation';
+    
+    const headerStyle = {
+        backgroundColor: isQuotation ? '#B8860B' : 'hsl(var(--primary))',
+        backgroundImage: isQuotation ? 'linear-gradient(135deg, #F0E68C 0%, #B8860B 100%)' : undefined,
+    };
+    
+    const titleStyle = {
+        color: isQuotation ? '#B8860B' : 'hsl(var(--primary))',
+    };
+    
+    const tableHeaderStyle = {
+        backgroundColor: isQuotation ? '#B8860B' : 'hsl(var(--primary))',
+    };
+    
+    const totalStyle = {
+        backgroundColor: isQuotation ? '#B8860B' : 'hsl(var(--primary))',
+        color: isQuotation ? '#FFFFFF' : 'hsl(var(--primary-foreground))',
+    };
+
     return (
       <div ref={ref as React.Ref<HTMLDivElement>} className="bg-white text-gray-800 text-sm w-full">
         {/* Header with geometric shapes */}
         <div className="relative h-40">
           <div
             className="absolute bottom-0 left-0 w-full h-24"
-            style={{ backgroundColor: 'hsl(var(--primary))' }}
+            style={headerStyle}
           ></div>
           <div className="absolute top-0 left-0 p-8 w-full flex justify-between items-center">
             <div className="flex items-center gap-4">
@@ -77,7 +97,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
                     {customer?.phone && <p>{customer.phone}</p>}
                 </div>
                 <div className="text-left">
-                    <h1 className="text-3xl font-extrabold uppercase" style={{ color: 'hsl(var(--primary))' }}>{documentTitle}</h1>
+                    <h1 className="text-3xl font-extrabold uppercase" style={titleStyle}>{documentTitle}</h1>
                     <p><strong>#</strong> {documentId}</p>
                     <p><strong>Date:</strong> {format(new Date(sale.date as Date), 'PPP')}</p>
                 </div>
@@ -86,7 +106,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
             {/* Items Table */}
             <table className="w-full text-left table-auto mb-8">
             <thead >
-                <tr style={{ backgroundColor: 'hsl(var(--primary))' }} className="text-white">
+                <tr style={tableHeaderStyle} className="text-white">
                 <th className="p-3">#</th>
                 <th className="p-3">Item</th>
                 <th className="p-3 text-right">Qty</th>
@@ -121,7 +141,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
                 <span>Discount:</span>
                 <span>- MMK {sale.discount.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between font-bold text-lg p-3 rounded-md" style={{ backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
+                <div className="flex justify-between font-bold text-lg p-3 rounded-md" style={totalStyle}>
                 <span>Total:</span>
                 <span>MMK {sale.total.toLocaleString()}</span>
                 </div>
@@ -229,3 +249,5 @@ export const InvoiceOrQuotation: React.FC<InvoiceOrQuotationProps> = ({ sale, st
         </div>
     );
 }
+
+    
