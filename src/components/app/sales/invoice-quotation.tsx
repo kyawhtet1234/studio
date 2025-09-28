@@ -40,91 +40,120 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
     const documentId = type === 'invoice' ? sale.id.slice(-6).toUpperCase() : `QUO-${sale.id.slice(-6).toUpperCase()}`;
 
     return (
-      <div ref={ref as React.Ref<HTMLDivElement>} className="p-8 bg-white text-black text-sm">
-        <div className="grid grid-cols-2 gap-8 mb-8">
-          <div>
-            {companyInfo?.logo && (
-              <div className="mb-4">
-                <Image src={companyInfo.logo} alt="Company Logo" width={150} height={75} className="object-contain" />
+      <div ref={ref as React.Ref<HTMLDivElement>} className="bg-white text-gray-800 text-sm w-full">
+        {/* Header with geometric shapes */}
+        <div className="relative h-40">
+          <div
+            className="absolute bottom-0 left-0 w-full h-24"
+            style={{ backgroundColor: 'hsl(var(--primary))' }}
+          ></div>
+          <div className="absolute top-0 left-0 p-8 w-full flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              {companyInfo?.logo && (
+                <div className="bg-white p-2 rounded-md shadow-md w-24 h-24 flex items-center justify-center">
+                  <Image src={companyInfo.logo} alt="Company Logo" width={80} height={80} className="object-contain" />
+                </div>
+              )}
+              <div>
+                <h1 className="text-xl font-bold text-white">{companyInfo?.name || 'Your Company'}</h1>
+                <p className="text-white text-xs">{companyInfo?.address}</p>
+                <p className="text-white text-xs">{companyInfo?.phone}</p>
               </div>
+            </div>
+             <div className="flex items-center gap-2">
+                <div className="w-4 h-8 bg-white opacity-50"></div>
+                <div className="w-4 h-8 bg-white opacity-75"></div>
+                <div className="w-4 h-8 bg-white"></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-8">
+            {/* Invoice Info */}
+            <div className="grid grid-cols-3 gap-8 mb-12">
+                <div className="col-span-2">
+                    <p className="text-gray-500">Bill To:</p>
+                    <h2 className="text-lg font-bold">{customer?.name || 'Walk-in Customer'}</h2>
+                    {customer?.phone && <p>{customer.phone}</p>}
+                </div>
+                <div className="text-left">
+                    <h1 className="text-3xl font-extrabold uppercase" style={{ color: 'hsl(var(--primary))' }}>{documentTitle}</h1>
+                    <p><strong>#</strong> {documentId}</p>
+                    <p><strong>Date:</strong> {format(new Date(sale.date as Date), 'PPP')}</p>
+                </div>
+            </div>
+
+            {/* Items Table */}
+            <table className="w-full text-left table-auto mb-8">
+            <thead >
+                <tr style={{ backgroundColor: 'hsl(var(--primary))' }} className="text-white">
+                <th className="p-3">#</th>
+                <th className="p-3">Item</th>
+                <th className="p-3 text-right">Qty</th>
+                <th className="p-3 text-right">Price</th>
+                <th className="p-3 text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {sale.items.map((item, index) => (
+                <tr key={item.productId} className="border-b">
+                    <td className="p-3">{index + 1}</td>
+                    <td className="p-3">
+                    <p className="font-semibold">{item.name}</p>
+                    <p className="text-xs text-gray-500">{item.sku}</p>
+                    </td>
+                    <td className="p-3 text-right">{item.quantity}</td>
+                    <td className="p-3 text-right">MMK {item.sellPrice.toLocaleString()}</td>
+                    <td className="p-3 text-right">MMK {item.total.toLocaleString()}</td>
+                </tr>
+                ))}
+            </tbody>
+            </table>
+
+            {/* Totals */}
+            <div className="flex justify-end mb-12">
+            <div className="w-full max-w-sm space-y-3">
+                <div className="flex justify-between">
+                <span>Subtotal:</span>
+                <span>MMK {sale.subtotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                <span>Discount:</span>
+                <span>- MMK {sale.discount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg p-3 rounded-md" style={{ backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
+                <span>Total:</span>
+                <span>MMK {sale.total.toLocaleString()}</span>
+                </div>
+            </div>
+            </div>
+
+            {/* Footer */}
+            <div className="grid grid-cols-2 gap-8">
+                 <div>
+                    {type === 'invoice' && companyInfo?.paymentInfo && (
+                        <>
+                            <h3 className="font-bold mb-2">Payment Information</h3>
+                            <p className="whitespace-pre-line text-xs">{companyInfo.paymentInfo}</p>
+                        </>
+                    )}
+                 </div>
+                 <div className="text-right">
+                     <div className="mt-16 mb-2 border-t-2 border-gray-400 border-dashed w-48 ml-auto"></div>
+                     <p>Authorised Sign</p>
+                 </div>
+            </div>
+             {companyInfo?.terms && (
+                <div className="mt-12 pt-8 border-t">
+                    <h3 className="font-bold mb-2">Terms & Conditions</h3>
+                    <p className="whitespace-pre-line text-xs text-gray-500">{companyInfo.terms}</p>
+                </div>
             )}
-            <h1 className="text-xl font-bold">{companyInfo?.name || 'Your Company'}</h1>
-            <p className="whitespace-pre-line">{companyInfo?.address}</p>
-            <p>{companyInfo?.phone}</p>
-          </div>
-          <div className="text-right">
-            <h1 className="text-3xl font-bold uppercase">{documentTitle}</h1>
-            <p><strong>#</strong>: {documentId}</p>
-            <p><strong>Date</strong>: {format(new Date(sale.date as Date), 'PPP')}</p>
-          </div>
+             <div className="text-center mt-8 text-gray-500">
+                <p>Thank you for your business!</p>
+            </div>
         </div>
 
-        <div className="mb-8">
-          <h2 className="text-base font-semibold mb-2">Bill To:</h2>
-          {customer ? (
-            <>
-              <p className="font-bold">{customer.name}</p>
-              <p>{customer.phone}</p>
-            </>
-          ) : (
-            <p>Walk-in Customer</p>
-          )}
-        </div>
-
-        <table className="w-full text-left table-auto">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2">Item</th>
-              <th className="p-2 text-right">Quantity</th>
-              <th className="p-2 text-right">Price</th>
-              <th className="p-2 text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sale.items.map(item => (
-              <tr key={item.productId} className="border-b">
-                <td className="p-2">
-                  <p className="font-semibold">{item.name}</p>
-                  <p className="text-xs text-gray-600">{item.sku}</p>
-                </td>
-                <td className="p-2 text-right">{item.quantity}</td>
-                <td className="p-2 text-right">MMK {item.sellPrice.toLocaleString()}</td>
-                <td className="p-2 text-right">MMK {item.total.toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div className="flex justify-end mt-4">
-          <div className="w-full max-w-xs space-y-2">
-            <div className="flex justify-between">
-              <span>Subtotal:</span>
-              <span>MMK {sale.subtotal.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Discount:</span>
-              <span>MMK {sale.discount.toLocaleString()}</span>
-            </div>
-            <Separator className="bg-black" />
-            <div className="flex justify-between font-bold text-lg">
-              <span>Total:</span>
-              <span>MMK {sale.total.toLocaleString()}</span>
-            </div>
-          </div>
-        </div>
-        
-        {type === 'invoice' && (
-             <div className="mt-8">
-                <Separator className="my-4 bg-black/50" />
-                <h3 className="font-bold mb-2">Payment Information</h3>
-                <p className="whitespace-pre-line text-xs">{companyInfo?.paymentInfo}</p>
-            </div>
-        )}
-
-        <div className="mt-8 text-xs text-gray-600">
-          <h3 className="font-bold mb-2">Terms & Conditions</h3>
-          <p className="whitespace-pre-line">{companyInfo?.terms}</p>
-        </div>
       </div>
     );
 });
@@ -153,7 +182,7 @@ export const InvoiceOrQuotation: React.FC<InvoiceOrQuotationProps> = ({ sale, st
         if (!input) return;
 
         // Temporarily make the content wider for better PDF layout
-        input.style.width = '1024px';
+        input.style.width = '800px';
 
         const canvas = await html2canvas(input, { scale: 2 });
         
@@ -173,35 +202,30 @@ export const InvoiceOrQuotation: React.FC<InvoiceOrQuotationProps> = ({ sale, st
         let height = heightInPdf;
         let position = 0;
 
-        if (height > pdfHeight) {
-             height = pdfHeight;
-        }
-        
         pdf.addImage(imgData, 'PNG', 0, position, widthInPdf, heightInPdf);
-        let remainingHeight = imgHeight * (widthInPdf / imgWidth) - height;
+        let remainingHeight = heightInPdf - pdfHeight;
 
         while(remainingHeight > 0) {
-            position = -height;
+            position -= pdfHeight;
             pdf.addPage();
             pdf.addImage(imgData, 'PNG', 0, position, widthInPdf, heightInPdf);
-            remainingHeight -= height;
+            remainingHeight -= pdfHeight;
         }
 
         pdf.save(`${type}_${sale.id.slice(-6)}.pdf`);
     };
 
     return (
-        <div className="bg-gray-200 p-4">
+        <div className="bg-gray-100 p-4 rounded-lg">
             <div className="flex justify-end mb-4">
                 <Button onClick={handleDownload}>
                     <Download className="mr-2 h-4 w-4" />
                     Download PDF
                 </Button>
             </div>
-            <div className="max-h-[60vh] overflow-y-auto border bg-white">
+            <div className="max-h-[60vh] overflow-y-auto border shadow-lg">
                 <InvoiceContent ref={documentRef} sale={sale} store={store} customer={customer} type={type} companyInfo={companyInfo} />
             </div>
         </div>
     );
 }
-
