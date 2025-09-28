@@ -371,7 +371,7 @@ export default function ReportsPage() {
       return [...filteredSales].sort((a, b) => {
         const dateA = toDate(a.date);
         const dateB = toDate(b.date);
-        return dateB.getTime() - a.getTime();
+        return dateB.getTime() - dateA.getTime();
       });
   }, [filteredSales]);
 
