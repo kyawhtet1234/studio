@@ -1,3 +1,4 @@
+
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { SaleTransaction, Product } from "@/lib/types";
@@ -69,7 +70,7 @@ export function BestSellers({ sales, products, className }: { sales: SaleTransac
 
 
   return (
-    <Card className={cn(className)}>
+    <Card className={cn(className, "shadow-drop-shadow-black")}>
       <CardHeader>
         <CardTitle>Best Selling Items</CardTitle>
         <CardDescription>Top 5 best selling items this month by quantity.</CardDescription>

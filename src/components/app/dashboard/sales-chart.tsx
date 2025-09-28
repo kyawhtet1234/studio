@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -55,7 +56,7 @@ export function SalesChart({ sales, className }: { sales: SaleTransaction[], cla
   }, [sales]);
 
   return (
-    <Card className={cn(className)}>
+    <Card className={cn(className, "shadow-drop-shadow-black")}>
       <CardHeader>
         <CardTitle>Sales of the Month</CardTitle>
         <CardDescription>Showing sales data for the last 30 days.</CardDescription>
