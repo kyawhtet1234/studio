@@ -25,9 +25,9 @@ export default function DashboardPage() {
 
   const filteredSales = useMemo(() => {
     if (selectedStore === 'all') {
-      return sales;
+      return sales.filter(s => s.status === 'completed');
     }
-    return sales.filter(sale => sale.storeId === selectedStore);
+    return sales.filter(sale => sale.storeId === selectedStore && sale.status === 'completed');
   }, [sales, selectedStore]);
 
 
@@ -39,9 +39,6 @@ export default function DashboardPage() {
     let todayCogs = 0;
   
     salesData.forEach(sale => {
-      // Only include completed sales in dashboard metrics
-      if (sale.status !== 'completed') return;
-
       const saleDate = toDate(sale.date);
       saleDate.setHours(0, 0, 0, 0);
   
@@ -96,8 +93,8 @@ export default function DashboardPage() {
         />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-        <SalesChart sales={filteredSales.filter(s => s.status === 'completed')} className="bg-shiny-3 shadow-drop-shadow-black rounded-lg" />
-        <BestSellers sales={filteredSales.filter(s => s.status === 'completed')} products={products} className="bg-shiny-4 shadow-drop-shadow-black rounded-lg" />
+        <SalesChart sales={filteredSales} className="bg-shiny-3 shadow-drop-shadow-black rounded-lg" />
+        <BestSellers sales={filteredSales} products={products} className="bg-shiny-4 shadow-drop-shadow-black rounded-lg" />
       </div>
     </div>
   );
