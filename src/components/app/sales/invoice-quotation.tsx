@@ -53,11 +53,11 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
     const documentId = type === 'invoice' ? sale.id.slice(-6).toUpperCase() : `QUO-${sale.id.slice(-6).toUpperCase()}`;
 
     const headerStyle = {
-        background: 'linear-gradient(135deg, #00C9FF 0%, #92FE9D 100%)',
+        background: 'linear-gradient(135deg, #020024 0%, #090979 35%, #00d4ff 100%)',
     };
     
     const titleStyle = {
-        color: '#000000',
+        color: type === 'quotation' ? '#000000' : '#FFFFFF',
     };
     
     const tableHeaderStyle = {
@@ -73,18 +73,18 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
     return (
       <div ref={ref as React.Ref<HTMLDivElement>} className="bg-white text-gray-800 text-sm w-full">
         {/* Header */}
-        <div className="relative h-48" style={headerStyle}>
+        <div className="relative h-48" style={{ background: 'linear-gradient(135deg, #0a192f 0%, #172a4d 50%, #294d6a 100%)' }}>
           <div className="absolute inset-0 p-8 flex justify-between items-center">
             
             {/* Left side - Logo */}
-            {companyInfo?.logo && (
-              <div className="h-full flex items-center relative w-1/3">
-                <Image src={companyInfo.logo} alt="Company Logo" fill className="object-contain" />
-              </div>
-            )}
+             <div className="h-full flex items-center relative w-1/3">
+                {companyInfo?.logo && (
+                    <Image src={companyInfo.logo} alt="Company Logo" layout="fill" objectFit="contain" />
+                )}
+            </div>
             
             {/* Right side - Company Info */}
-            <div className="text-right text-black">
+            <div className="text-right text-white">
               <h1 className="text-2xl font-bold">{companyInfo?.name || 'Your Company'}</h1>
               <p className="text-xs whitespace-pre-line">{companyInfo?.address}</p>
               <p className="text-xs">{companyInfo?.phone}</p>
@@ -104,7 +104,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
                 <div className="text-left">
                     <h1 className="text-3xl font-extrabold uppercase" style={titleStyle}>{documentTitle}</h1>
                     <p><strong>#</strong> {documentId}</p>
-                    <p><strong>Date:</strong> {format(new Date(sale.date as Date), 'PPP')}</p>
+                    <p><strong>Date:</strong> {format(new Date(sale.date as Date), 'PP')}</p>
                 </div>
             </div>
 
