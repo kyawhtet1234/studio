@@ -14,7 +14,7 @@ type StatCardProps = {
 
 export function StatCard({ title, value, icon: Icon, description, loading, className }: StatCardProps) {
   if (loading) {
-    return <Skeleton className="h-[126px]" />;
+    return <Skeleton className={cn("h-[126px]", className)} />;
   }
   
   return (
