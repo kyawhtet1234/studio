@@ -13,6 +13,7 @@ import { EditEntitySheet } from '@/components/app/products/edit-entity-sheet';
 import { AddStoreForm, AddPaymentTypeForm } from '@/components/app/products/forms';
 import { ReceiptSettings } from '@/components/app/settings/receipt-settings';
 import { InvoiceSettings } from '@/components/app/settings/invoice-settings';
+import { QuotationSettings } from '@/components/app/settings/quotation-settings';
 
 type EditingState = 
   | { type: 'store', data: Store }
@@ -98,6 +99,7 @@ export default function SettingsPage() {
                 <TabsList className="overflow-x-auto self-start h-auto">
                     <TabsTrigger value="receipt">Receipt</TabsTrigger>
                     <TabsTrigger value="invoice">Invoice</TabsTrigger>
+                    <TabsTrigger value="quotation">Quotation</TabsTrigger>
                     <TabsTrigger value="stores">Stores</TabsTrigger>
                     <TabsTrigger value="paymentTypes">Payment Types</TabsTrigger>
                 </TabsList>
@@ -112,6 +114,9 @@ export default function SettingsPage() {
             </TabsContent>
             <TabsContent value="invoice">
                 <InvoiceSettings />
+            </TabsContent>
+            <TabsContent value="quotation">
+                <QuotationSettings />
             </TabsContent>
             <TabsContent value="stores">
                 <DataTable columns={storeCols} data={stores} filterColumnId="name" filterPlaceholder="Filter stores by name..."/>

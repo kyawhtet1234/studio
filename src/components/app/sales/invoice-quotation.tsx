@@ -12,12 +12,25 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 // LocalStorage Keys
-const INVOICE_COMPANY_NAME_KEY = 'invoice-company-name';
-const INVOICE_COMPANY_ADDRESS_KEY = 'invoice-company-address';
-const INVOICE_COMPANY_PHONE_KEY = 'invoice-company-phone';
-const INVOICE_COMPANY_LOGO_KEY = 'invoice-company-logo';
-const INVOICE_TERMS_KEY = 'invoice-terms';
-const INVOICE_PAYMENT_INFO_KEY = 'invoice-payment-info';
+const SETTINGS_KEYS = {
+  invoice: {
+    companyName: 'invoice-company-name',
+    companyAddress: 'invoice-company-address',
+    companyPhone: 'invoice-company-phone',
+    companyLogo: 'invoice-company-logo',
+    terms: 'invoice-terms',
+    paymentInfo: 'invoice-payment-info',
+  },
+  quotation: {
+    companyName: 'quotation-company-name',
+    companyAddress: 'quotation-company-address',
+    companyPhone: 'quotation-company-phone',
+    companyLogo: 'quotation-company-logo',
+    terms: 'quotation-terms',
+    paymentInfo: 'quotation-payment-info',
+  }
+};
+
 
 interface CompanyInfo {
   name: string;
@@ -186,16 +199,17 @@ export const InvoiceOrQuotation: React.FC<InvoiceOrQuotationProps> = ({ sale, st
 
     useEffect(() => {
         // Must be in useEffect to avoid server/client mismatch with localStorage
+        const keys = SETTINGS_KEYS[type];
         const info = {
-          name: localStorage.getItem(INVOICE_COMPANY_NAME_KEY) || 'Your Company Name',
-          address: localStorage.getItem(INVOICE_COMPANY_ADDRESS_KEY) || 'Your Company Address',
-          phone: localStorage.getItem(INVOICE_COMPANY_PHONE_KEY) || '',
-          logo: localStorage.getItem(INVOICE_COMPANY_LOGO_KEY),
-          terms: localStorage.getItem(INVOICE_TERMS_KEY) || 'Thank you for your business.',
-          paymentInfo: localStorage.getItem(INVOICE_PAYMENT_INFO_KEY) || 'Please make payments to the account below.',
+          name: localStorage.getItem(keys.companyName) || 'Your Company Name',
+          address: localStorage.getItem(keys.companyAddress) || 'Your Company Address',
+          phone: localStorage.getItem(keys.companyPhone) || '',
+          logo: localStorage.getItem(keys.companyLogo),
+          terms: localStorage.getItem(keys.terms) || 'Thank you for your business.',
+          paymentInfo: localStorage.getItem(keys.paymentInfo) || 'Please make payments to the account below.',
         };
         setCompanyInfo(info);
-    }, []);
+    }, [type]);
 
     const handleDownload = async () => {
         const input = documentRef.current;
