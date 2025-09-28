@@ -23,6 +23,7 @@ import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { InvoiceOrQuotation } from "@/components/app/sales/invoice-quotation";
+import { DocumentViewer } from "@/components/app/reports/document-viewer";
 
 
 const toDate = (date: Date | Timestamp): Date => {
@@ -370,7 +371,7 @@ export default function ReportsPage() {
       return [...filteredSales].sort((a, b) => {
         const dateA = toDate(a.date);
         const dateB = toDate(b.date);
-        return dateB.getTime() - dateA.getTime();
+        return dateB.getTime() - a.getTime();
       });
   }, [filteredSales]);
 
@@ -393,6 +394,8 @@ export default function ReportsPage() {
           title: 'Sales By Customer'
         };
       case 'sales':
+      case 'invoice':
+      case 'quotation':
         return {
           data: salesHistory.map(s => ({
             Date: toDate(s.date).toLocaleDateString(),
@@ -498,6 +501,8 @@ export default function ReportsPage() {
             <TabsTrigger value="salesByCustomer">Sales By Customer</TabsTrigger>
             <TabsTrigger value="sales">Sales History</TabsTrigger>
             <TabsTrigger value="purchase">Purchase History</TabsTrigger>
+            <TabsTrigger value="invoice">Invoices</TabsTrigger>
+            <TabsTrigger value="quotation">Quotations</TabsTrigger>
         </TabsList>
         <TabsContent value="daily">
             <ReportTable data={dailyReports} total={dailyTotal} periodLabel="Date" />
@@ -514,10 +519,14 @@ export default function ReportsPage() {
         <TabsContent value="purchase">
             <PurchaseHistoryTable data={purchaseHistory} stores={stores} suppliers={suppliers} onDelete={deletePurchase} />
         </TabsContent>
+        <TabsContent value="invoice">
+            <DocumentViewer type="invoice" sales={salesHistory} stores={stores} customers={customers} />
+        </TabsContent>
+        <TabsContent value="quotation">
+            <DocumentViewer type="quotation" sales={salesHistory} stores={stores} customers={customers} />
+        </TabsContent>
       </Tabs>
       {renderPrintDialog()}
     </div>
   );
 }
-
-    
