@@ -55,20 +55,21 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
     const isQuotation = type === 'quotation';
     
     const headerStyle = {
-        backgroundColor: isQuotation ? '#B8860B' : 'hsl(var(--primary))',
-        backgroundImage: isQuotation ? 'linear-gradient(135deg, #F0E68C 0%, #B8860B 100%)' : undefined,
+        backgroundColor: isQuotation ? '#C00000' : 'hsl(var(--primary))',
+        backgroundImage: isQuotation ? 'linear-gradient(135deg, #FF6B6B 0%, #A50000 100%)' : undefined,
     };
     
     const titleStyle = {
-        color: isQuotation ? '#B8860B' : 'hsl(var(--primary))',
+        color: isQuotation ? '#A50000' : 'hsl(var(--primary))',
     };
     
     const tableHeaderStyle = {
-        backgroundColor: isQuotation ? '#B8860B' : 'hsl(var(--primary))',
+        backgroundColor: isQuotation ? '#A50000' : 'hsl(var(--primary))',
+        color: 'white',
     };
     
     const totalStyle = {
-        backgroundColor: isQuotation ? '#B8860B' : 'hsl(var(--primary))',
+        backgroundColor: isQuotation ? '#A50000' : 'hsl(var(--primary))',
         color: isQuotation ? '#FFFFFF' : 'hsl(var(--primary-foreground))',
     };
 
@@ -83,7 +84,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
           <div className="absolute top-0 left-0 p-8 w-full h-full flex justify-center items-center">
             <div className="flex items-center gap-4 text-center flex-col">
               {companyInfo?.logo && (
-                <div className="bg-white p-2 rounded-md shadow-md w-24 h-24 flex items-center justify-center">
+                <div className="p-2 rounded-md w-24 h-24 flex items-center justify-center">
                   <Image src={companyInfo.logo} alt="Company Logo" width={80} height={80} className="object-contain" />
                 </div>
               )}
@@ -114,7 +115,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
             {/* Items Table */}
             <table className="w-full text-left table-auto mb-8">
             <thead >
-                <tr style={tableHeaderStyle} className="text-white">
+                <tr style={tableHeaderStyle}>
                 <th className="p-3">#</th>
                 <th className="p-3">Item</th>
                 <th className="p-3 text-right">Qty</th>
