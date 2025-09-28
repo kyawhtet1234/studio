@@ -80,8 +80,8 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
             className="absolute bottom-0 left-0 w-full h-32"
             style={headerStyle}
           ></div>
-          <div className="absolute top-0 left-0 p-8 w-full flex justify-between items-center">
-            <div className="flex items-center gap-4">
+          <div className="absolute top-0 left-0 p-8 w-full h-full flex justify-center items-center">
+            <div className="flex items-center gap-4 text-center flex-col">
               {companyInfo?.logo && (
                 <div className="bg-white p-2 rounded-md shadow-md w-24 h-24 flex items-center justify-center">
                   <Image src={companyInfo.logo} alt="Company Logo" width={80} height={80} className="object-contain" />
@@ -92,11 +92,6 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
                 <p className="text-white text-xs whitespace-pre-line">{companyInfo?.address}</p>
                 <p className="text-white text-xs">{companyInfo?.phone}</p>
               </div>
-            </div>
-             <div className="flex items-center gap-2">
-                <div className="w-4 h-8 bg-white opacity-50"></div>
-                <div className="w-4 h-8 bg-white opacity-75"></div>
-                <div className="w-4 h-8 bg-white"></div>
             </div>
           </div>
         </div>
