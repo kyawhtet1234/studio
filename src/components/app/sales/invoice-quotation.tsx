@@ -62,9 +62,9 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
     return (
       <div ref={ref as React.Ref<HTMLDivElement>} className="bg-white text-gray-800 text-sm w-full">
         {/* Header with geometric shapes */}
-        <div className="relative h-40">
+        <div className="relative h-48">
           <div
-            className="absolute bottom-0 left-0 w-full h-24"
+            className="absolute bottom-0 left-0 w-full h-32"
             style={headerStyle}
           ></div>
           <div className="absolute top-0 left-0 p-8 w-full flex justify-between items-center">
@@ -76,7 +76,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
               )}
               <div>
                 <h1 className="text-xl font-bold text-white">{companyInfo?.name || 'Your Company'}</h1>
-                <p className="text-white text-xs">{companyInfo?.address}</p>
+                <p className="text-white text-xs whitespace-pre-line">{companyInfo?.address}</p>
                 <p className="text-white text-xs">{companyInfo?.phone}</p>
               </div>
             </div>
@@ -249,5 +249,3 @@ export const InvoiceOrQuotation: React.FC<InvoiceOrQuotationProps> = ({ sale, st
         </div>
     );
 }
-
-    
