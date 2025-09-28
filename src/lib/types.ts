@@ -63,7 +63,7 @@ export type SaleTransaction = {
   subtotal: number;
   discount: number;
   total: number;
-  status: 'completed' | 'voided';
+  status: 'completed' | 'voided' | 'draft';
   paymentType: string;
 };
 
