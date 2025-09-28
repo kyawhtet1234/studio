@@ -28,9 +28,9 @@ export function BestSellers({ sales, products, className }: { sales: SaleTransac
   const { bestSellingItems, chartConfig } = useMemo(() => {
     const itemSales: { [key: string]: { name: string, quantity: number, total: number } } = {};
 
-    sales.forEach(sale => {
-      if (sale.status === 'voided') return;
+    const completedSales = sales.filter(s => s.status === 'completed');
 
+    completedSales.forEach(sale => {
       const saleDate = toDate(sale.date);
       const today = new Date();
       const monthDiff = today.getMonth() - saleDate.getMonth() + (12 * (today.getFullYear() - saleDate.getFullYear()));

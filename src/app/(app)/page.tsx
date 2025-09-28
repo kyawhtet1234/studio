@@ -39,7 +39,8 @@ export default function DashboardPage() {
     let todayCogs = 0;
   
     salesData.forEach(sale => {
-      if (sale.status === 'voided') return;
+      // Only include completed sales in dashboard metrics
+      if (sale.status !== 'completed') return;
 
       const saleDate = toDate(sale.date);
       saleDate.setHours(0, 0, 0, 0);
@@ -95,8 +96,8 @@ export default function DashboardPage() {
         />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-        <SalesChart sales={filteredSales} className="bg-shiny-3 shadow-drop-shadow-black" />
-        <BestSellers sales={filteredSales} products={products} className="bg-shiny-4 shadow-drop-shadow-black" />
+        <SalesChart sales={filteredSales.filter(s => s.status === 'completed')} className="bg-shiny-3 shadow-drop-shadow-black" />
+        <BestSellers sales={filteredSales.filter(s => s.status === 'completed')} products={products} className="bg-shiny-4 shadow-drop-shadow-black" />
       </div>
     </div>
   );

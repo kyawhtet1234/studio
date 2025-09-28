@@ -32,9 +32,10 @@ export function SalesChart({ sales, className }: { sales: SaleTransaction[], cla
     });
 
     let hasSales = false;
-    sales.forEach(sale => {
-      if (sale.status === 'voided') return;
 
+    const completedSales = sales.filter(s => s.status === 'completed');
+
+    completedSales.forEach(sale => {
       const saleDate = toDate(sale.date);
       const today = new Date();
       const diffTime = today.getTime() - saleDate.getTime();
