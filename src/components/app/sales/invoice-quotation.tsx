@@ -53,7 +53,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
     const documentId = type === 'invoice' ? sale.id.slice(-6).toUpperCase() : `QUO-${sale.id.slice(-6).toUpperCase()}`;
 
     const headerStyle = {
-        background: 'linear-gradient(135deg, #4F4F4F 0%, #2C2C2C 50%, #000000 100%)',
+        background: 'linear-gradient(135deg, #00C9FF 0%, #92FE9D 100%)',
     };
     
     const titleStyle = {
@@ -72,14 +72,14 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
 
     return (
       <div ref={ref as React.Ref<HTMLDivElement>} className="bg-white text-gray-800 text-sm w-full">
-        {/* Header with geometric shapes */}
+        {/* Header */}
         <div className="relative h-48" style={headerStyle}>
           <div className="absolute inset-0 p-8 flex justify-between items-center">
             
             {/* Left side - Logo */}
             {companyInfo?.logo && (
-              <div className="h-full flex items-center">
-                <Image src={companyInfo.logo} alt="Company Logo" width={140} height={140} className="object-contain h-32 w-auto" />
+              <div className="h-full flex items-center relative w-1/3">
+                <Image src={companyInfo.logo} alt="Company Logo" fill className="object-contain" />
               </div>
             )}
             
