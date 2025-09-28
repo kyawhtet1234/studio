@@ -53,7 +53,8 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
     const documentId = type === 'invoice' ? sale.id.slice(-6).toUpperCase() : `QUO-${sale.id.slice(-6).toUpperCase()}`;
 
     const headerStyle = {
-        background: 'linear-gradient(135deg, #020024 0%, #090979 35%, #00d4ff 100%)',
+      background: 'linear-gradient(135deg, #a8e063 0%, #56ab2f 100%)',
+      boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2), 0 6px 6px rgba(0, 0, 0, 0.23)',
     };
     
     const titleStyle = {
@@ -73,7 +74,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
     return (
       <div ref={ref as React.Ref<HTMLDivElement>} className="bg-white text-gray-800 text-sm w-full">
         {/* Header */}
-        <div className="relative h-48" style={{ background: 'linear-gradient(135deg, #0a192f 0%, #172a4d 50%, #294d6a 100%)' }}>
+        <div className="relative h-48" style={headerStyle}>
           <div className="absolute inset-0 p-8 flex justify-between items-center">
             
             {/* Left side - Logo */}
@@ -102,7 +103,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
                     {customer?.phone && <p>{customer.phone}</p>}
                 </div>
                 <div className="text-left">
-                    <h1 className="text-3xl font-extrabold uppercase" style={titleStyle}>{documentTitle}</h1>
+                    <h1 className="text-3xl font-extrabold uppercase" style={{ color: type === 'quotation' ? 'black' : 'inherit' }}>{documentTitle}</h1>
                     <p><strong>#</strong> {documentId}</p>
                     <p><strong>Date:</strong> {format(new Date(sale.date as Date), 'PP')}</p>
                 </div>
