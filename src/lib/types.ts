@@ -126,3 +126,9 @@ export type CashAllocation = {
   targetAmount: number;
   currentAmount: number;
 };
+
+export type Liability = {
+  id: string;
+  name: string;
+  amount: number;
+};

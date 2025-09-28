@@ -26,7 +26,7 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { Expense, ExpenseCategory, CashAllocation } from "@/lib/types";
+import type { Expense, ExpenseCategory, CashAllocation, Liability } from "@/lib/types";
 import { useEffect } from "react";
 
 
@@ -45,6 +45,11 @@ const cashAllocationSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters."),
     targetAmount: z.coerce.number().positive("Target amount must be a positive number."),
     currentAmount: z.coerce.number().min(0).optional().default(0),
+});
+
+const liabilitySchema = z.object({
+    name: z.string().min(2, "Name must be at least 2 characters."),
+    amount: z.coerce.number().positive("Amount must be a positive number."),
 });
 
 interface FormProps<T> {
@@ -235,6 +240,59 @@ export function AddCashAllocationForm({ onSave, onSuccess, allocation }: FormPro
             />
         )}
         <Button type="submit">{isEditMode ? 'Save Changes' : 'Create Allocation'}</Button>
+      </form>
+    </Form>
+  );
+}
+
+export function AddLiabilityForm({ onSave, onSuccess, liability }: FormProps<Omit<Liability, 'id'>> & { liability?: Liability }) {
+  const form = useForm({
+    resolver: zodResolver(liabilitySchema),
+    defaultValues: {
+      name: liability?.name || "",
+      amount: liability?.amount || 0,
+    }
+  });
+  const { toast } = useToast();
+  const isEditMode = !!liability;
+
+  useEffect(() => {
+    if (liability) form.reset(liability);
+  }, [liability, form]);
+
+  async function onSubmit(data: z.infer<typeof liabilitySchema>) {
+    await onSave(data);
+    toast({ title: `Liability ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
+    form.reset();
+    onSuccess();
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Liability Name</FormLabel>
+              <FormControl><Input {...field} placeholder="e.g. Bank Loan" /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="amount"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Amount</FormLabel>
+              <FormControl><Input type="number" step="1000" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Liability'}</Button>
       </form>
     </Form>
   );

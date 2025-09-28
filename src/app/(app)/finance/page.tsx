@@ -9,16 +9,17 @@ import { DollarSign, TrendingUp, TrendingDown } from "lucide-react";
 import type { Timestamp } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/app/products/data-table";
-import { expenseColumns, expenseCategoryColumns, cashAllocationColumns } from "@/components/app/finance/columns";
+import { expenseColumns, expenseCategoryColumns, cashAllocationColumns, liabilityColumns } from "@/components/app/finance/columns";
 import { AddEntitySheet } from "@/components/app/products/add-entity-sheet";
 import { EditEntitySheet } from "@/components/app/products/edit-entity-sheet";
-import { AddExpenseForm, AddExpenseCategoryForm, AddCashAllocationForm } from "@/components/app/finance/forms";
-import type { Expense, ExpenseCategory, CashAllocation } from '@/lib/types';
+import { AddExpenseForm, AddExpenseCategoryForm, AddCashAllocationForm, AddLiabilityForm } from "@/components/app/finance/forms";
+import type { Expense, ExpenseCategory, CashAllocation, Liability } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CashFlowReport } from '@/components/app/finance/cash-flow-report';
 import { FinancialForecast } from '@/components/app/finance/financial-forecast';
 import { AffordabilityChecker } from '@/components/app/finance/affordability-checker';
 import { ExpenseBreakdownChart } from '@/components/app/finance/expense-breakdown-chart';
+import { BalanceSheet } from '@/components/app/finance/balance-sheet';
 
 
 // Helper function to safely convert date
@@ -35,6 +36,7 @@ export default function FinancePage() {
     products, 
     expenses, 
     purchases,
+    inventory,
     addExpense, 
     deleteExpense, 
     expenseCategories,
@@ -46,11 +48,16 @@ export default function FinancePage() {
     updateCashAllocation,
     deleteCashAllocation,
     cashAccounts,
+    liabilities,
+    addLiability,
+    updateLiability,
+    deleteLiability,
     loading 
   } = useData();
   const [activeTab, setActiveTab] = useState("overview");
   const [editingCategory, setEditingCategory] = useState<ExpenseCategory | null>(null);
   const [editingAllocation, setEditingAllocation] = useState<CashAllocation | null>(null);
+  const [editingLiability, setEditingLiability] = useState<Liability | null>(null);
 
   const getFinancialMetrics = () => {
     const today = new Date();
@@ -97,6 +104,10 @@ export default function FinancePage() {
     onEdit: (data) => setEditingAllocation(data),
     onDelete: deleteCashAllocation,
   });
+  const liabilityCols = liabilityColumns({
+    onEdit: (data) => setEditingLiability(data),
+    onDelete: deleteLiability,
+  });
 
   const renderAddButton = () => {
      switch (activeTab) {
@@ -118,6 +129,12 @@ export default function FinancePage() {
             {(onSuccess) => <AddCashAllocationForm onSave={addCashAllocation} onSuccess={onSuccess} />}
           </AddEntitySheet>
         );
+      case 'liabilities':
+        return (
+          <AddEntitySheet buttonText="Add Liability" title="Add a new liability" description="Enter the details for a new liability, such as a loan or debt.">
+            {(onSuccess) => <AddLiabilityForm onSave={addLiability} onSuccess={onSuccess} />}
+          </AddEntitySheet>
+        );
       default:
         return null;
     }
@@ -132,14 +149,16 @@ export default function FinancePage() {
         <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
             <TabsList className="overflow-x-auto self-start h-auto">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="balanceSheet">Balance Sheet</TabsTrigger>
                 <TabsTrigger value="cashFlow">Cash Flow</TabsTrigger>
                 <TabsTrigger value="netProfit">Net Profit</TabsTrigger>
                 <TabsTrigger value="expenses">Expenses</TabsTrigger>
                 <TabsTrigger value="expenseCategories">Expense Categories</TabsTrigger>
                 <TabsTrigger value="forecast">Forecast</TabsTrigger>
                 <TabsTrigger value="allocations">Cash Allocations</TabsTrigger>
+                <TabsTrigger value="liabilities">Liabilities</TabsTrigger>
             </TabsList>
-             {['expenses', 'expenseCategories', 'allocations'].includes(activeTab) && (
+             {['expenses', 'expenseCategories', 'allocations', 'liabilities'].includes(activeTab) && (
                 <div>
                   {renderAddButton()}
                 </div>
@@ -174,6 +193,14 @@ export default function FinancePage() {
                 <ExpenseBreakdownChart expenses={expenses} expenseCategories={expenseCategories} />
              </div>
         </TabsContent>
+        <TabsContent value="balanceSheet">
+            <BalanceSheet 
+                cashAccounts={cashAccounts} 
+                inventory={inventory} 
+                products={products} 
+                liabilities={liabilities}
+            />
+        </TabsContent>
         <TabsContent value="cashFlow">
            <CashFlowReport sales={sales} purchases={purchases} expenses={expenses} />
         </TabsContent>
@@ -203,6 +230,9 @@ export default function FinancePage() {
               <DataTable columns={allocationCols} data={cashAllocations} filterColumnId="name" filterPlaceholder="Filter allocations by name..."/>
             </div>
         </TabsContent>
+        <TabsContent value="liabilities">
+            <DataTable columns={liabilityCols} data={liabilities} filterColumnId="name" filterPlaceholder="Filter liabilities by name..."/>
+        </TabsContent>
       </Tabs>
       <EditEntitySheet
         title="Edit Expense Category"
@@ -226,6 +256,18 @@ export default function FinancePage() {
             onSave={(data) => updateCashAllocation(editingAllocation!.id, data)}
             onSuccess={onSuccess}
             allocation={editingAllocation!}
+            />}
+      </EditEntitySheet>
+      <EditEntitySheet
+        title="Edit Liability"
+        description="Update the details for this liability."
+        isOpen={!!editingLiability}
+        onClose={() => setEditingLiability(null)}
+      >
+        {(onSuccess) => <AddLiabilityForm
+            onSave={(data) => updateLiability(editingLiability!.id, data)}
+            onSuccess={onSuccess}
+            liability={editingLiability!}
             />}
       </EditEntitySheet>
     </div>

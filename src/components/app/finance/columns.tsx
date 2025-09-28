@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import type { Expense, ExpenseCategory, CashAllocation } from "@/lib/types";
+import type { Expense, ExpenseCategory, CashAllocation, Liability } from "@/lib/types";
 import { format } from 'date-fns';
 import { Progress } from "@/components/ui/progress";
 
@@ -173,6 +173,24 @@ export const cashAllocationColumns = ({ onEdit, onDelete }: { onEdit: (item: Cas
       onEdit={onEdit}
       onDelete={onDelete}
       deleteConfirmationText={`This will permanently delete the allocation "${row.original.name}".`}
+    />
+  },
+];
+
+export const liabilityColumns = ({ onEdit, onDelete }: { onEdit: (item: Liability) => void, onDelete: (id: string) => void }): ColumnDef<Liability>[] => [
+  { accessorKey: "name", header: "Name" },
+  { 
+    accessorKey: "amount", 
+    header: "Amount",
+    cell: ({ row }) => `MMK ${row.original.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  },
+  { 
+    id: "actions",
+    cell: ({ row }) => <ActionsCell 
+      row={row}
+      onEdit={onEdit}
+      onDelete={onDelete}
+      deleteConfirmationText={`This will permanently delete the liability "${row.original.name}".`}
     />
   },
 ];

@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup } from 'firebase/firestore';
 
-import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType } from '@/lib/types';
+import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability } from '@/lib/types';
 
 interface DataContextProps {
     products: Product[];
@@ -22,6 +22,7 @@ interface DataContextProps {
     cashAccounts: CashAccount[];
     cashTransactions: CashTransaction[];
     cashAllocations: CashAllocation[];
+    liabilities: Liability[];
     addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<void>;
     updateProduct: (productId: string, product: Partial<Omit<Product, 'id'>>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
@@ -55,6 +56,9 @@ interface DataContextProps {
     addCashAllocation: (allocation: Omit<CashAllocation, 'id'>) => Promise<void>;
     updateCashAllocation: (allocationId: string, allocation: Partial<Omit<CashAllocation, 'id'>>) => Promise<void>;
     deleteCashAllocation: (allocationId: string) => Promise<void>;
+    addLiability: (liability: Omit<Liability, 'id'>) => Promise<void>;
+    updateLiability: (liabilityId: string, liability: Partial<Omit<Liability, 'id'>>) => Promise<void>;
+    deleteLiability: (liabilityId: string) => Promise<void>;
     updateInventory: (newInventory: InventoryItem[]) => Promise<void>;
     loading: boolean;
 }
@@ -77,6 +81,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [cashAccounts, setCashAccounts] = useState<CashAccount[]>([]);
     const [cashTransactions, setCashTransactions] = useState<CashTransaction[]>([]);
     const [cashAllocations, setCashAllocations] = useState<CashAllocation[]>([]);
+    const [liabilities, setLiabilities] = useState<Liability[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async (uid: string) => {
@@ -154,6 +159,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
             const cashAllocationsSnap = await getDocs(query(collection(db, 'users', uid, 'cashAllocations')));
             setCashAllocations(cashAllocationsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as CashAllocation)));
 
+            const liabilitiesSnap = await getDocs(query(collection(db, 'users', uid, 'liabilities')));
+            setLiabilities(liabilitiesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Liability)));
+
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
@@ -180,6 +188,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setCashAccounts([]);
             setCashTransactions([]);
             setCashAllocations([]);
+            setLiabilities([]);
             setLoading(false);
         }
     }, [user, fetchData]);
@@ -620,6 +629,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await fetchData(user.uid);
     };
 
+    const addLiability = async (liabilityData: Omit<Liability, 'id'>) => {
+        if (!user) return;
+        await addDoc(collection(db, 'users', user.uid, 'liabilities'), liabilityData);
+        await fetchData(user.uid);
+    };
+
+    const updateLiability = async (liabilityId: string, liabilityData: Partial<Omit<Liability, 'id'>>) => {
+        if (!user) return;
+        const liabilityRef = doc(db, 'users', user.uid, 'liabilities', liabilityId);
+        await updateDoc(liabilityRef, liabilityData);
+        await fetchData(user.uid);
+    };
+    
+    const deleteLiability = async (liabilityId: string) => {
+        if (!user) return;
+        await deleteDoc(doc(db, 'users', user.uid, 'liabilities', liabilityId));
+        await fetchData(user.uid);
+    };
 
     const updateInventory = async (updatedItems: InventoryItem[]) => {
         if (!user) return;
@@ -661,6 +688,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             cashAccounts, addCashAccount, deleteCashAccount,
             cashTransactions, addCashTransaction,
             cashAllocations, addCashAllocation, updateCashAllocation, deleteCashAllocation,
+            liabilities, addLiability, updateLiability, deleteLiability,
             loading
         }}>
             {children}
