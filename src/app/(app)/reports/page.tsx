@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { InvoiceOrQuotation } from "@/components/app/sales/invoice-quotation";
 
 
 const toDate = (date: Date | Timestamp): Date => {
@@ -282,7 +283,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt }: 
 
 export default function ReportsPage() {
   const { sales, products, purchases, stores, suppliers, customers, voidSale, deletePurchase } = useData();
-  const [receiptToPrint, setReceiptToPrint] = useState<SaleTransaction | null>(null);
+  const [documentToPrint, setDocumentToPrint] = useState<{ type: 'receipt' | 'invoice' | 'quotation', sale: SaleTransaction } | null>(null);
   const [selectedStore, setSelectedStore] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('daily');
 
@@ -441,6 +442,26 @@ export default function ReportsPage() {
     }
   };
 
+  const renderPrintDialog = () => {
+    if (!documentToPrint) return null;
+
+    const { type, sale } = documentToPrint;
+    const store = stores.find((s) => s.id === sale.storeId);
+    const customer = customers.find((c) => c.id === sale.customerId);
+
+    return (
+      <Dialog open={!!documentToPrint} onOpenChange={() => setDocumentToPrint(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Print Document</DialogTitle>
+          </DialogHeader>
+          {type === 'receipt' && <Receipt sale={sale} store={store} />}
+          {(type === 'invoice' || type === 'quotation') && <InvoiceOrQuotation type={type} sale={sale} store={store} customer={customer} />}
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
   return (
     <div>
       <PageHeader title="Reports">
@@ -488,25 +509,13 @@ export default function ReportsPage() {
             <SalesByCustomerTable data={salesByCustomer} />
         </TabsContent>
          <TabsContent value="sales">
-            <SalesHistoryTable data={salesHistory} stores={stores} customers={customers} onVoid={voidSale} onPrintReceipt={setReceiptToPrint} />
+            <SalesHistoryTable data={salesHistory} stores={stores} customers={customers} onVoid={voidSale} onPrintReceipt={(sale) => setDocumentToPrint({ type: 'receipt', sale })} />
         </TabsContent>
         <TabsContent value="purchase">
             <PurchaseHistoryTable data={purchaseHistory} stores={stores} suppliers={suppliers} onDelete={deletePurchase} />
         </TabsContent>
       </Tabs>
-      <Dialog open={!!receiptToPrint} onOpenChange={() => setReceiptToPrint(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Sale Receipt</DialogTitle>
-          </DialogHeader>
-          {receiptToPrint && (
-            <Receipt
-              sale={receiptToPrint}
-              store={stores.find((s) => s.id === receiptToPrint.storeId)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {renderPrintDialog()}
     </div>
   );
 }

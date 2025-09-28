@@ -33,13 +33,15 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Trash2, PlusCircle, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { CartItem, SaleTransaction, Store, Product, Customer, PaymentType } from '@/lib/types';
 import { useData } from "@/lib/data-context";
 import { Receipt } from "./receipt";
 import { AddCustomerForm } from "@/components/app/products/forms";
+import { InvoiceOrQuotation } from "./invoice-quotation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 const formSchema = z.object({
@@ -424,15 +426,40 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     </Dialog>
 
     <Dialog open={!!lastSale} onOpenChange={handleCloseReceipt}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Sale Receipt</DialogTitle>
+            <DialogTitle>Transaction Complete</DialogTitle>
           </DialogHeader>
           {lastSale && (
-            <Receipt
-              sale={lastSale}
-              store={stores.find((s) => s.id === lastSale.storeId)}
-            />
+            <Tabs defaultValue="receipt">
+              <TabsList>
+                <TabsTrigger value="receipt">Receipt</TabsTrigger>
+                <TabsTrigger value="invoice">Invoice</TabsTrigger>
+                <TabsTrigger value="quotation">Quotation</TabsTrigger>
+              </TabsList>
+              <TabsContent value="receipt">
+                <Receipt
+                  sale={lastSale}
+                  store={stores.find((s) => s.id === lastSale.storeId)}
+                />
+              </TabsContent>
+              <TabsContent value="invoice">
+                <InvoiceOrQuotation 
+                  type="invoice"
+                  sale={lastSale}
+                  store={stores.find((s) => s.id === lastSale.storeId)}
+                  customer={customers.find((c) => c.id === lastSale.customerId)}
+                />
+              </TabsContent>
+              <TabsContent value="quotation">
+                 <InvoiceOrQuotation 
+                  type="quotation"
+                  sale={lastSale}
+                  store={stores.find((s) => s.id === lastSale.storeId)}
+                  customer={customers.find((c) => c.id === lastSale.customerId)}
+                />
+              </TabsContent>
+            </Tabs>
           )}
         </DialogContent>
       </Dialog>
