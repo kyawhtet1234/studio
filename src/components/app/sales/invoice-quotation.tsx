@@ -86,7 +86,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
             
             {/* Right side - Company Info */}
             <div className="text-right text-white">
-              <h1 className="text-2xl font-bold">{companyInfo?.name || 'Your Company'}</h1>
+              <h1 className="text-2xl font-bold" style={type === 'quotation' ? { color: 'black'} : {}}>{companyInfo?.name || 'Your Company'}</h1>
               <p className="text-xs whitespace-pre-line">{companyInfo?.address}</p>
               <p className="text-xs">{companyInfo?.phone}</p>
             </div>
