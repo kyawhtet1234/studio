@@ -52,48 +52,44 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
     const documentTitle = type === 'invoice' ? 'INVOICE' : 'QUOTATION';
     const documentId = type === 'invoice' ? sale.id.slice(-6).toUpperCase() : `QUO-${sale.id.slice(-6).toUpperCase()}`;
 
-    const isQuotation = type === 'quotation';
-    
     const headerStyle = {
-        backgroundColor: isQuotation ? '#C00000' : 'hsl(var(--primary))',
-        backgroundImage: isQuotation ? 'linear-gradient(135deg, #FF6B6B 0%, #A50000 100%)' : undefined,
+        background: 'linear-gradient(135deg, #4F4F4F 0%, #2C2C2C 50%, #000000 100%)',
     };
     
     const titleStyle = {
-        color: isQuotation ? '#A50000' : 'hsl(var(--primary))',
+        color: '#333333',
     };
     
     const tableHeaderStyle = {
-        backgroundColor: isQuotation ? '#A50000' : 'hsl(var(--primary))',
+        background: '#333333',
         color: 'white',
     };
     
     const totalStyle = {
-        backgroundColor: isQuotation ? '#A50000' : 'hsl(var(--primary))',
-        color: isQuotation ? '#FFFFFF' : 'hsl(var(--primary-foreground))',
+        background: '#333333',
+        color: 'white',
     };
 
     return (
       <div ref={ref as React.Ref<HTMLDivElement>} className="bg-white text-gray-800 text-sm w-full">
         {/* Header with geometric shapes */}
-        <div className="relative h-48">
-          <div
-            className="absolute bottom-0 left-0 w-full h-32"
-            style={headerStyle}
-          ></div>
-          <div className="absolute top-0 left-0 p-8 w-full h-full flex justify-center items-center">
-            <div className="flex items-center gap-4 text-center flex-col">
-              {companyInfo?.logo && (
-                <div className="p-2 rounded-md w-24 h-24 flex items-center justify-center">
-                  <Image src={companyInfo.logo} alt="Company Logo" width={80} height={80} className="object-contain" />
-                </div>
-              )}
-              <div>
-                <h1 className="text-xl font-bold text-white">{companyInfo?.name || 'Your Company'}</h1>
-                <p className="text-white text-xs whitespace-pre-line">{companyInfo?.address}</p>
-                <p className="text-white text-xs">{companyInfo?.phone}</p>
+        <div className="relative h-48" style={headerStyle}>
+          <div className="absolute inset-0 p-8 flex justify-between items-center">
+            
+            {/* Left side - Logo */}
+            {companyInfo?.logo && (
+              <div className="h-full flex items-center">
+                <Image src={companyInfo.logo} alt="Company Logo" width={140} height={140} className="object-contain h-32 w-auto" />
               </div>
+            )}
+            
+            {/* Right side - Company Info */}
+            <div className="text-right text-white">
+              <h1 className="text-2xl font-bold">{companyInfo?.name || 'Your Company'}</h1>
+              <p className="text-xs whitespace-pre-line">{companyInfo?.address}</p>
+              <p className="text-xs">{companyInfo?.phone}</p>
             </div>
+
           </div>
         </div>
 
