@@ -63,7 +63,7 @@ interface DocumentFormProps {
     type: 'invoice' | 'quotation';
     stores: Store[];
     customers: Customer[];
-    onSave: (sale: Omit<SaleTransaction, 'id' | 'date' | 'status' | 'paymentType'>) => Promise<void>;
+    onSave: (sale: Omit<SaleTransaction, 'id' | 'date'>) => Promise<void>;
     onAddCustomer: (customer: Omit<Customer, 'id'>) => Promise<void>;
 }
 
@@ -128,14 +128,14 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer }:
     }
     
     if (foundProduct && itemName && currentPrice > 0 && currentQuantity > 0) {
-      const inventoryItem = inventory.find(i => i.productId === foundProduct.id && i.storeId === watchStoreId);
-      const availableStock = inventoryItem?.stock || 0;
-      
-      const isInvoice = type === 'invoice';
-
-      if(isInvoice && availableStock < currentQuantity) {
-        toast({ variant: 'destructive', title: 'Not enough stock', description: `Only ${availableStock} of ${itemName} available.` });
-        return;
+      // For invoices, check stock. For quotations, don't.
+      if (type === 'invoice') {
+        const inventoryItem = inventory.find(i => i.productId === foundProduct.id && i.storeId === watchStoreId);
+        const availableStock = inventoryItem?.stock || 0;
+        if(availableStock < currentQuantity) {
+          toast({ variant: 'destructive', title: 'Not enough stock', description: `Only ${availableStock} of ${itemName} available.` });
+          return;
+        }
       }
 
       const newItem: CartItem = {
@@ -164,7 +164,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer }:
   const total = subtotal - (watchDiscount || 0);
   
   async function onSubmit(data: DocumentFormValues) {
-    const docData: Omit<SaleTransaction, 'id' | 'date' | 'status' | 'paymentType'> = {
+    const docData: Omit<SaleTransaction, 'id' | 'date'> = {
         storeId: data.storeId,
         customerId: data.customerId,
         items: data.cart.map(item => ({
@@ -178,19 +178,17 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer }:
         subtotal: subtotal,
         discount: data.discount || 0,
         total: total,
+        status: type, // Set status to 'invoice' or 'quotation'
+        paymentType: type === 'invoice' ? 'Invoice' : 'Quotation' // Differentiate payment type
     };
     
     try {
-      if (type === 'invoice') {
-        await onSave(docData);
-      }
+      await onSave(docData);
 
       const completeDocData: SaleTransaction = {
         ...docData,
         id: `${type}-${Date.now()}`,
         date: new Date(),
-        status: type === 'invoice' ? 'completed' : 'draft',
-        paymentType: type === 'invoice' ? 'Invoice' : 'Quotation'
       }
 
       setGeneratedDocument(completeDocData);

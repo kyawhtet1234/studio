@@ -41,7 +41,7 @@ interface DataContextProps {
     addPaymentType: (paymentType: Omit<PaymentType, 'id'>) => Promise<void>;
     updatePaymentType: (paymentTypeId: string, paymentType: Partial<Omit<PaymentType, 'id'>>) => Promise<void>;
     deletePaymentType: (paymentTypeId: string) => Promise<void>;
-    addSale: (sale: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => Promise<void>;
+    addSale: (sale: Omit<SaleTransaction, 'id' | 'date'>) => Promise<void>;
     voidSale: (saleId: string) => Promise<void>;
     addPurchase: (purchase: Omit<PurchaseTransaction, 'id' | 'date'>) => Promise<void>;
     deletePurchase: (purchaseId: string) => Promise<void>;
@@ -332,47 +332,46 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await fetchData(user.uid);
     };
 
-    const addSale = async (saleData: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => {
+    const addSale = async (saleData: Omit<SaleTransaction, 'id' | 'date'>) => {
         if (!user) return;
         
-        try {
-            await runTransaction(db, async (transaction) => {
-                // ===== READS FIRST =====
-                const inventoryRefs = saleData.items.map(item => {
-                    const inventoryId = `${item.productId}_${saleData.storeId}`;
-                    return doc(db, 'users', user.uid, 'inventory', inventoryId);
-                });
+        const isActualSale = saleData.status === 'completed';
 
-                const inventorySnaps = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
+        if (isActualSale) {
+             try {
+                await runTransaction(db, async (transaction) => {
+                    const inventoryRefs = saleData.items.map(item => {
+                        const inventoryId = `${item.productId}_${saleData.storeId}`;
+                        return doc(db, 'users', user.uid, 'inventory', inventoryId);
+                    });
 
-                // ===== WRITES SECOND =====
-                const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
-                transaction.set(newSaleRef, { 
-                    ...saleData, 
-                    date: Timestamp.now(),
-                    status: 'completed' 
-                });
+                    const inventorySnaps = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
 
-                for (let i = 0; i < saleData.items.length; i++) {
-                    const item = saleData.items[i];
-                    const inventorySnap = inventorySnaps[i];
+                    const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
+                    transaction.set(newSaleRef, { ...saleData, date: Timestamp.now() });
 
-                    if (!inventorySnap.exists()) {
-                        throw new Error(`Product ${item.name} is out of stock.`);
+                    for (let i = 0; i < saleData.items.length; i++) {
+                        const item = saleData.items[i];
+                        const inventorySnap = inventorySnaps[i];
+
+                        if (!inventorySnap.exists()) throw new Error(`Product ${item.name} is out of stock.`);
+                        
+                        const currentStock = inventorySnap.data().stock || 0;
+                        if (currentStock < item.quantity) {
+                            throw new Error(`Not enough stock for ${item.name}. Available: ${currentStock}, Requested: ${item.quantity}`);
+                        }
+
+                        const newStock = currentStock - item.quantity;
+                        transaction.update(inventorySnap.ref, { stock: newStock });
                     }
-
-                    const currentStock = inventorySnap.data().stock || 0;
-                    if (currentStock < item.quantity) {
-                        throw new Error(`Not enough stock for ${item.name}. Available: ${currentStock}, Requested: ${item.quantity}`);
-                    }
-
-                    const newStock = currentStock - item.quantity;
-                    transaction.update(inventorySnap.ref, { stock: newStock });
-                }
-            });
-        } catch (e) {
-            console.error("Sale transaction failed: ", e);
-            throw e;
+                });
+            } catch (e) {
+                console.error("Sale transaction failed: ", e);
+                throw e;
+            }
+        } else {
+            // For invoices and quotations, just add the document without touching inventory.
+            await addDoc(collection(db, 'users', user.uid, 'sales'), { ...saleData, date: Timestamp.now() });
         }
 
         await fetchData(user.uid);
@@ -383,7 +382,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         
         try {
             await runTransaction(db, async (transaction) => {
-                // ===== READS FIRST =====
                 const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
                 const saleSnap = await transaction.get(saleRef);
                 
@@ -393,33 +391,34 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
                 const saleData = saleSnap.data() as SaleTransaction;
                 
-                const inventoryRefs = saleData.items.map(item => {
-                    const inventoryId = `${item.productId}_${saleData.storeId}`;
-                    return doc(db, 'users', user.uid, 'inventory', inventoryId);
-                });
+                // Only adjust inventory for completed sales
+                if (saleData.status === 'completed') {
+                    const inventoryRefs = saleData.items.map(item => {
+                        const inventoryId = `${item.productId}_${saleData.storeId}`;
+                        return doc(db, 'users', user.uid, 'inventory', inventoryId);
+                    });
 
-                const inventorySnaps = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
+                    const inventorySnaps = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
 
-                // ===== WRITES SECOND =====
-                transaction.update(saleRef, { status: 'voided' });
+                    for (let i = 0; i < saleData.items.length; i++) {
+                        const item = saleData.items[i];
+                        const inventorySnap = inventorySnaps[i];
+                        const inventoryRef = inventoryRefs[i];
 
-                for (let i = 0; i < saleData.items.length; i++) {
-                    const item = saleData.items[i];
-                    const inventorySnap = inventorySnaps[i];
-                    const inventoryRef = inventoryRefs[i];
-
-                    if (inventorySnap.exists()) {
-                        const currentStock = inventorySnap.data().stock || 0;
-                        transaction.update(inventoryRef, { stock: currentStock + item.quantity });
-                    } else {
-                        // If inventory record doesn't exist, create it.
-                        transaction.set(inventoryRef, {
-                            productId: item.productId,
-                            storeId: saleData.storeId,
-                            stock: item.quantity,
-                        });
+                        if (inventorySnap.exists()) {
+                            const currentStock = inventorySnap.data().stock || 0;
+                            transaction.update(inventoryRef, { stock: currentStock + item.quantity });
+                        } else {
+                            transaction.set(inventoryRef, {
+                                productId: item.productId,
+                                storeId: saleData.storeId,
+                                stock: item.quantity,
+                            });
+                        }
                     }
                 }
+                
+                transaction.update(saleRef, { status: 'voided' });
             });
         } catch(e) {
             console.error("Void sale transaction failed: ", e);

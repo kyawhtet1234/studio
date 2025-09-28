@@ -21,24 +21,23 @@ export function DocumentViewer({ type, sales, stores, customers }: DocumentViewe
     const selectedSale = sales.find(s => s.id === selectedSaleId);
     const selectedStore = selectedSale ? stores.find(s => s.id === selectedSale.storeId) : undefined;
     const selectedCustomer = selectedSale ? customers.find(c => c.id === selectedSale.customerId) : undefined;
-    const title = type === 'invoice' ? 'Generate Invoice' : 'Generate Quotation';
-
-    const validSales = sales.filter(s => s.status !== 'voided');
+    const title = type === 'invoice' ? 'View Invoices' : 'View Quotations';
+    const description = type === 'invoice' ? 'Select an invoice to view or download it.' : 'Select a quotation to view or download it.';
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
-                <CardDescription>Select a sale to generate a document.</CardDescription>
+                <CardDescription>{description}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="max-w-md">
                     <Select onValueChange={setSelectedSaleId}>
                         <SelectTrigger>
-                            <SelectValue placeholder="Select a sale record..." />
+                            <SelectValue placeholder={`Select a ${type}...`} />
                         </SelectTrigger>
                         <SelectContent>
-                            {validSales.map(sale => (
+                            {sales.map(sale => (
                                 <SelectItem key={sale.id} value={sale.id}>
                                     {format(new Date(sale.date as Date), 'PPP')} - {customers.find(c=>c.id === sale.customerId)?.name || 'Walk-in'} - MMK {sale.total.toLocaleString()}
                                 </SelectItem>
@@ -57,8 +56,12 @@ export function DocumentViewer({ type, sales, stores, customers }: DocumentViewe
                         />
                     </div>
                 )}
+                 {!selectedSale && sales.length === 0 && (
+                    <div className="text-center text-muted-foreground pt-8">
+                        No {type}s found.
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
 }
-

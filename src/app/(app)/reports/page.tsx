@@ -219,11 +219,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt }: 
                             <TableCell>{customerName}</TableCell>
                             <TableCell>{sale.paymentType}</TableCell>
                             <TableCell>
-                                {isVoided ? (
-                                     <Badge variant="destructive">Voided</Badge>
-                                ) : (
-                                    <Badge variant="secondary">Completed</Badge>
-                                )}
+                                <Badge variant={isVoided ? "destructive" : "secondary"} className="capitalize">{sale.status}</Badge>
                             </TableCell>
                             <TableCell className="text-right">MMK {sale.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                             <TableCell className="text-right">MMK {sale.discount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
@@ -302,9 +298,10 @@ export default function ReportsPage() {
   const getReportData = (period: 'daily' | 'monthly') => {
     const reports: { [key: string]: { date: string, sales: number, cogs: number, profit: number } } = {};
     
-    filteredSales.forEach(sale => {
-        if(sale.status === 'voided') return;
-        
+    // Only include completed sales for financial reports
+    const completedSales = filteredSales.filter(s => s.status === 'completed');
+    
+    completedSales.forEach(sale => {
         const d = toDate(sale.date);
         const key = period === 'daily' 
             ? d.toISOString().split('T')[0] 
@@ -337,8 +334,10 @@ export default function ReportsPage() {
   const getSalesByCustomerData = () => {
     const customerSales: { [key: string]: { customerId: string, customerName: string, totalSales: number } } = {};
 
-    filteredSales.forEach(sale => {
-        if (sale.status === 'voided' || !sale.customerId) return;
+    const completedSales = filteredSales.filter(s => s.status === 'completed');
+
+    completedSales.forEach(sale => {
+        if (!sale.customerId) return;
 
         if (!customerSales[sale.customerId]) {
             const customer = customers.find(c => c.id === sale.customerId);
@@ -368,13 +367,26 @@ export default function ReportsPage() {
   }, [filteredPurchases]);
 
   const salesHistory = useMemo(() => {
-      return [...filteredSales].sort((a, b) => {
-        const dateA = toDate(a.date);
-        const dateB = toDate(b.date);
-        return dateB.getTime() - dateA.getTime();
+      return filteredSales
+        .filter(s => s.status === 'completed')
+        .sort((a, b) => {
+            const dateA = toDate(a.date);
+            const dateB = toDate(b.date);
+            return dateB.getTime() - dateA.getTime();
       });
   }, [filteredSales]);
 
+  const invoiceHistory = useMemo(() => {
+      return filteredSales
+        .filter(s => s.status === 'invoice')
+        .sort((a, b) => toDate(b.date).getTime() - toDate(a.date).getTime());
+  }, [filteredSales]);
+
+  const quotationHistory = useMemo(() => {
+      return filteredSales
+        .filter(s => s.status === 'quotation')
+        .sort((a, b) => toDate(b.date).getTime() - toDate(a.date).getTime());
+  }, [filteredSales]);
 
   const getActiveReportData = () => {
     switch (activeTab) {
@@ -394,8 +406,6 @@ export default function ReportsPage() {
           title: 'Sales By Customer'
         };
       case 'sales':
-      case 'invoice':
-      case 'quotation':
         return {
           data: salesHistory.map(s => ({
             Date: toDate(s.date).toLocaleDateString(),
@@ -408,6 +418,26 @@ export default function ReportsPage() {
             Total: s.total
           })),
           title: 'Sales History'
+        };
+       case 'invoice':
+        return {
+          data: invoiceHistory.map(s => ({
+            Date: toDate(s.date).toLocaleDateString(),
+            Store: stores.find(st => st.id === s.storeId)?.name || 'N/A',
+            Customer: customers.find(c => c.id === s.customerId)?.name || 'N/A',
+            Total: s.total
+          })),
+          title: 'Invoice History'
+        };
+      case 'quotation':
+        return {
+          data: quotationHistory.map(s => ({
+            Date: toDate(s.date).toLocaleDateString(),
+            Store: stores.find(st => st.id === s.storeId)?.name || 'N/A',
+            Customer: customers.find(c => c.id === s.customerId)?.name || 'N/A',
+            Total: s.total
+          })),
+          title: 'Quotation History'
         };
       case 'purchase':
         return {
@@ -520,10 +550,10 @@ export default function ReportsPage() {
             <PurchaseHistoryTable data={purchaseHistory} stores={stores} suppliers={suppliers} onDelete={deletePurchase} />
         </TabsContent>
         <TabsContent value="invoice">
-            <DocumentViewer type="invoice" sales={salesHistory} stores={stores} customers={customers} />
+            <DocumentViewer type="invoice" sales={invoiceHistory} stores={stores} customers={customers} />
         </TabsContent>
         <TabsContent value="quotation">
-            <DocumentViewer type="quotation" sales={salesHistory} stores={stores} customers={customers} />
+            <DocumentViewer type="quotation" sales={quotationHistory} stores={stores} customers={customers} />
         </TabsContent>
       </Tabs>
       {renderPrintDialog()}
