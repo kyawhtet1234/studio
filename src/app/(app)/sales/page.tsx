@@ -12,8 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function SalesPage() {
   const { addSale, stores, customers, addCustomer } = useData();
 
-  const handleSaveSale = async (newSale: Omit<SaleTransaction, 'id' | 'date' | 'status'>) => {
-    await addSale(newSale);
+  const handleSaveDocument = async (docData: Omit<SaleTransaction, 'id' | 'date'>) => {
+    await addSale(docData);
   };
 
   return (
@@ -27,17 +27,17 @@ export default function SalesPage() {
         </TabsList>
         <TabsContent value="sale">
             <div className="mt-4">
-                <SalesForm stores={stores} customers={customers} onSave={handleSaveSale} onAddCustomer={addCustomer} />
+                <SalesForm stores={stores} customers={customers} onSave={(saleData) => addSale({...saleData, status: 'completed' })} onAddCustomer={addCustomer} />
             </div>
         </TabsContent>
         <TabsContent value="invoice">
             <div className="mt-4">
-                <DocumentForm type="invoice" stores={stores} customers={customers} onSave={handleSaveSale} onAddCustomer={addCustomer} />
+                <DocumentForm type="invoice" stores={stores} customers={customers} onSave={handleSaveDocument} onAddCustomer={addCustomer} onSuccess={() => {}} />
             </div>
         </TabsContent>
         <TabsContent value="quotation">
             <div className="mt-4">
-                <DocumentForm type="quotation" stores={stores} customers={customers} onSave={handleSaveSale} onAddCustomer={addCustomer} />
+                <DocumentForm type="quotation" stores={stores} customers={customers} onSave={handleSaveDocument} onAddCustomer={addCustomer} onSuccess={() => {}}/>
             </div>
         </TabsContent>
       </Tabs>

@@ -65,9 +65,11 @@ interface DocumentFormProps {
     customers: Customer[];
     onSave: (sale: Omit<SaleTransaction, 'id' | 'date'>) => Promise<void>;
     onAddCustomer: (customer: Omit<Customer, 'id'>) => Promise<void>;
+    sale?: SaleTransaction;
+    onSuccess: () => void;
 }
 
-export function DocumentForm({ type, stores, customers, onSave, onAddCustomer }: DocumentFormProps) {
+export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, sale, onSuccess }: DocumentFormProps) {
   const { products, inventory } = useData();
   const { toast } = useToast();
   const [generatedDocument, setGeneratedDocument] = useState<SaleTransaction | null>(null);
@@ -79,15 +81,29 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer }:
   const [quantity, setQuantity] = useState<number | string>(1);
   const [foundProduct, setFoundProduct] = useState<Product | null>(null);
 
+  const isEditMode = !!sale;
+
   const form = useForm<DocumentFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      storeId: "",
-      customerId: "",
-      cart: [],
-      discount: 0,
+      storeId: sale?.storeId || "",
+      customerId: sale?.customerId || "",
+      cart: sale?.items || [],
+      discount: sale?.discount || 0,
     },
   });
+
+  useEffect(() => {
+    if (sale) {
+        form.reset({
+            storeId: sale.storeId,
+            customerId: sale.customerId,
+            cart: sale.items,
+            discount: sale.discount,
+        })
+    }
+  }, [sale, form]);
+
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -184,19 +200,26 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer }:
     
     try {
       await onSave(docData);
+      const toastTitle = isEditMode ? `${type.charAt(0).toUpperCase() + type.slice(1)} Updated` : `${type.charAt(0).toUpperCase() + type.slice(1)} Generated`;
 
-      const completeDocData: SaleTransaction = {
-        ...docData,
-        id: `${type}-${Date.now()}`,
-        date: new Date(),
+      if (!isEditMode) {
+        const completeDocData: SaleTransaction = {
+          ...docData,
+          id: `${type}-${Date.now()}`,
+          date: new Date(),
+        }
+        setGeneratedDocument(completeDocData);
+      }
+      
+      toast({ title: toastTitle, description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
+      
+      if (onSuccess) {
+          onSuccess();
+      } else {
+        form.reset();
+        remove();
       }
 
-      setGeneratedDocument(completeDocData);
-      
-      const toastTitle = type === 'invoice' ? 'Invoice Generated' : 'Quotation Generated';
-      toast({ title: toastTitle, description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
-      form.reset();
-      remove();
     } catch(error) {
        toast({
         variant: 'destructive',
@@ -216,7 +239,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer }:
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card>
           <CardHeader>
-             <CardTitle className="capitalize">New {type}</CardTitle>
+             <CardTitle className="capitalize">{isEditMode ? 'Edit' : 'New'} {type}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -385,7 +408,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer }:
             <p className="text-sm font-medium text-destructive">{form.formState.errors.cart.message || form.formState.errors.cart.root?.message}</p>
         )}
         <div className="flex justify-end">
-            <Button type="submit" size="lg" className="capitalize">Generate {type}</Button>
+            <Button type="submit" size="lg" className="capitalize">{isEditMode ? 'Save Changes' : `Generate ${type}`}</Button>
         </div>
       </form>
     </Form>
@@ -399,21 +422,23 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer }:
         </DialogContent>
     </Dialog>
 
-    <Dialog open={!!generatedDocument} onOpenChange={handleCloseDialog}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle className="capitalize">{type} Generated</DialogTitle>
-          </DialogHeader>
-          {generatedDocument && (
-            <InvoiceOrQuotation 
-              type={type}
-              sale={generatedDocument}
-              store={stores.find((s) => s.id === generatedDocument.storeId)}
-              customer={customers.find((c) => c.id === generatedDocument.customerId)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+    {!isEditMode && 
+      <Dialog open={!!generatedDocument} onOpenChange={handleCloseDialog}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle className="capitalize">{type} Generated</DialogTitle>
+            </DialogHeader>
+            {generatedDocument && (
+              <InvoiceOrQuotation 
+                type={type}
+                sale={generatedDocument}
+                store={stores.find((s) => s.id === generatedDocument.storeId)}
+                customer={customers.find((c) => c.id === generatedDocument.customerId)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+    }
     </>
   );
 }

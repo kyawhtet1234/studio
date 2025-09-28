@@ -24,6 +24,10 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { InvoiceOrQuotation } from "@/components/app/sales/invoice-quotation";
 import { DocumentViewer } from "@/components/app/reports/document-viewer";
+import { DataTable } from "@/components/app/products/data-table";
+import { documentColumns } from "@/components/app/reports/document-columns";
+import { EditEntitySheet } from "@/components/app/products/edit-entity-sheet";
+import { DocumentForm } from "@/components/app/sales/document-form";
 
 
 const toDate = (date: Date | Timestamp): Date => {
@@ -279,8 +283,9 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt }: 
 
 
 export default function ReportsPage() {
-  const { sales, products, purchases, stores, suppliers, customers, voidSale, deletePurchase } = useData();
+  const { sales, products, purchases, stores, suppliers, customers, voidSale, deletePurchase, deleteSale, updateSale, addCustomer } = useData();
   const [documentToPrint, setDocumentToPrint] = useState<{ type: 'receipt' | 'invoice' | 'quotation', sale: SaleTransaction } | null>(null);
+  const [editingDocument, setEditingDocument] = useState<SaleTransaction | null>(null);
   const [selectedStore, setSelectedStore] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('daily');
 
@@ -495,6 +500,23 @@ export default function ReportsPage() {
     )
   }
 
+  const invoiceCols = documentColumns({
+    customers,
+    onEdit: (doc) => setEditingDocument(doc),
+    onDelete: deleteSale,
+    onPrint: (doc) => setDocumentToPrint({ type: 'invoice', sale: doc }),
+    type: 'invoice'
+  });
+  
+  const quotationCols = documentColumns({
+      customers,
+      onEdit: (doc) => setEditingDocument(doc),
+      onDelete: deleteSale,
+      onPrint: (doc) => setDocumentToPrint({ type: 'quotation', sale: doc }),
+      type: 'quotation'
+  });
+
+
   return (
     <div>
       <PageHeader title="Reports">
@@ -550,13 +572,31 @@ export default function ReportsPage() {
             <PurchaseHistoryTable data={purchaseHistory} stores={stores} suppliers={suppliers} onDelete={deletePurchase} />
         </TabsContent>
         <TabsContent value="invoice">
-            <DocumentViewer type="invoice" sales={invoiceHistory} stores={stores} customers={customers} />
+            <DataTable columns={invoiceCols} data={invoiceHistory} filterColumnId="id" filterPlaceholder="Filter by number..." />
         </TabsContent>
         <TabsContent value="quotation">
-            <DocumentViewer type="quotation" sales={quotationHistory} stores={stores} customers={customers} />
+            <DataTable columns={quotationCols} data={quotationHistory} filterColumnId="id" filterPlaceholder="Filter by number..." />
         </TabsContent>
       </Tabs>
       {renderPrintDialog()}
+      <EditEntitySheet
+        title={`Edit ${editingDocument?.status === 'invoice' ? 'Invoice' : 'Quotation'}`}
+        description="Update the details for this document."
+        isOpen={!!editingDocument}
+        onClose={() => setEditingDocument(null)}
+      >
+        {(onSuccess) => (
+          <DocumentForm
+            type={editingDocument?.status as 'invoice' | 'quotation'}
+            stores={stores}
+            customers={customers}
+            onSave={(data) => updateSale(editingDocument!.id, data)}
+            onAddCustomer={addCustomer}
+            sale={editingDocument!}
+            onSuccess={onSuccess}
+          />
+        )}
+      </EditEntitySheet>
     </div>
   );
 }

@@ -94,7 +94,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "cart",
   });
@@ -200,7 +200,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
       
       toast({ title: 'Sale Saved!', description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
       form.reset();
-      remove(); // Clears the useFieldArray
+      replace([]); // Clears the useFieldArray
     } catch(error) {
        toast({
         variant: 'destructive',
@@ -435,7 +435,6 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
               <TabsList>
                 <TabsTrigger value="receipt">Receipt</TabsTrigger>
                 <TabsTrigger value="invoice">Invoice</TabsTrigger>
-                <TabsTrigger value="quotation">Quotation</TabsTrigger>
               </TabsList>
               <TabsContent value="receipt">
                 <Receipt
@@ -446,14 +445,6 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
               <TabsContent value="invoice">
                 <InvoiceOrQuotation 
                   type="invoice"
-                  sale={lastSale}
-                  store={stores.find((s) => s.id === lastSale.storeId)}
-                  customer={customers.find((c) => c.id === lastSale.customerId)}
-                />
-              </TabsContent>
-              <TabsContent value="quotation">
-                 <InvoiceOrQuotation 
-                  type="quotation"
                   sale={lastSale}
                   store={stores.find((s) => s.id === lastSale.storeId)}
                   customer={customers.find((c) => c.id === lastSale.customerId)}

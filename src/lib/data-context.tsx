@@ -42,7 +42,9 @@ interface DataContextProps {
     updatePaymentType: (paymentTypeId: string, paymentType: Partial<Omit<PaymentType, 'id'>>) => Promise<void>;
     deletePaymentType: (paymentTypeId: string) => Promise<void>;
     addSale: (sale: Omit<SaleTransaction, 'id' | 'date'>) => Promise<void>;
+    updateSale: (saleId: string, sale: Partial<Omit<SaleTransaction, 'id' | 'date'>>) => Promise<void>;
     voidSale: (saleId: string) => Promise<void>;
+    deleteSale: (saleId: string) => Promise<void>;
     addPurchase: (purchase: Omit<PurchaseTransaction, 'id' | 'date'>) => Promise<void>;
     deletePurchase: (purchaseId: string) => Promise<void>;
     addExpense: (expense: Omit<Expense, 'id'>) => Promise<void>;
@@ -376,6 +378,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         await fetchData(user.uid);
     };
+    
+    const updateSale = async (saleId: string, saleData: Partial<Omit<SaleTransaction, 'id' | 'date'>>) => {
+        if (!user) return;
+        const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
+        await updateDoc(saleRef, { ...saleData, date: Timestamp.now() });
+        await fetchData(user.uid);
+    };
+    
+    const deleteSale = async (saleId: string) => {
+        if (!user) return;
+        // Invoices and quotations don't affect inventory, so a simple delete is fine.
+        await deleteDoc(doc(db, 'users', user.uid, 'sales', saleId));
+        await fetchData(user.uid);
+    };
+
 
     const voidSale = async (saleId: string) => {
         if (!user) return;
@@ -680,7 +697,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             customers, addCustomer, updateCustomer, deleteCustomer,
             paymentTypes, addPaymentType, updatePaymentType, deletePaymentType,
             inventory, updateInventory,
-            sales, addSale, voidSale,
+            sales, addSale, updateSale, voidSale, deleteSale,
             purchases, addPurchase, deletePurchase,
             expenses, addExpense, deleteExpense,
             expenseCategories, addExpenseCategory, updateExpenseCategory, deleteExpenseCategory,
