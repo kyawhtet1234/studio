@@ -53,7 +53,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
     const documentId = type === 'invoice' ? sale.id.slice(-6).toUpperCase() : `QUO-${sale.id.slice(-6).toUpperCase()}`;
 
     const headerStyle = {
-      background: 'linear-gradient(135deg, #a8e063 0%, #56ab2f 100%)',
+      background: 'linear-gradient(135deg, #FCEABB 0%, #F8B500 100%)',
       boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2), 0 6px 6px rgba(0, 0, 0, 0.23)',
     };
     
