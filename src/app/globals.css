@@ -27,11 +27,11 @@
     --border: 210 40% 89.8%;
     --input: 210 40% 89.8%;
     --ring: 150 50% 45%;
-    --chart-1: 150 50% 45%; /* Green */
-    --chart-2: 200 80% 50%; /* Blue */
-    --chart-3: 170 70% 40%; /* Teal */
+    --chart-1: 0 80% 60%; /* Coral Red */
+    --chart-2: 35 95% 55%; /* Vibrant Orange */
+    --chart-3: 150 50% 45%; /* Green */
     --chart-4: 220 80% 60%; /* Indigo */
-    --chart-5: 160 60% 45%; /* Sea Green */
+    --chart-5: 265 80% 60%; /* Purple */
     --sidebar-background: 210 38% 18%; /* Deep Blue */
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 150 50% 45%; /* Green */
