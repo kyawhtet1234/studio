@@ -53,12 +53,12 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
     const documentId = type === 'invoice' ? sale.id.slice(-6).toUpperCase() : `QUO-${sale.id.slice(-6).toUpperCase()}`;
 
     const headerStyle = {
-      background: 'linear-gradient(135deg, #FCEABB 0%, #F8B500 100%)',
+      background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
       boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2), 0 6px 6px rgba(0, 0, 0, 0.23)',
     };
     
     const titleStyle = {
-        color: type === 'quotation' ? '#000000' : '#FFFFFF',
+        color: '#000000',
     };
     
     const tableHeaderStyle = {
@@ -85,8 +85,8 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
             </div>
             
             {/* Right side - Company Info */}
-            <div className="text-right text-white">
-              <h1 className="text-2xl font-bold" style={type === 'quotation' ? { color: 'black'} : {}}>{companyInfo?.name || 'Your Company'}</h1>
+            <div className="text-right" style={titleStyle}>
+              <h1 className="text-2xl font-bold">{companyInfo?.name || 'Your Company'}</h1>
               <p className="text-xs whitespace-pre-line">{companyInfo?.address}</p>
               <p className="text-xs">{companyInfo?.phone}</p>
             </div>
@@ -103,7 +103,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
                     {customer?.phone && <p>{customer.phone}</p>}
                 </div>
                 <div className="text-left">
-                    <h1 className="text-3xl font-extrabold uppercase" style={{ color: type === 'quotation' ? 'black' : 'inherit' }}>{documentTitle}</h1>
+                    <h1 className="text-3xl font-extrabold uppercase">{documentTitle}</h1>
                     <p><strong>#</strong> {documentId}</p>
                     <p><strong>Date:</strong> {format(new Date(sale.date as Date), 'PP')}</p>
                 </div>
