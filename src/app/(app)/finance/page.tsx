@@ -68,7 +68,7 @@ export default function FinancePage() {
     let monthExpenses = 0;
 
     sales.forEach(sale => {
-      if (sale.status === 'voided') return;
+      if (sale.status === 'voided' || sale.status === 'quotation') return;
       const saleDate = toDate(sale.date);
       if (saleDate >= startOfMonth) {
         monthSales += sale.total;
