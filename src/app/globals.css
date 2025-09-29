@@ -8,10 +8,10 @@
     --foreground: 220 25% 10%; /* Dark Blue-Gray Text */
     --card: 220 40% 100%;
     --card-foreground: 220 25% 10%;
-    --card-1: 145 63% 90%; /* Light Mint Green */
-    --card-2: 210 100% 92%; /* Light Sky Blue */
-    --card-3: 160 70% 85%; /* Light Seafoam Green */
-    --card-4: 190 80% 90%; /* Light Cyan */
+    --card-1: 0 100% 92%; /* Light Red */
+    --card-2: 60 100% 90%; /* Light Yellow */
+    --card-3: 210 100% 92%; /* Light Sky Blue */
+    --card-4: 270 100% 92%; /* Light Purple */
     --popover: 220 40% 100%;
     --popover-foreground: 220 25% 10%;
     --primary: 150 50% 45%; /* Green */
@@ -47,10 +47,10 @@
     --foreground: 0 0% 98%;
     --card: 260 20% 7%;
     --card-foreground: 0 0% 98%;
-    --card-1: 174 90% 15%; /* Saturated Darker Teal */
-    --card-2: 350 85% 18%; /* Saturated Darker Pink/Red */
-    --card-3: 45 90% 15%; /* Saturated Darker Orange/Yellow */
-    --card-4: 210 90% 18%; /* Saturated Darker Blue */
+    --card-1: 0 85% 18%; /* Saturated Darker Red */
+    --card-2: 45 90% 15%; /* Saturated Darker Orange/Yellow */
+    --card-3: 210 90% 18%; /* Saturated Darker Blue */
+    --card-4: 270 85% 20%; /* Saturated Darker Purple */
     --popover: 260 20% 5%;
     --popover-foreground: 0 0% 98%;
     --primary: 265 80% 60%;
