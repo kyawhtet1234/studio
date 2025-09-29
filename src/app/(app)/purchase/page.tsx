@@ -9,7 +9,7 @@ import type { PurchaseTransaction } from "@/lib/types";
 export default function PurchasePage() {
   const { stores, suppliers, addPurchase } = useData();
 
-  const handleSavePurchase = async (newPurchase: Omit<PurchaseTransaction, 'id' | 'date'>) => {
+  const handleSavePurchase = async (newPurchase: Omit<PurchaseTransaction, 'id'>) => {
     await addPurchase(newPurchase);
   };
   
@@ -20,3 +20,5 @@ export default function PurchasePage() {
     </div>
   );
 }
+
+    

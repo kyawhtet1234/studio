@@ -33,15 +33,19 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Trash2, PlusCircle } from "lucide-react";
+import { Trash2, PlusCircle, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Store, PurchaseTransaction, Supplier, Product } from "@/lib/types";
 import { useData } from "@/lib/data-context";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 
 const formSchema = z.object({
   storeId: z.string().min(1, "Please select a store."),
   supplierId: z.string().min(1, "Please select a supplier."),
+  date: z.date(),
   cart: z.array(
     z.object({
       productId: z.string(),
@@ -59,7 +63,7 @@ type PurchaseFormValues = z.infer<typeof formSchema>;
 interface PurchaseFormProps {
     stores: Store[];
     suppliers: Supplier[];
-    onSavePurchase: (purchase: Omit<PurchaseTransaction, 'id' | 'date'>) => Promise<void>;
+    onSavePurchase: (purchase: Omit<PurchaseTransaction, 'id'>) => Promise<void>;
 }
 
 export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseFormProps) {
@@ -77,6 +81,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
     defaultValues: {
       storeId: "",
       supplierId: "",
+      date: new Date(),
       cart: [],
     },
   });
@@ -155,6 +160,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
     const purchaseData = {
       storeId: data.storeId,
       supplierId: data.supplierId, 
+      date: data.date,
       items: data.cart.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
@@ -180,7 +186,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
              <CardTitle>Purchase Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FormField
                     control={form.control}
                     name="storeId"
@@ -224,6 +230,47 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                         <FormMessage />
                     </FormItem>
                     )}
+                />
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) =>
+                              date > new Date() || date < new Date("1900-01-01")
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
             </div>
             <div className={cn("flex flex-col sm:flex-row flex-wrap items-end gap-4 pt-4 border-t", !watchSupplierId && "opacity-50 pointer-events-none")}>

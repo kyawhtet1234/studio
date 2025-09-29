@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function SalesPage() {
   const { addSale, stores, customers, addCustomer } = useData();
 
-  const handleSaveDocument = async (docData: Omit<SaleTransaction, 'id' | 'date'>) => {
+  const handleSaveDocument = async (docData: Omit<SaleTransaction, 'id'>) => {
     await addSale(docData);
   };
 
@@ -44,3 +44,5 @@ export default function SalesPage() {
     </div>
   );
 }
+
+    

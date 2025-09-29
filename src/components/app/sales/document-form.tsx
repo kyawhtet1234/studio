@@ -34,16 +34,22 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Trash2, PlusCircle, UserPlus } from "lucide-react";
+import { Trash2, PlusCircle, UserPlus, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { CartItem, SaleTransaction, Store, Product, Customer } from '@/lib/types';
 import { useData } from "@/lib/data-context";
 import { AddCustomerForm } from "@/components/app/products/forms";
 import { InvoiceOrQuotation } from "./invoice-quotation";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+
 
 const formSchema = z.object({
   storeId: z.string().min(1, "Please select a store."),
   customerId: z.string().optional(),
+  date: z.date(),
   cart: z.array(
     z.object({
       productId: z.string(),
@@ -63,7 +69,7 @@ interface DocumentFormProps {
     type: 'invoice' | 'quotation';
     stores: Store[];
     customers: Customer[];
-    onSave: (sale: Omit<SaleTransaction, 'id' | 'date'>) => Promise<void>;
+    onSave: (sale: Omit<SaleTransaction, 'id'>) => Promise<void>;
     onAddCustomer: (customer: Omit<Customer, 'id'>) => Promise<void>;
     sale?: SaleTransaction;
     onSuccess: () => void;
@@ -88,6 +94,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
     defaultValues: {
       storeId: sale?.storeId || "",
       customerId: sale?.customerId || "",
+      date: sale ? (sale.date as Date) : new Date(),
       cart: sale?.items || [],
       discount: sale?.discount || 0,
     },
@@ -98,6 +105,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
         form.reset({
             storeId: sale.storeId,
             customerId: sale.customerId,
+            date: sale.date as Date,
             cart: sale.items,
             discount: sale.discount,
         })
@@ -180,9 +188,10 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
   const total = subtotal - (watchDiscount || 0);
   
   async function onSubmit(data: DocumentFormValues) {
-    const docData: Omit<SaleTransaction, 'id' | 'date'> = {
+    const docData: Omit<SaleTransaction, 'id'> = {
         storeId: data.storeId,
         customerId: data.customerId,
+        date: data.date,
         items: data.cart.map(item => ({
             productId: item.productId,
             name: item.name,
@@ -242,7 +251,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
              <CardTitle className="capitalize">{isEditMode ? 'Edit' : 'New'} {type}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FormField
                     control={form.control}
                     name="storeId"
@@ -291,6 +300,47 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
                         <FormMessage />
                     </FormItem>
                     )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) =>
+                              date > new Date() || date < new Date("1900-01-01")
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
             </div>
             <div className="flex flex-col sm:flex-row flex-wrap items-end gap-4 pt-4 border-t">

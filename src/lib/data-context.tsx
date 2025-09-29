@@ -41,11 +41,11 @@ interface DataContextProps {
     addPaymentType: (paymentType: Omit<PaymentType, 'id'>) => Promise<void>;
     updatePaymentType: (paymentTypeId: string, paymentType: Partial<Omit<PaymentType, 'id'>>) => Promise<void>;
     deletePaymentType: (paymentTypeId: string) => Promise<void>;
-    addSale: (sale: Omit<SaleTransaction, 'id' | 'date'>) => Promise<void>;
-    updateSale: (saleId: string, sale: Partial<Omit<SaleTransaction, 'id' | 'date'>>) => Promise<void>;
+    addSale: (sale: Omit<SaleTransaction, 'id'>) => Promise<void>;
+    updateSale: (saleId: string, sale: Partial<Omit<SaleTransaction, 'id'>>) => Promise<void>;
     voidSale: (saleId: string) => Promise<void>;
     deleteSale: (saleId: string) => Promise<void>;
-    addPurchase: (purchase: Omit<PurchaseTransaction, 'id' | 'date'>) => Promise<void>;
+    addPurchase: (purchase: Omit<PurchaseTransaction, 'id'>) => Promise<void>;
     deletePurchase: (purchaseId: string) => Promise<void>;
     addExpense: (expense: Omit<Expense, 'id'>) => Promise<void>;
     deleteExpense: (expenseId: string) => Promise<void>;
@@ -334,7 +334,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await fetchData(user.uid);
     };
 
-    const addSale = async (saleData: Omit<SaleTransaction, 'id' | 'date'>) => {
+    const addSale = async (saleData: Omit<SaleTransaction, 'id'>) => {
         if (!user) return;
         
         const isActualSale = saleData.status === 'completed';
@@ -350,7 +350,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     const inventorySnaps = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
 
                     const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
-                    transaction.set(newSaleRef, { ...saleData, date: Timestamp.now() });
+                    transaction.set(newSaleRef, { ...saleData, date: Timestamp.fromDate(saleData.date as Date) });
 
                     for (let i = 0; i < saleData.items.length; i++) {
                         const item = saleData.items[i];
@@ -373,16 +373,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
             }
         } else {
             // For invoices and quotations, just add the document without touching inventory.
-            await addDoc(collection(db, 'users', user.uid, 'sales'), { ...saleData, date: Timestamp.now() });
+            await addDoc(collection(db, 'users', user.uid, 'sales'), { ...saleData, date: Timestamp.fromDate(saleData.date as Date) });
         }
 
         await fetchData(user.uid);
     };
     
-    const updateSale = async (saleId: string, saleData: Partial<Omit<SaleTransaction, 'id' | 'date'>>) => {
+    const updateSale = async (saleId: string, saleData: Partial<Omit<SaleTransaction, 'id'>>) => {
         if (!user) return;
         const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
-        await updateDoc(saleRef, { ...saleData, date: Timestamp.now() });
+        await updateDoc(saleRef, { ...saleData, date: Timestamp.fromDate(saleData.date as Date) });
         await fetchData(user.uid);
     };
     
@@ -445,7 +445,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await fetchData(user.uid);
     };
 
-    const addPurchase = async (purchaseData: Omit<PurchaseTransaction, 'id' | 'date'>) => {
+    const addPurchase = async (purchaseData: Omit<PurchaseTransaction, 'id'>) => {
         if (!user) return;
     
         try {
@@ -460,7 +460,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
                 // ===== WRITES SECOND =====
                 const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
-                transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.now() });
+                transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.fromDate(purchaseData.date as Date) });
 
                 for (let i = 0; i < purchaseData.items.length; i++) {
                     const item = purchaseData.items[i];
@@ -719,3 +719,5 @@ export function useData() {
     }
     return context;
 }
+
+    
