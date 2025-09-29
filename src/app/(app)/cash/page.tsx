@@ -196,7 +196,7 @@ export default function CashPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div>
+        <div className="overflow-x-auto">
             <h2 className="text-xl font-semibold mb-4">Accounts</h2>
             <div className="rounded-md border">
               <Table>
@@ -245,7 +245,7 @@ export default function CashPage() {
               </Table>
             </div>
         </div>
-        <div>
+        <div className="overflow-x-auto">
             <h2 className="text-xl font-semibold mb-4">Recent Transactions</h2>
              <div className="rounded-md border">
                 <Table>

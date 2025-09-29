@@ -282,7 +282,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                 <Label htmlFor="itemName-input">Item Name</Label>
                 <Input id="itemName-input" placeholder="Item name" value={itemName} onChange={(e) => setItemName(e.target.value)} />
               </div>
-              <div className="flex-grow w-full sm:w-auto min-w-[100px] space-y-2">
+              <div className="w-full sm:w-32 space-y-2">
                 <Label htmlFor="buyPrice-input">Purchase Price</Label>
                 <Input id="buyPrice-input" type="number" step="0.01" value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} />
               </div>

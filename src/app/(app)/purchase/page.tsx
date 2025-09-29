@@ -16,7 +16,9 @@ export default function PurchasePage() {
   return (
     <div>
       <PageHeader title="New Purchase" />
-      <PurchaseForm stores={stores} suppliers={suppliers} onSavePurchase={handleSavePurchase}/>
+      <div className="overflow-x-auto">
+        <PurchaseForm stores={stores} suppliers={suppliers} onSavePurchase={handleSavePurchase}/>
+      </div>
     </div>
   );
 }

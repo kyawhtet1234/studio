@@ -555,19 +555,19 @@ export default function ReportsPage() {
             <TabsTrigger value="invoice">Invoices</TabsTrigger>
             <TabsTrigger value="quotation">Quotations</TabsTrigger>
         </TabsList>
-        <TabsContent value="daily">
+        <TabsContent value="daily" className="overflow-x-auto">
             <ReportTable data={dailyReports} total={dailyTotal} periodLabel="Date" />
         </TabsContent>
-        <TabsContent value="monthly">
+        <TabsContent value="monthly" className="overflow-x-auto">
             <ReportTable data={monthlyReports} total={monthlyTotal} period-label="Month" />
         </TabsContent>
-        <TabsContent value="salesByCustomer">
+        <TabsContent value="salesByCustomer" className="overflow-x-auto">
             <SalesByCustomerTable data={salesByCustomer} />
         </TabsContent>
-         <TabsContent value="sales">
+         <TabsContent value="sales" className="overflow-x-auto">
             <SalesHistoryTable data={salesHistory} stores={stores} customers={customers} onVoid={voidSale} onPrintReceipt={(sale) => setDocumentToPrint({ type: 'receipt', sale })} />
         </TabsContent>
-        <TabsContent value="purchase">
+        <TabsContent value="purchase" className="overflow-x-auto">
             <PurchaseHistoryTable data={purchaseHistory} stores={stores} suppliers={suppliers} onDelete={deletePurchase} />
         </TabsContent>
         <TabsContent value="invoice">

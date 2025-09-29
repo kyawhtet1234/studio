@@ -230,7 +230,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
              <CardTitle>Sale Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <FormField
                     control={form.control}
                     name="storeId"
@@ -363,7 +363,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     readOnly
                   />
               </div>
-              <div className="flex-grow w-full sm:w-auto min-w-[100px] space-y-2">
+              <div className="w-full sm:w-32 space-y-2">
                   <Label htmlFor="sellPrice-input">Sell Price</Label>
                   <Input
                     id="sellPrice-input"

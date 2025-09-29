@@ -362,7 +362,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
                     readOnly
                   />
               </div>
-              <div className="flex-grow w-full sm:w-auto min-w-[100px] space-y-2">
+              <div className="w-full sm:w-32 space-y-2">
                   <Label htmlFor={`sellPrice-input-${type}`}>Sell Price</Label>
                   <Input
                     id={`sellPrice-input-${type}`}

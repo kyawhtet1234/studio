@@ -97,7 +97,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton tooltip={user?.email || 'Profile'}>
               <UserCircle />
-              <span>{user?.email}</span>
+              <span className="truncate">{user?.email}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>

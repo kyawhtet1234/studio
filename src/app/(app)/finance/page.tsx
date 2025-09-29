@@ -193,7 +193,9 @@ export default function FinancePage() {
                      className="bg-shiny-green rounded-xl shadow-lg"
                     />
                 </div>
-                <ExpenseBreakdownChart expenses={expenses} expenseCategories={expenseCategories} />
+                <div className="overflow-x-auto">
+                  <ExpenseBreakdownChart expenses={expenses} expenseCategories={expenseCategories} />
+                </div>
              </div>
         </TabsContent>
         <TabsContent value="balanceSheet">
