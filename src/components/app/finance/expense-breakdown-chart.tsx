@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { PieChart, Pie, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, ResponsiveContainer, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import type { Expense, ExpenseCategory } from '@/lib/types';
@@ -19,6 +19,15 @@ interface ExpenseBreakdownChartProps {
   expenses: Expense[];
   expenseCategories: ExpenseCategory[];
 }
+
+const CHART_COLORS = [
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
+];
+
 
 export function ExpenseBreakdownChart({ expenses, expenseCategories }: ExpenseBreakdownChartProps) {
   const { chartData, chartConfig } = useMemo(() => {
@@ -49,7 +58,7 @@ export function ExpenseBreakdownChart({ expenses, expenseCategories }: ExpenseBr
         const key = item.name;
         acc[key] = {
             label: item.name,
-            color: `hsl(var(--chart-${index + 1}))`,
+            color: CHART_COLORS[index % CHART_COLORS.length],
         };
         return acc;
     }, {} as any)
@@ -89,6 +98,9 @@ export function ExpenseBreakdownChart({ expenses, expenseCategories }: ExpenseBr
                 innerRadius={60}
                 strokeWidth={5}
               >
+                {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                ))}
               </Pie>
               <ChartLegend
                 content={<ChartLegendContent nameKey="name" />}
