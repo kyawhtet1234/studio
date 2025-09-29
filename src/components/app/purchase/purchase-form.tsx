@@ -175,7 +175,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Card>
+        <Card className="bg-shiny-1 rounded-xl shadow-lg">
           <CardHeader>
              <CardTitle>Purchase Details</CardTitle>
           </CardHeader>
@@ -252,7 +252,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-shiny-2 rounded-xl shadow-lg">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
              <Table>
@@ -309,3 +309,5 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
     </Form>
   );
 }
+
+    
