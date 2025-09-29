@@ -10,7 +10,7 @@ import { FileDown, MoreHorizontal, Printer, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { PurchaseTransaction, SaleTransaction, Store, Customer } from "@/lib/types";
 import type { Timestamp } from 'firebase/firestore';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -303,10 +303,9 @@ export default function ReportsPage() {
   const getReportData = (period: 'daily' | 'monthly') => {
     const reports: { [key: string]: { date: string, sales: number, cogs: number, profit: number } } = {};
     
-    // Only include completed sales for financial reports
-    const completedSales = filteredSales.filter(s => s.status === 'completed');
+    const includedSales = filteredSales.filter(s => s.status === 'completed' || s.status === 'invoice');
     
-    completedSales.forEach(sale => {
+    includedSales.forEach(sale => {
         const d = toDate(sale.date);
         const key = period === 'daily' 
             ? d.toISOString().split('T')[0] 
@@ -339,9 +338,9 @@ export default function ReportsPage() {
   const getSalesByCustomerData = () => {
     const customerSales: { [key: string]: { customerId: string, customerName: string, totalSales: number } } = {};
 
-    const completedSales = filteredSales.filter(s => s.status === 'completed');
+    const includedSales = filteredSales.filter(s => s.status === 'completed' || s.status === 'invoice');
 
-    completedSales.forEach(sale => {
+    includedSales.forEach(sale => {
         if (!sale.customerId) return;
 
         if (!customerSales[sale.customerId]) {
@@ -600,3 +599,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+    
