@@ -98,7 +98,7 @@ export function BestSellers({ sales, products, className }: { sales: SaleTransac
                         label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                     >
                          {bestSellingItems.map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                            <Cell key={`cell-${index}`} fill={chartConfig[bestSellingItems[index].name]?.color || CHART_COLORS[index % CHART_COLORS.length]} />
                         ))}
                     </Pie>
                     </PieChart>
@@ -116,7 +116,7 @@ export function BestSellers({ sales, products, className }: { sales: SaleTransac
                   {bestSellingItems.map((item, index) => (
                   <TableRow key={index}>
                       <TableCell className="font-medium flex items-center gap-2">
-                        <div className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
+                        <div className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: chartConfig[item.name]?.color || CHART_COLORS[index % CHART_COLORS.length] }} />
                         {item.name}
                       </TableCell>
                       <TableCell className="text-right">{item.quantity}</TableCell>

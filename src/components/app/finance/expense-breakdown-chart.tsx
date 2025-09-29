@@ -42,7 +42,6 @@ export function ExpenseBreakdownChart({ expenses, expenseCategories }: ExpenseBr
       return {
         name: category?.name || 'Uncategorized',
         amount: amount,
-        fill: `hsl(var(--chart-${Object.keys(categoryExpenses).indexOf(categoryId) + 1}))`,
       };
     });
 
