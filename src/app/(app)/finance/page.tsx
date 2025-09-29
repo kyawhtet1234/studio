@@ -174,7 +174,7 @@ export default function FinancePage() {
                     icon={DollarSign}
                     description="Total sales recorded this month."
                     loading={loading}
-                    className="bg-shiny-1 rounded-xl shadow-lg"
+                    className="bg-shiny-red rounded-xl shadow-lg"
                     />
                     <StatCard 
                     title="This Month's Profit"
@@ -182,7 +182,7 @@ export default function FinancePage() {
                     icon={TrendingUp}
                     description="Net Profit (Sales - COGS - Expenses)."
                     loading={loading}
-                     className="bg-shiny-2 rounded-xl shadow-lg"
+                     className="bg-shiny-blue rounded-xl shadow-lg"
                     />
                     <StatCard 
                     title="This Month's Expenses"
@@ -190,7 +190,7 @@ export default function FinancePage() {
                     icon={TrendingDown}
                     description="Total expenses recorded this month."
                     loading={loading}
-                     className="bg-shiny-3 rounded-xl shadow-lg"
+                     className="bg-shiny-green rounded-xl shadow-lg"
                     />
                 </div>
                 <ExpenseBreakdownChart expenses={expenses} expenseCategories={expenseCategories} />

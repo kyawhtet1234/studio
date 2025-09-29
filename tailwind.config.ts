@@ -31,6 +31,7 @@ export default {
         'shiny-yellow': 'linear-gradient(135deg, hsl(var(--card-2)) 0%, hsl(48 95% 55%) 100%)',
         'shiny-blue': 'linear-gradient(135deg, hsl(var(--card-3)) 0%, hsl(var(--accent)) 100%)',
         'shiny-purple': 'linear-gradient(135deg, hsl(var(--card-4)) 0%, hsl(265 80% 60%) 100%)',
+        'shiny-green': 'linear-gradient(135deg, hsl(var(--chart-3)) 0%, hsl(150 50% 45%) 100%)',
         'sidebar-gradient': 'radial-gradient(circle at 50% 0, hsl(var(--sidebar-accent)) 0%, hsl(var(--sidebar-background)) 100%)',
         'sidebar-shiny-gradient': 'linear-gradient(180deg, hsl(var(--sidebar-accent)) 0%, hsl(var(--sidebar-background)) 100%)',
       },

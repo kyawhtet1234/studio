@@ -183,7 +183,7 @@ export default function CashPage() {
           icon={Wallet}
           description="Total cash across all cash accounts."
           loading={loading}
-          className="bg-shiny-4 rounded-xl shadow-lg"
+          className="bg-shiny-purple rounded-xl shadow-lg"
         />
         <StatCard 
           title="Total in Bank"
@@ -191,7 +191,7 @@ export default function CashPage() {
           icon={Landmark}
           description="Total cash across all bank accounts."
           loading={loading}
-          className="bg-shiny-1 rounded-xl shadow-lg"
+          className="bg-shiny-red rounded-xl shadow-lg"
         />
       </div>
 
