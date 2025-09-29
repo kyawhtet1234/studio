@@ -72,7 +72,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
     };
 
     return (
-      <div ref={ref as React.Ref<HTMLDivElement>} className="bg-white text-gray-800 text-sm w-full">
+      <div ref={ref as React.Ref<HTMLDivElement>} className="bg-white text-gray-800 text-xs w-full">
         {/* Header */}
         <div className="relative h-48" style={headerStyle}>
           <div className="absolute inset-0 p-8 flex justify-between items-center">
@@ -86,9 +86,9 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
             
             {/* Right side - Company Info */}
             <div className="text-right" style={titleStyle}>
-              <h1 className="text-2xl font-bold">{companyInfo?.name || 'Your Company'}</h1>
-              <p className="text-xs whitespace-pre-line">{companyInfo?.address}</p>
-              <p className="text-xs">{companyInfo?.phone}</p>
+              <h1 className="text-xl font-bold">{companyInfo?.name || 'Your Company'}</h1>
+              <p className="text-[11px] whitespace-pre-line">{companyInfo?.address}</p>
+              <p className="text-[11px]">{companyInfo?.phone}</p>
             </div>
 
           </div>
@@ -99,11 +99,11 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
             <div className="grid grid-cols-3 gap-8 mb-12">
                 <div className="col-span-2">
                     <p className="text-gray-500">Bill To:</p>
-                    <h2 className="text-lg font-bold">{customer?.name || 'Walk-in Customer'}</h2>
+                    <h2 className="text-base font-bold">{customer?.name || 'Walk-in Customer'}</h2>
                     {customer?.phone && <p>{customer.phone}</p>}
                 </div>
                 <div className="text-left">
-                    <h1 className="text-3xl font-extrabold uppercase">{documentTitle}</h1>
+                    <h1 className="text-2xl font-extrabold uppercase">{documentTitle}</h1>
                     <p><strong>#</strong> {documentId}</p>
                     <p><strong>Date:</strong> {format(new Date(sale.date as Date), 'PP')}</p>
                 </div>
@@ -113,24 +113,24 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
             <table className="w-full text-left table-auto mb-8">
             <thead >
                 <tr style={tableHeaderStyle}>
-                <th className="p-3">#</th>
-                <th className="p-3">Item</th>
-                <th className="p-3 text-right">Qty</th>
-                <th className="p-3 text-right">Price</th>
-                <th className="p-3 text-right">Total</th>
+                <th className="p-2">#</th>
+                <th className="p-2">Item</th>
+                <th className="p-2 text-right">Qty</th>
+                <th className="p-2 text-right">Price</th>
+                <th className="p-2 text-right">Total</th>
                 </tr>
             </thead>
             <tbody>
                 {sale.items.map((item, index) => (
                 <tr key={item.productId} className="border-b">
-                    <td className="p-3">{index + 1}</td>
-                    <td className="p-3">
+                    <td className="p-2">{index + 1}</td>
+                    <td className="p-2">
                     <p className="font-semibold">{item.name}</p>
-                    <p className="text-xs text-gray-500">{item.sku}</p>
+                    <p className="text-[10px] text-gray-500">{item.sku}</p>
                     </td>
-                    <td className="p-3 text-right">{item.quantity}</td>
-                    <td className="p-3 text-right">MMK {item.sellPrice.toLocaleString()}</td>
-                    <td className="p-3 text-right">MMK {item.total.toLocaleString()}</td>
+                    <td className="p-2 text-right">{item.quantity}</td>
+                    <td className="p-2 text-right">MMK {item.sellPrice.toLocaleString()}</td>
+                    <td className="p-2 text-right">MMK {item.total.toLocaleString()}</td>
                 </tr>
                 ))}
             </tbody>
@@ -138,7 +138,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
 
             {/* Totals */}
             <div className="flex justify-end mb-12">
-            <div className="w-full max-w-sm space-y-3">
+            <div className="w-full max-w-sm space-y-2">
                 <div className="flex justify-between">
                 <span>Subtotal:</span>
                 <span>MMK {sale.subtotal.toLocaleString()}</span>
@@ -147,7 +147,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
                 <span>Discount:</span>
                 <span>- MMK {sale.discount.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between font-bold text-lg p-3 rounded-md" style={totalStyle}>
+                <div className="flex justify-between font-bold text-base p-2 rounded-md" style={totalStyle}>
                 <span>Total:</span>
                 <span>MMK {sale.total.toLocaleString()}</span>
                 </div>
@@ -159,23 +159,23 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
                  <div>
                     {type === 'invoice' && companyInfo?.paymentInfo && (
                         <>
-                            <h3 className="font-bold mb-2">Payment Information</h3>
-                            <p className="whitespace-pre-line text-xs">{companyInfo.paymentInfo}</p>
+                            <h3 className="font-bold mb-1">Payment Information</h3>
+                            <p className="whitespace-pre-line text-[10px]">{companyInfo.paymentInfo}</p>
                         </>
                     )}
                  </div>
                  <div className="text-right">
-                     <div className="mt-16 mb-2 border-t-2 border-gray-400 border-dashed w-48 ml-auto"></div>
+                     <div className="mt-12 mb-2 border-t-2 border-gray-400 border-dashed w-40 ml-auto"></div>
                      <p>Authorised Sign</p>
                  </div>
             </div>
              {companyInfo?.terms && (
-                <div className="mt-12 pt-8 border-t">
-                    <h3 className="font-bold mb-2">Terms & Conditions</h3>
-                    <p className="whitespace-pre-line text-xs text-gray-500">{companyInfo.terms}</p>
+                <div className="mt-8 pt-4 border-t">
+                    <h3 className="font-bold mb-1">Terms & Conditions</h3>
+                    <p className="whitespace-pre-line text-[10px] text-gray-500">{companyInfo.terms}</p>
                 </div>
             )}
-             <div className="text-center mt-8 text-gray-500">
+             <div className="text-center mt-6 text-gray-500">
                 <p>Thank you for your business!</p>
             </div>
         </div>
