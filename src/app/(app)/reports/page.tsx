@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useData } from "@/lib/data-context";
@@ -6,7 +7,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
-import { FileDown, MoreHorizontal, Printer, Undo2 } from "lucide-react";
+import { FileDown, MoreHorizontal, Printer, Trash2, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { PurchaseTransaction, SaleTransaction, Store, Customer } from "@/lib/types";
 import type { Timestamp } from 'firebase/firestore';
@@ -182,8 +183,9 @@ const PurchaseHistoryTable = ({ data, stores, suppliers, onDelete }: { data: Pur
     )
 };
 
-const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt }: { data: SaleTransaction[], stores: Store[], customers: Customer[], onVoid: (id: string) => void, onPrintReceipt: (sale: SaleTransaction) => void }) => {
+const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, onDelete }: { data: SaleTransaction[], stores: Store[], customers: Customer[], onVoid: (id: string) => void, onPrintReceipt: (sale: SaleTransaction) => void, onDelete: (id: string) => void }) => {
     const [voidCandidate, setVoidCandidate] = useState<string | null>(null);
+    const [deleteCandidate, setDeleteCandidate] = useState<string | null>(null);
     const { toast } = useToast();
 
     const handleVoid = () => {
@@ -191,6 +193,14 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt }: 
             onVoid(voidCandidate);
             toast({ title: 'Success', description: 'Sale has been voided.' });
             setVoidCandidate(null);
+        }
+    };
+
+    const handleDelete = () => {
+        if (deleteCandidate) {
+            onDelete(deleteCandidate);
+            toast({ title: 'Success', description: 'Sale has been deleted.' });
+            setDeleteCandidate(null);
         }
     };
     
@@ -245,6 +255,10 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt }: 
                                             <Undo2 className="mr-2 h-4 w-4" />
                                             Void Transaction
                                         </DropdownMenuItem>
+                                         <DropdownMenuItem className="text-destructive" onClick={() => setDeleteCandidate(sale.id)}>
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Delete
+                                        </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>
@@ -273,6 +287,22 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt }: 
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleVoid}>
                     Confirm Void
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+         <AlertDialog open={!!deleteCandidate} onOpenChange={() => setDeleteCandidate(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure you want to delete this sale?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the sale record. This will not adjust inventory. Use 'Void' to restock items.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                        Delete
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
@@ -372,7 +402,7 @@ export default function ReportsPage() {
 
   const salesHistory = useMemo(() => {
       return filteredSales
-        .filter(s => s.status === 'completed')
+        .filter(s => s.status === 'completed' || s.status === 'voided')
         .sort((a, b) => {
             const dateA = toDate(a.date);
             const dateB = toDate(b.date);
@@ -565,7 +595,7 @@ export default function ReportsPage() {
             <SalesByCustomerTable data={salesByCustomer} />
         </TabsContent>
          <TabsContent value="sales" className="overflow-x-auto">
-            <SalesHistoryTable data={salesHistory} stores={stores} customers={customers} onVoid={voidSale} onPrintReceipt={(sale) => setDocumentToPrint({ type: 'receipt', sale })} />
+            <SalesHistoryTable data={salesHistory} stores={stores} customers={customers} onVoid={voidSale} onPrintReceipt={(sale) => setDocumentToPrint({ type: 'receipt', sale })} onDelete={deleteSale} />
         </TabsContent>
         <TabsContent value="purchase" className="overflow-x-auto">
             <PurchaseHistoryTable data={purchaseHistory} stores={stores} suppliers={suppliers} onDelete={deletePurchase} />
@@ -601,3 +631,4 @@ export default function ReportsPage() {
 }
 
     
+

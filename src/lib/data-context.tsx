@@ -1,4 +1,5 @@
 
+
 'use client';
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
@@ -388,7 +389,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     
     const deleteSale = async (saleId: string) => {
         if (!user) return;
-        // Invoices and quotations don't affect inventory, so a simple delete is fine.
         await deleteDoc(doc(db, 'users', user.uid, 'sales', saleId));
         await fetchData(user.uid);
     };
