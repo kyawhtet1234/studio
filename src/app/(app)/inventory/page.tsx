@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useData } from "@/lib/data-context";
 import type { InventoryItem } from "@/lib/types";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface AdjustmentItem {
   productId: string;
@@ -143,43 +144,45 @@ export default function InventoryPage() {
             </Select>
         </div>
       </PageHeader>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>SKU</TableHead>
-              <TableHead>Product Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Store</TableHead>
-              <TableHead className="text-right">Stock</TableHead>
-              <TableHead className="w-[100px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {inventoryData.map((item) => (
-                <TableRow key={`${item.productId}_${item.storeId}`}>
-                    <TableCell>{item.sku}</TableCell>
-                    <TableCell className="font-medium">{item.productName}</TableCell>
-                    <TableCell>{item.categoryName}</TableCell>
-                    <TableCell>{item.storeName}</TableCell>
-                    <TableCell className="text-right">{item.stock}</TableCell>
-                    <TableCell className="text-right">
-                        <Button variant="outline" size="sm" onClick={() => handleOpenAdjustDialog(item)}>
-                            Adjust
-                        </Button>
-                    </TableCell>
-                </TableRow>
-            ))}
-             {inventoryData.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={6} className="text-center h-24">
-                        No inventory found for the selected filters.
-                    </TableCell>
-                </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <Card className="shadow-drop-shadow-black">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>SKU</TableHead>
+                <TableHead>Product Name</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Store</TableHead>
+                <TableHead className="text-right">Stock</TableHead>
+                <TableHead className="w-[100px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {inventoryData.map((item) => (
+                  <TableRow key={`${item.productId}_${item.storeId}`}>
+                      <TableCell>{item.sku}</TableCell>
+                      <TableCell className="font-medium">{item.productName}</TableCell>
+                      <TableCell>{item.categoryName}</TableCell>
+                      <TableCell>{item.storeName}</TableCell>
+                      <TableCell className="text-right">{item.stock}</TableCell>
+                      <TableCell className="text-right">
+                          <Button variant="outline" size="sm" onClick={() => handleOpenAdjustDialog(item)}>
+                              Adjust
+                          </Button>
+                      </TableCell>
+                  </TableRow>
+              ))}
+              {inventoryData.length === 0 && (
+                  <TableRow>
+                      <TableCell colSpan={6} className="text-center h-24">
+                          No inventory found for the selected filters.
+                      </TableCell>
+                  </TableRow>
+              )}
+            </TableBody>
+          </Table>>
+        </CardContent>
+      </Card>
       <Dialog open={!!adjustmentItem} onOpenChange={() => setAdjustmentItem(null)}>
         <DialogContent>
           <DialogHeader>

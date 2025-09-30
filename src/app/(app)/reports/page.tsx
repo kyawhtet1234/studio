@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Receipt } from "@/components/app/sales/receipt";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 
 import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
@@ -39,71 +40,75 @@ const toDate = (date: Date | Timestamp): Date => {
 };
 
 const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales: number, profit: number, totalQuantity: number }, periodLabel: string }) => (
-    <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{periodLabel}</TableHead>
-              <TableHead className="text-right">Total Items</TableHead>
-              <TableHead className="text-right">Sales</TableHead>
-              <TableHead className="text-right">Profit (Sales - COGS)</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.map((report) => (
-                <TableRow key={report.date}>
-                    <TableCell className="font-medium">{report.date}</TableCell>
-                    <TableCell className="text-right">{report.totalQuantity}</TableCell>
-                    <TableCell className="text-right">MMK {report.sales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell className="text-right">MMK {report.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                </TableRow>
-            ))}
-             {data.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={4} className="text-center h-24">
-                        No reports found.
-                    </TableCell>
-                </TableRow>
-            )}
-          </TableBody>
-          <TableFooter>
-            <TableRow>
-              <TableCell className="font-bold">Total</TableCell>
-              <TableCell className="text-right font-bold">{total.totalQuantity}</TableCell>
-              <TableCell className="text-right font-bold">MMK {total.sales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-              <TableCell className="text-right font-bold">MMK {total.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-            </TableRow>
-          </TableFooter>
-        </Table>
-    </div>
+    <Card className="shadow-drop-shadow-black">
+      <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{periodLabel}</TableHead>
+                <TableHead className="text-right">Total Items</TableHead>
+                <TableHead className="text-right">Sales</TableHead>
+                <TableHead className="text-right">Profit (Sales - COGS)</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.map((report) => (
+                  <TableRow key={report.date}>
+                      <TableCell className="font-medium">{report.date}</TableCell>
+                      <TableCell className="text-right">{report.totalQuantity}</TableCell>
+                      <TableCell className="text-right">MMK {report.sales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right">MMK {report.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  </TableRow>
+              ))}
+              {data.length === 0 && (
+                  <TableRow>
+                      <TableCell colSpan={4} className="text-center h-24">
+                          No reports found.
+                      </TableCell>
+                  </TableRow>
+              )}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell className="font-bold">Total</TableCell>
+                <TableCell className="text-right font-bold">{total.totalQuantity}</TableCell>
+                <TableCell className="text-right font-bold">MMK {total.sales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                <TableCell className="text-right font-bold">MMK {total.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+      </CardContent>
+    </Card>
 );
 
 const SalesByCustomerTable = ({ data }: { data: any[] }) => (
-    <div className="rounded-md border">
-        <Table>
-            <TableHeader>
-                <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead className="text-right">Total Sales</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {data.map((report) => (
-                    <TableRow key={report.customerId}>
-                        <TableCell className="font-medium">{report.customerName}</TableCell>
-                        <TableCell className="text-right">MMK {report.totalSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    </TableRow>
-                ))}
-                {data.length === 0 && (
-                    <TableRow>
-                        <TableCell colSpan={2} className="text-center h-24">
-                            No sales with customers found.
-                        </TableCell>
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
-    </div>
+    <Card className="shadow-drop-shadow-black">
+      <CardContent className="p-0">
+          <Table>
+              <TableHeader>
+                  <TableRow>
+                      <TableHead>Customer</TableHead>
+                      <TableHead className="text-right">Total Sales</TableHead>
+                  </TableRow>
+              </TableHeader>
+              <TableBody>
+                  {data.map((report) => (
+                      <TableRow key={report.customerId}>
+                          <TableCell className="font-medium">{report.customerName}</TableCell>
+                          <TableCell className="text-right">MMK {report.totalSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      </TableRow>
+                  ))}
+                  {data.length === 0 && (
+                      <TableRow>
+                          <TableCell colSpan={2} className="text-center h-24">
+                              No sales with customers found.
+                          </TableCell>
+                      </TableRow>
+                  )}
+              </TableBody>
+          </Table>
+      </CardContent>
+    </Card>
 );
 
 const PurchaseHistoryTable = ({ data, stores, suppliers, onDelete }: { data: PurchaseTransaction[], stores: any[], suppliers: any[], onDelete: (id: string) => void }) => {
@@ -120,7 +125,8 @@ const PurchaseHistoryTable = ({ data, stores, suppliers, onDelete }: { data: Pur
     
     return (
     <>
-        <div className="rounded-md border">
+        <Card className="shadow-drop-shadow-black">
+          <CardContent className="p-0">
             <Table>
             <TableHeader>
                 <TableRow>
@@ -140,7 +146,7 @@ const PurchaseHistoryTable = ({ data, stores, suppliers, onDelete }: { data: Pur
                             <TableCell>{stores.find(s => s.id === purchase.storeId)?.name || 'N/A'}</TableCell>
                             <TableCell>{suppliers.find(s => s.id === purchase.supplierId)?.name || 'N/A'}</TableCell>
                             <TableCell className="text-right">MMK {purchase.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                             <TableCell>
+                              <TableCell>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="ghost" className="h-8 w-8 p-0">
@@ -165,7 +171,8 @@ const PurchaseHistoryTable = ({ data, stores, suppliers, onDelete }: { data: Pur
                 )}
             </TableBody>
             </Table>
-        </div>
+          </CardContent>
+        </Card>
         <AlertDialog open={!!deleteCandidate} onOpenChange={() => setDeleteCandidate(null)}>
             <AlertDialogContent>
                 <AlertDialogHeader>
@@ -209,7 +216,8 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
     
     return (
     <>
-        <div className="rounded-md border">
+        <Card className="shadow-drop-shadow-black">
+          <CardContent className="p-0">
             <Table>
             <TableHeader>
                 <TableRow>
@@ -261,7 +269,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                                             <Undo2 className="mr-2 h-4 w-4" />
                                             Void Transaction
                                         </DropdownMenuItem>
-                                         <DropdownMenuItem className="text-destructive" onClick={() => setDeleteCandidate(sale.id)}>
+                                          <DropdownMenuItem className="text-destructive" onClick={() => setDeleteCandidate(sale.id)}>
                                             <Trash2 className="mr-2 h-4 w-4" />
                                             Delete
                                         </DropdownMenuItem>
@@ -280,7 +288,8 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                 )}
             </TableBody>
             </Table>
-        </div>
+          </CardContent>
+        </Card>
         <AlertDialog open={!!voidCandidate} onOpenChange={() => setVoidCandidate(null)}>
             <AlertDialogContent>
                 <AlertDialogHeader>
@@ -297,7 +306,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
-         <AlertDialog open={!!deleteCandidate} onOpenChange={() => setDeleteCandidate(null)}>
+          <AlertDialog open={!!deleteCandidate} onOpenChange={() => setDeleteCandidate(null)}>
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure you want to delete this sale?</AlertDialogTitle>
@@ -607,17 +616,25 @@ export default function ReportsPage() {
         <TabsContent value="salesByCustomer" className="overflow-x-auto">
             <SalesByCustomerTable data={salesByCustomer} />
         </TabsContent>
-         <TabsContent value="sales" className="overflow-x-auto">
+          <TabsContent value="sales" className="overflow-x-auto">
             <SalesHistoryTable data={salesHistory} stores={stores} customers={customers} onVoid={voidSale} onPrintReceipt={(sale) => setDocumentToPrint({ type: 'receipt', sale })} onDelete={deleteSale} />
         </TabsContent>
         <TabsContent value="purchase" className="overflow-x-auto">
             <PurchaseHistoryTable data={purchaseHistory} stores={stores} suppliers={suppliers} onDelete={deletePurchase} />
         </TabsContent>
         <TabsContent value="invoice">
-            <DataTable columns={invoiceCols} data={invoiceHistory} filterColumnId="id" filterPlaceholder="Filter by number..." />
+            <Card className="shadow-drop-shadow-black">
+              <CardContent className="p-4 md:p-6">
+                <DataTable columns={invoiceCols} data={invoiceHistory} filterColumnId="id" filterPlaceholder="Filter by number..." />
+              </CardContent>
+            </Card>
         </TabsContent>
         <TabsContent value="quotation">
-            <DataTable columns={quotationCols} data={quotationHistory} filterColumnId="id" filterPlaceholder="Filter by number..." />
+            <Card className="shadow-drop-shadow-black">
+              <CardContent className="p-4 md:p-6">
+                <DataTable columns={quotationCols} data={quotationHistory} filterColumnId="id" filterPlaceholder="Filter by number..." />
+              </CardContent>
+            </Card>
         </TabsContent>
       </Tabs>
       {renderPrintDialog()}
@@ -650,5 +667,6 @@ export default function ReportsPage() {
     
 
     
+
 
 
