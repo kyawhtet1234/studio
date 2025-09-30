@@ -10,6 +10,7 @@ import type { Timestamp } from 'firebase/firestore';
 import { useMemo, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { SaleTransaction } from '@/lib/types';
+import { InventoryAlerts } from '@/components/app/dashboard/inventory-alerts';
 
 // Helper function to safely convert date
 const toDate = (date: Date | Timestamp): Date => {
@@ -20,7 +21,7 @@ const toDate = (date: Date | Timestamp): Date => {
 };
 
 export default function DashboardPage() {
-  const { sales, products, loading, stores } = useData();
+  const { sales, products, loading, stores, inventory } = useData();
   const [selectedStore, setSelectedStore] = useState<string>('all');
 
   const filteredSales = useMemo(() => {
@@ -91,6 +92,9 @@ export default function DashboardPage() {
           loading={loading}
           className="bg-shiny-blue rounded-xl shadow-lg"
         />
+      </div>
+      <div className="mt-6">
+        <InventoryAlerts inventory={inventory} products={products} stores={stores} className="bg-shiny-yellow rounded-xl shadow-lg" />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
         <SalesChart sales={filteredSales} className="bg-shiny-yellow rounded-xl shadow-lg" />
