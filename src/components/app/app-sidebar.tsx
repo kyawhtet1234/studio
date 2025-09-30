@@ -31,13 +31,13 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 const menuItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard, color: 'bg-shiny-blue' },
-  { href: '/sales', label: 'Sales', icon: ShoppingCart, color: 'bg-shiny-green' },
-  { href: '/products', label: 'Products', icon: Package, color: 'bg-shiny-yellow' },
-  { href: '/purchase', label: 'Purchase', icon: Truck, color: 'bg-blue-500' },
-  { href: '/inventory', label: 'Inventory', icon: Boxes, color: 'bg-shiny-red' },
+  { href: '/', label: 'Dashboard', icon: LayoutDashboard, color: 'bg-blue-500' },
+  { href: '/sales', label: 'Sales', icon: ShoppingCart, color: 'bg-green-500' },
+  { href: '/products', label: 'Products', icon: Package, color: 'bg-yellow-500' },
+  { href: '/purchase', label: 'Purchase', icon: Truck, color: 'bg-sky-500' },
+  { href: '/inventory', label: 'Inventory', icon: Boxes, color: 'bg-red-500' },
   { href: '/transfer', label: 'Transfer', icon: ArrowRightLeft, color: 'bg-orange-500' },
-  { href: '/reports', label: 'Reports', icon: BarChart3, color: 'bg-red-500' },
+  { href: '/reports', label: 'Reports', icon: BarChart3, color: 'bg-rose-500' },
   { href: '/finance', label: 'Finance', icon: Landmark, color: 'bg-purple-500' },
   { href: '/cash', label: 'Cash', icon: Wallet, color: 'bg-indigo-500' },
 ];
@@ -77,14 +77,14 @@ export function AppSidebar() {
                   isActive={isItemActive(item.href)}
                   tooltip={item.label}
                   className={cn(
-                    "w-full justify-start rounded-lg shadow-md transition-transform duration-200 hover:scale-105",
+                    "w-full justify-start rounded-xl border-2 border-transparent shadow-md transition-transform duration-200 hover:scale-105",
                     item.color,
                     "text-white",
-                    isItemActive(item.href) && "ring-2 ring-offset-2 ring-primary"
+                    isItemActive(item.href) && "ring-4 ring-offset-2 ring-primary"
                   )}
                 >
                   <item.icon className="h-5 w-5" />
-                  <span className="text-sm font-medium">{item.label}</span>
+                  <span className="text-base font-medium">{item.label}</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
@@ -100,14 +100,14 @@ export function AppSidebar() {
                   tooltip="Settings" 
                   isActive={pathname === '/settings'}
                    className={cn(
-                    "w-full justify-start rounded-lg shadow-md transition-transform duration-200 hover:scale-105",
+                    "w-full justify-start rounded-xl border-2 border-transparent shadow-md transition-transform duration-200 hover:scale-105",
                     "bg-purple-600",
                     "text-white",
-                    pathname === '/settings' && "ring-2 ring-offset-2 ring-primary"
+                    pathname === '/settings' && "ring-4 ring-offset-2 ring-primary"
                   )}
                 >
                     <Settings className="h-5 w-5" />
-                    <span>Settings</span>
+                    <span className="text-base">Settings</span>
                 </SidebarMenuButton>
               </Link>
           </SidebarMenuItem>
