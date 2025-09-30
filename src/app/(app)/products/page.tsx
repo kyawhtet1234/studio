@@ -11,6 +11,7 @@ import { useState, useMemo } from "react";
 import { useData } from "@/lib/data-context";
 import type { Product, Category, Supplier, Customer } from "@/lib/types";
 import { toDate } from "@/lib/utils";
+import { Card, CardContent } from "@/components/ui/card";
 
 type EditingState = 
   | { type: 'product', data: Product }
@@ -160,7 +161,11 @@ export default function ProductsPage() {
         </div>
 
         <TabsContent value="items">
-          <DataTable columns={productCols} data={sortedProducts} filterColumnId="name" filterPlaceholder="Filter items by name..."/>
+          <Card className="shadow-drop-shadow-black">
+            <CardContent className="p-4 md:p-6">
+                <DataTable columns={productCols} data={sortedProducts} filterColumnId="name" filterPlaceholder="Filter items by name..."/>
+            </CardContent>
+          </Card>
         </TabsContent>
         <TabsContent value="categories">
           <DataTable columns={categoryCols} data={categories} filterColumnId="name" filterPlaceholder="Filter categories by name..."/>
