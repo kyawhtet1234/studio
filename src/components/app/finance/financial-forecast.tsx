@@ -8,7 +8,7 @@ import { generateFinancialForecast, type FinancialForecastOutput } from '@/ai/fl
 import type { SaleTransaction, Expense } from '@/lib/types';
 import { Loader2, Wand } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toDate } from '@/lib/utils';
 
