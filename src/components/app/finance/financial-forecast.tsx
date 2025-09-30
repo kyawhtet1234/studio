@@ -10,18 +10,13 @@ import { Loader2, Wand } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { toDate } from '@/lib/utils';
+
 
 interface FinancialForecastProps {
   sales: SaleTransaction[];
   expenses: Expense[];
 }
-
-const toDate = (date: Date | any): Date => {
-  if (date instanceof Date) {
-    return date;
-  }
-  return date.toDate();
-};
 
 const chartConfig = {
   historicalSales: { label: 'Historical Sales', color: 'hsl(var(--chart-1))' },
