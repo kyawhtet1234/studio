@@ -94,7 +94,7 @@ export default function DashboardPage() {
         />
       </div>
       <div className="mt-6">
-        <InventoryAlerts inventory={inventory} products={products} stores={stores} className="bg-shiny-yellow rounded-xl shadow-lg" />
+        <InventoryAlerts inventory={inventory} products={products} stores={stores} className="bg-shiny-teal rounded-xl shadow-lg" />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
         <SalesChart sales={filteredSales} className="bg-shiny-yellow rounded-xl shadow-lg" />
