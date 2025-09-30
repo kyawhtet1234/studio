@@ -38,12 +38,13 @@ const toDate = (date: Date | Timestamp): Date => {
   return (date as Timestamp).toDate();
 };
 
-const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales: number, profit: number }, periodLabel: string }) => (
+const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales: number, profit: number, totalQuantity: number }, periodLabel: string }) => (
     <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>{periodLabel}</TableHead>
+              <TableHead className="text-right">Total Items</TableHead>
               <TableHead className="text-right">Sales</TableHead>
               <TableHead className="text-right">Profit (Sales - COGS)</TableHead>
             </TableRow>
@@ -52,13 +53,14 @@ const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales
             {data.map((report) => (
                 <TableRow key={report.date}>
                     <TableCell className="font-medium">{report.date}</TableCell>
+                    <TableCell className="text-right">{report.totalQuantity}</TableCell>
                     <TableCell className="text-right">MMK {report.sales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                     <TableCell className="text-right">MMK {report.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 </TableRow>
             ))}
              {data.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={3} className="text-center h-24">
+                    <TableCell colSpan={4} className="text-center h-24">
                         No reports found.
                     </TableCell>
                 </TableRow>
@@ -67,6 +69,7 @@ const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales
           <TableFooter>
             <TableRow>
               <TableCell className="font-bold">Total</TableCell>
+              <TableCell className="text-right font-bold">{total.totalQuantity}</TableCell>
               <TableCell className="text-right font-bold">MMK {total.sales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
               <TableCell className="text-right font-bold">MMK {total.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
             </TableRow>
@@ -334,7 +337,7 @@ export default function ReportsPage() {
 
 
   const getReportData = (period: 'daily' | 'monthly') => {
-    const reports: { [key: string]: { date: string, sales: number, cogs: number, profit: number } } = {};
+    const reports: { [key: string]: { date: string, sales: number, cogs: number, profit: number, totalQuantity: number } } = {};
     
     const includedSales = filteredSales.filter(s => s.status === 'completed' || s.status === 'invoice');
     
@@ -345,25 +348,29 @@ export default function ReportsPage() {
             : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 
         if (!reports[key]) {
-            reports[key] = { date: key, sales: 0, cogs: 0, profit: 0 };
+            reports[key] = { date: key, sales: 0, cogs: 0, profit: 0, totalQuantity: 0 };
         }
 
         reports[key].sales += sale.total;
         let saleCogs = 0;
+        let saleQuantity = 0;
         sale.items.forEach(item => {
             const product = products.find(p => p.id === item.productId);
             if(product) saleCogs += product.buyPrice * item.quantity;
+            saleQuantity += item.quantity;
         });
         reports[key].cogs += saleCogs;
         reports[key].profit = reports[key].sales - reports[key].cogs;
+        reports[key].totalQuantity += saleQuantity;
     });
 
     const data = Object.values(reports).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     const total = data.reduce((acc, report) => {
         acc.sales += report.sales;
         acc.profit += report.profit;
+        acc.totalQuantity += report.totalQuantity;
         return acc;
-    }, { sales: 0, profit: 0 });
+    }, { sales: 0, profit: 0, totalQuantity: 0 });
 
     return { data, total };
   };
@@ -429,12 +436,12 @@ export default function ReportsPage() {
     switch (activeTab) {
       case 'daily':
         return { 
-          data: dailyReports.map(r => ({ Period: r.date, Sales: r.sales, Profit: r.profit })),
+          data: dailyReports.map(r => ({ Period: r.date, 'Total Items': r.totalQuantity, Sales: r.sales, Profit: r.profit })),
           title: 'Daily Sales Report'
         };
       case 'monthly':
         return {
-          data: monthlyReports.map(r => ({ Period: r.date, Sales: r.sales, Profit: r.profit })),
+          data: monthlyReports.map(r => ({ Period: r.date, 'Total Items': r.totalQuantity, Sales: r.sales, Profit: r.profit })),
           title: 'Monthly Sales Report'
         };
       case 'salesByCustomer':
@@ -643,4 +650,5 @@ export default function ReportsPage() {
     
 
     
+
 
