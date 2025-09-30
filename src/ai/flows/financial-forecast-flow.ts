@@ -54,10 +54,10 @@ const financialForecastFlow = ai.defineFlow(
         Analyze the historical sales and expense data to identify trends, seasonality, and growth patterns.
         
         Historical Sales:
-        ${input.sales.map(s => `${s.date.toISOString().substring(0,10)}: MMK ${s.amount.toFixed(2)}`).join('\n')}
+        ${input.sales.map(s => `${toDate(s.date).toISOString().substring(0,10)}: MMK ${s.amount.toFixed(2)}`).join('\n')}
 
         Historical Expenses:
-        ${input.expenses.map(e => `${e.date.toISOString().substring(0,10)}: MMK ${e.amount.toFixed(2)}`).join('\n')}
+        ${input.expenses.map(e => `${toDate(e.date).toISOString().substring(0,10)}: MMK ${e.amount.toFixed(2)}`).join('\n')}
         
         Based on this data, generate a month-by-month forecast for the next 6 months.
         Provide the output as a JSON object matching the defined schema, including both the forecast figures and a brief analysis.
