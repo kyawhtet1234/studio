@@ -316,7 +316,6 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
                                 "w-full pl-3 text-left font-normal",
                                 !field.value && "text-muted-foreground"
                               )}
-                              disabled
                             >
                               {field.value ? (
                                 format(field.value, "PPP")
@@ -498,4 +497,5 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
 
     
 
+    
     

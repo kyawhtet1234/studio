@@ -317,7 +317,6 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                                 "w-full pl-3 text-left font-normal",
                                 !field.value && "text-muted-foreground"
                               )}
-                              disabled
                             >
                               {field.value ? (
                                 format(field.value, "PPP")
@@ -511,4 +510,5 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
 
     
 
+    
     

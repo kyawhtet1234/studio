@@ -246,7 +246,6 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                                 "w-full pl-3 text-left font-normal",
                                 !field.value && "text-muted-foreground"
                               )}
-                              disabled
                             >
                               {field.value ? (
                                 format(field.value, "PPP")
@@ -362,4 +361,5 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
 
     
 
+    
     
