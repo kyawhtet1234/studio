@@ -313,7 +313,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
 
 
 export default function ReportsPage() {
-  const { sales, products, purchases, stores, suppliers, customers, voidSale, deletePurchase, deleteSale, updateSale, addCustomer } = useData();
+  const { sales, products, purchases, stores, suppliers, customers, voidSale, deletePurchase, deleteSale, updateSale, addCustomer, markInvoiceAsPaid } = useData();
   const [documentToPrint, setDocumentToPrint] = useState<{ type: 'receipt' | 'invoice' | 'quotation', sale: SaleTransaction } | null>(null);
   const [editingDocument, setEditingDocument] = useState<SaleTransaction | null>(null);
   const [selectedStore, setSelectedStore] = useState<string>('all');
@@ -412,7 +412,7 @@ export default function ReportsPage() {
 
   const invoiceHistory = useMemo(() => {
       return filteredSales
-        .filter(s => s.status === 'invoice')
+        .filter(s => s.status === 'invoice' || s.status === 'completed')
         .sort((a, b) => toDate(b.date).getTime() - toDate(a.date).getTime());
   }, [filteredSales]);
 
@@ -534,6 +534,7 @@ export default function ReportsPage() {
     onEdit: (doc) => setEditingDocument(doc),
     onDelete: deleteSale,
     onPrint: (doc) => setDocumentToPrint({ type: 'invoice', sale: doc }),
+    onMarkAsPaid: markInvoiceAsPaid,
     type: 'invoice'
   });
   
@@ -542,6 +543,7 @@ export default function ReportsPage() {
       onEdit: (doc) => setEditingDocument(doc),
       onDelete: deleteSale,
       onPrint: (doc) => setDocumentToPrint({ type: 'quotation', sale: doc }),
+      onMarkAsPaid: markInvoiceAsPaid,
       type: 'quotation'
   });
 

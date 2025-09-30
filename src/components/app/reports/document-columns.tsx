@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Printer, Edit, Trash2 } from "lucide-react";
+import { MoreHorizontal, Printer, Edit, Trash2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,16 +25,18 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import type { SaleTransaction, Customer } from "@/lib/types";
 import { format } from 'date-fns';
+import { Badge } from "@/components/ui/badge";
 
 interface ActionsCellProps {
   row: any,
   onEdit: (item: SaleTransaction) => void,
   onDelete: (id: string) => void,
   onPrint: (item: SaleTransaction) => void,
+  onMarkAsPaid: (id: string) => void,
   type: 'invoice' | 'quotation'
 }
 
-const ActionsCell = ({ row, onEdit, onDelete, onPrint, type }: ActionsCellProps) => {
+const ActionsCell = ({ row, onEdit, onDelete, onPrint, onMarkAsPaid, type }: ActionsCellProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const item = row.original as SaleTransaction;
   const { toast } = useToast();
@@ -47,6 +49,16 @@ const ActionsCell = ({ row, onEdit, onDelete, onPrint, type }: ActionsCellProps)
     });
     setIsDeleteDialogOpen(false);
   };
+  
+  const handleMarkAsPaid = () => {
+    onMarkAsPaid(item.id);
+    toast({
+      title: "Success",
+      description: "Invoice marked as paid and converted to sale.",
+    });
+  };
+
+  const isPaid = item.status === 'completed';
 
   return (
     <>
@@ -59,11 +71,17 @@ const ActionsCell = ({ row, onEdit, onDelete, onPrint, type }: ActionsCellProps)
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          {type === 'invoice' && (
+            <DropdownMenuItem onClick={handleMarkAsPaid} disabled={isPaid}>
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Mark as Paid
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={() => onPrint(item)}>
             <Printer className="mr-2 h-4 w-4" />
             View / Print
           </DropdownMenuItem>
-           <DropdownMenuItem onClick={() => onEdit(item)}>
+           <DropdownMenuItem onClick={() => onEdit(item)} disabled={isPaid}>
             <Edit className="mr-2 h-4 w-4" />
             Edit
           </DropdownMenuItem>
@@ -96,7 +114,7 @@ const ActionsCell = ({ row, onEdit, onDelete, onPrint, type }: ActionsCellProps)
   );
 };
 
-export const documentColumns = ({ customers, onEdit, onDelete, onPrint, type }: { customers: Customer[], onEdit: (item: SaleTransaction) => void, onDelete: (id: string) => void, onPrint: (item: SaleTransaction) => void, type: 'invoice' | 'quotation' }): ColumnDef<SaleTransaction>[] => [
+export const documentColumns = ({ customers, onEdit, onDelete, onPrint, onMarkAsPaid, type }: { customers: Customer[], onEdit: (item: SaleTransaction) => void, onDelete: (id: string) => void, onPrint: (item: SaleTransaction) => void, onMarkAsPaid: (id: string) => void, type: 'invoice' | 'quotation' }): ColumnDef<SaleTransaction>[] => [
   { 
     accessorKey: "date", 
     header: "Date",
@@ -112,6 +130,18 @@ export const documentColumns = ({ customers, onEdit, onDelete, onPrint, type }: 
     header: "Customer",
     cell: ({ row }) => customers.find(c => c.id === row.original.customerId)?.name || 'Walk-in'
   },
+  {
+    accessorKey: 'status',
+    header: 'Status',
+    cell: ({row}) => {
+        const status = row.original.status;
+        const isPaid = status === 'completed';
+        if (type === 'invoice') {
+            return <Badge variant={isPaid ? 'default' : 'secondary'}>{isPaid ? 'Paid' : 'Unpaid'}</Badge>
+        }
+        return <Badge variant="secondary">{status}</Badge>
+    }
+  },
   { 
     accessorKey: "total", 
     header: "Amount", 
@@ -125,6 +155,7 @@ export const documentColumns = ({ customers, onEdit, onDelete, onPrint, type }: 
         onEdit={onEdit}
         onDelete={onDelete}
         onPrint={onPrint}
+        onMarkAsPaid={onMarkAsPaid}
         type={type}
       />
     ),

@@ -46,6 +46,7 @@ interface DataContextProps {
     updateSale: (saleId: string, sale: Partial<Omit<SaleTransaction, 'id'>>) => Promise<void>;
     voidSale: (saleId: string) => Promise<void>;
     deleteSale: (saleId: string) => Promise<void>;
+    markInvoiceAsPaid: (saleId: string) => Promise<void>;
     addPurchase: (purchase: Omit<PurchaseTransaction, 'id'>) => Promise<void>;
     deletePurchase: (purchaseId: string) => Promise<void>;
     addExpense: (expense: Omit<Expense, 'id'>) => Promise<void>;
@@ -393,6 +394,39 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await fetchData(user.uid);
     };
 
+    const markInvoiceAsPaid = async (saleId: string) => {
+        if (!user) return;
+        try {
+            await runTransaction(db, async (transaction) => {
+                const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
+                const saleSnap = await transaction.get(saleRef);
+                if (!saleSnap.exists()) throw new Error("Invoice not found");
+
+                const saleData = saleSnap.data() as SaleTransaction;
+
+                // Deduct inventory
+                for (const item of saleData.items) {
+                    const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${saleData.storeId}`);
+                    const invSnap = await transaction.get(invRef);
+                    if (!invSnap.exists()) throw new Error(`Inventory for ${item.name} not found.`);
+                    
+                    const currentStock = invSnap.data().stock || 0;
+                    if (currentStock < item.quantity) {
+                        throw new Error(`Not enough stock for ${item.name}.`);
+                    }
+                    const newStock = currentStock - item.quantity;
+                    transaction.update(invRef, { stock: newStock });
+                }
+
+                // Update sale status
+                transaction.update(saleRef, { status: 'completed' });
+            });
+        } catch (e) {
+            console.error("Mark as paid transaction failed: ", e);
+            throw e;
+        }
+        await fetchData(user.uid);
+    };
 
     const voidSale = async (saleId: string) => {
         if (!user) return;
@@ -697,7 +731,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             customers, addCustomer, updateCustomer, deleteCustomer,
             paymentTypes, addPaymentType, updatePaymentType, deletePaymentType,
             inventory, updateInventory,
-            sales, addSale, updateSale, voidSale, deleteSale,
+            sales, addSale, updateSale, voidSale, deleteSale, markInvoiceAsPaid,
             purchases, addPurchase, deletePurchase,
             expenses, addExpense, deleteExpense,
             expenseCategories, addExpenseCategory, updateExpenseCategory, deleteExpenseCategory,
