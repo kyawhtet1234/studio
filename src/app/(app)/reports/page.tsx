@@ -241,17 +241,17 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                             <TableCell>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" className="h-8 w-8 p-0" disabled={isVoided}>
+                                        <Button variant="ghost" className="h-8 w-8 p-0">
                                             <span className="sr-only">Open menu</span>
                                             <MoreHorizontal className="h-4 w-4" />
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => onPrintReceipt(sale)}>
+                                        <DropdownMenuItem onClick={() => onPrintReceipt(sale)} disabled={isVoided}>
                                             <Printer className="mr-2 h-4 w-4" />
                                             Print Receipt
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setVoidCandidate(sale.id)}>
+                                        <DropdownMenuItem onClick={() => setVoidCandidate(sale.id)} disabled={isVoided}>
                                             <Undo2 className="mr-2 h-4 w-4" />
                                             Void Transaction
                                         </DropdownMenuItem>
@@ -296,7 +296,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure you want to delete this sale?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the sale record. This will not adjust inventory. Use 'Void' to restock items.
+                        This action cannot be undone. This will permanently delete the sale record. This will not adjust inventory. Use 'Void' to restock items if this was a completed sale.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -632,3 +632,6 @@ export default function ReportsPage() {
 
     
 
+
+
+    
