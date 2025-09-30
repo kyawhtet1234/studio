@@ -215,6 +215,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                 <TableHead>Customer</TableHead>
                 <TableHead>Payment</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-right">Total Qty</TableHead>
                 <TableHead className="text-right">Subtotal</TableHead>
                 <TableHead className="text-right">Discount</TableHead>
                 <TableHead className="text-right">Total</TableHead>
@@ -226,6 +227,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                     const saleDate = toDate(sale.date);
                     const isVoided = sale.status === 'voided';
                     const customerName = customers.find(c => c.id === sale.customerId)?.name || 'N/A';
+                    const totalQty = sale.items.reduce((sum, item) => sum + item.quantity, 0);
                     return (
                         <TableRow key={sale.id} className={cn(isVoided && "text-muted-foreground bg-muted/30")}>
                             <TableCell className="font-medium">{saleDate.toLocaleDateString()}</TableCell>
@@ -235,6 +237,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                             <TableCell>
                                 <Badge variant={isVoided ? "destructive" : "secondary"} className="capitalize">{sale.status}</Badge>
                             </TableCell>
+                            <TableCell className="text-right">{totalQty}</TableCell>
                             <TableCell className="text-right">MMK {sale.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                             <TableCell className="text-right">MMK {sale.discount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                             <TableCell className="text-right">MMK {sale.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
@@ -267,7 +270,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                 })}
                 {data.length === 0 && (
                     <TableRow>
-                        <TableCell colSpan={9} className="text-center h-24">
+                        <TableCell colSpan={10} className="text-center h-24">
                             No sales history found.
                         </TableCell>
                     </TableRow>
@@ -447,6 +450,7 @@ export default function ReportsPage() {
             Customer: customers.find(c => c.id === s.customerId)?.name || 'N/A',
             Payment: s.paymentType,
             Status: s.status,
+            'Total Qty': s.items.reduce((sum, i) => sum + i.quantity, 0),
             Subtotal: s.subtotal,
             Discount: s.discount,
             Total: s.total
@@ -639,3 +643,4 @@ export default function ReportsPage() {
     
 
     
+
