@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/lib/auth-context';
+import { ThemeProvider } from '@/components/app/settings/theme-provider';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -20,10 +21,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <AuthProvider>
-            {children}
-            <Toaster />
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+              {children}
+              <Toaster />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

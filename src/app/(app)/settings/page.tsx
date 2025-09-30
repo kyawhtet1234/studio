@@ -14,6 +14,7 @@ import { AddStoreForm, AddPaymentTypeForm } from '@/components/app/products/form
 import { ReceiptSettings } from '@/components/app/settings/receipt-settings';
 import { InvoiceSettings } from '@/components/app/settings/invoice-settings';
 import { QuotationSettings } from '@/components/app/settings/quotation-settings';
+import { ThemeSettings } from '@/components/app/settings/theme-settings';
 
 type EditingState = 
   | { type: 'store', data: Store }
@@ -97,6 +98,7 @@ export default function SettingsPage() {
         <Tabs defaultValue="receipt" onValueChange={setActiveTab} value={activeTab}>
             <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                 <TabsList className="overflow-x-auto self-start h-auto">
+                    <TabsTrigger value="theme">Theme</TabsTrigger>
                     <TabsTrigger value="receipt">Receipt</TabsTrigger>
                     <TabsTrigger value="invoice">Invoice</TabsTrigger>
                     <TabsTrigger value="quotation">Quotation</TabsTrigger>
@@ -109,6 +111,9 @@ export default function SettingsPage() {
                   </div>
                 )}
             </div>
+            <TabsContent value="theme">
+                <ThemeSettings />
+            </TabsContent>
             <TabsContent value="receipt">
                 <ReceiptSettings />
             </TabsContent>
