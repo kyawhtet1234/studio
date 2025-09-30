@@ -225,7 +225,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     <>
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Card className="bg-custom-teal rounded-xl shadow-lg">
+        <Card className="bg-shiny-blue rounded-xl shadow-lg">
           <CardHeader>
              <CardTitle>Sale Details</CardTitle>
           </CardHeader>
@@ -391,7 +391,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
           </CardContent>
         </Card>
 
-        <Card className="bg-custom-green rounded-xl shadow-lg">
+        <Card className="bg-shiny-green rounded-xl shadow-lg">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
                 <Table>
@@ -505,5 +505,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     </>
   );
 }
+
+    
 
     
