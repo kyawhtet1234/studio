@@ -246,6 +246,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                                 "w-full pl-3 text-left font-normal",
                                 !field.value && "text-muted-foreground"
                               )}
+                              disabled
                             >
                               {field.value ? (
                                 format(field.value, "PPP")
@@ -305,12 +306,12 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
              <Table>
                 <TableHeader>
                     <TableRow>
-                    <TableHead className="w-[120px]">SKU</TableHead>
-                    <TableHead>Item Name</TableHead>
-                    <TableHead className="text-right">Price</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead className="w-[120px] text-black">SKU</TableHead>
+                    <TableHead className="text-black">Item Name</TableHead>
+                    <TableHead className="text-right text-black">Price</TableHead>
+                    <TableHead className="text-right text-black">Qty</TableHead>
+                    <TableHead className="text-right text-black">Total</TableHead>
+                    <TableHead className="w-[50px] text-black"></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -356,6 +357,8 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
     </Form>
   );
 }
+
+    
 
     
 
