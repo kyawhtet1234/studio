@@ -72,7 +72,7 @@ export function SalesChart({ sales, className, style }: { sales: SaleTransaction
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 12, fill: 'white' }}
                 />
                 <YAxis 
                   tickFormatter={(value) => `MMK ${Number(value).toLocaleString()}`}
@@ -80,7 +80,7 @@ export function SalesChart({ sales, className, style }: { sales: SaleTransaction
                   axisLine={false}
                   tickMargin={8}
                   width={80}
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 12, fill: 'white' }}
                 />
                 <ChartTooltip
                   cursor={false}
