@@ -8,7 +8,7 @@ import { useMemo } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
-const LOW_STOCK_THRESHOLD = 10;
+const LOW_STOCK_THRESHOLD = 3;
 
 interface InventoryAlertsProps {
   inventory: InventoryItem[];
@@ -20,16 +20,18 @@ interface InventoryAlertsProps {
 export function InventoryAlerts({ inventory, products, stores, className }: InventoryAlertsProps) {
   const lowStockItems = useMemo(() => {
     return inventory
-      .filter(item => item.stock <= LOW_STOCK_THRESHOLD)
       .map(item => {
         const product = products.find(p => p.id === item.productId);
         const store = stores.find(s => s.id === item.storeId);
+        if (!product || !store) return null;
+
         return {
           ...item,
-          productName: product?.name || 'Unknown Product',
-          storeName: store?.name || 'Unknown Store',
+          productName: product.name,
+          storeName: store.name,
         };
       })
+      .filter((item): item is NonNullable<typeof item> => item !== null && item.stock <= LOW_STOCK_THRESHOLD)
       .sort((a, b) => a.stock - b.stock);
   }, [inventory, products, stores]);
 
@@ -44,7 +46,7 @@ export function InventoryAlerts({ inventory, products, stores, className }: Inve
       </CardHeader>
       <CardContent>
         {lowStockItems.length > 0 ? (
-          <div className="max-h-60 overflow-y-auto">
+          <div className="max-h-60 overflow-y-auto no-scrollbar">
             <Table>
               <TableHeader>
                 <TableRow>
