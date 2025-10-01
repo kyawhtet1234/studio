@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 const chartConfig = {
   sales: {
     label: "Sales",
-    color: "hsl(var(--primary))",
+    color: "hsl(var(--chart-2))",
   },
 };
 
@@ -23,7 +23,7 @@ const toDate = (date: Date | Timestamp): Date => {
   return (date as Timestamp).toDate();
 };
 
-export function SalesChart({ sales, className }: { sales: SaleTransaction[], className?: string}) {
+export function SalesChart({ sales, className, style }: { sales: SaleTransaction[], className?: string, style?: React.CSSProperties}) {
   const { monthlySales, hasSales } = useMemo(() => {
     const data = new Array(30).fill(0).map((_, i) => {
       const date = new Date();
@@ -56,7 +56,7 @@ export function SalesChart({ sales, className }: { sales: SaleTransaction[], cla
   }, [sales]);
 
   return (
-    <Card className={cn(className, "shadow-drop-shadow-black")}>
+    <Card className={cn(className, "shadow-drop-shadow-black")} style={style}>
       <CardHeader>
         <CardTitle>Sales of the Month</CardTitle>
         <CardDescription>Showing sales data for the last 30 days.</CardDescription>

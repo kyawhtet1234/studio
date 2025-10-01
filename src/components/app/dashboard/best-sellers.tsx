@@ -24,7 +24,7 @@ const CHART_COLORS = [
   'hsl(var(--chart-5))',
 ];
 
-export function BestSellers({ sales, products, className }: { sales: SaleTransaction[], products: Product[], className?: string }) {
+export function BestSellers({ sales, products, className, style }: { sales: SaleTransaction[], products: Product[], className?: string, style?: React.CSSProperties }) {
   const { bestSellingItems, chartConfig } = useMemo(() => {
     const itemSales: { [key: string]: { name: string, quantity: number, total: number } } = {};
 
@@ -70,7 +70,7 @@ export function BestSellers({ sales, products, className }: { sales: SaleTransac
 
 
   return (
-    <Card className={cn(className, "shadow-drop-shadow-black")}>
+    <Card className={cn(className, "shadow-drop-shadow-black")} style={style}>
       <CardHeader>
         <CardTitle>Best Selling Items</CardTitle>
         <CardDescription>Top 5 best selling items this month by quantity.</CardDescription>

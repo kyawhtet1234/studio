@@ -11,15 +11,16 @@ type StatCardProps = {
   description?: string;
   loading?: boolean;
   className?: string;
+  style?: React.CSSProperties;
 };
 
-export function StatCard({ title, value, icon: Icon, description, loading, className }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, description, loading, className, style }: StatCardProps) {
   if (loading) {
-    return <Skeleton className={cn("h-[126px]", className)} />;
+    return <Skeleton className={cn("h-[126px]", className)} style={style} />;
   }
   
   return (
-    <Card className={cn(className, "shadow-drop-shadow-black")}>
+    <Card className={cn(className, "shadow-drop-shadow-black")} style={style}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <Icon className="h-4 w-4 text-muted-foreground" />

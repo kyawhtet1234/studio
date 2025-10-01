@@ -15,9 +15,10 @@ interface InventoryAlertsProps {
   products: Product[];
   stores: Store[];
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export function InventoryAlerts({ inventory, products, stores, className }: InventoryAlertsProps) {
+export function InventoryAlerts({ inventory, products, stores, className, style }: InventoryAlertsProps) {
   const lowStockItems = useMemo(() => {
     return inventory
       .map(item => {
@@ -36,7 +37,7 @@ export function InventoryAlerts({ inventory, products, stores, className }: Inve
   }, [inventory, products, stores]);
 
   return (
-    <Card className={cn(className, "shadow-drop-shadow-black")}>
+    <Card className={cn(className, "shadow-drop-shadow-black")} style={style}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <AlertTriangle className="h-6 w-6 text-destructive" />

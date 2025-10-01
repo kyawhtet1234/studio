@@ -82,7 +82,8 @@ export default function DashboardPage() {
           icon={DollarSign}
           description="Total sales recorded today."
           loading={loading}
-          className="bg-shiny-yellow rounded-xl shadow-lg"
+          style={{ backgroundColor: '#FF9AA2' }}
+          className="rounded-xl shadow-lg"
         />
         <StatCard 
           title="Today's Profit"
@@ -90,15 +91,16 @@ export default function DashboardPage() {
           icon={TrendingUp}
           description="Gross profit (Sales - COGS)."
           loading={loading}
-          className="bg-shiny-blue rounded-xl shadow-lg"
+          style={{ backgroundColor: '#B5E3F5' }}
+          className="rounded-xl shadow-lg"
         />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-        <SalesChart sales={filteredSales} className="bg-shiny-green rounded-xl shadow-lg text-white" />
-        <BestSellers sales={filteredSales} products={products} className="bg-shiny-purple rounded-xl shadow-lg" />
+        <SalesChart sales={filteredSales} style={{ backgroundColor: '#FFC7A0' }} className="rounded-xl shadow-lg" />
+        <BestSellers sales={filteredSales} products={products} style={{ backgroundColor: '#E6B9FF' }} className="rounded-xl shadow-lg" />
       </div>
       <div className="mt-6">
-        <InventoryAlerts inventory={inventory} products={products} stores={stores} className="bg-shiny-red rounded-xl shadow-lg text-destructive-foreground" />
+        <InventoryAlerts inventory={inventory} products={products} stores={stores} style={{ backgroundColor: '#CDEACF' }} className="rounded-xl shadow-lg" />
       </div>
     </div>
   );
