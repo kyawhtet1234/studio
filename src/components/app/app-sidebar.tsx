@@ -62,9 +62,11 @@ export function AppSidebar() {
   return (
     <Sidebar className="bg-background border-r" side="left" collapsible="icon" variant="sidebar">
       <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2">
-          <Building2 className="w-8 h-8 text-primary" />
-          <span className="text-xl font-semibold font-headline">THE CRAFT SHOP</span>
+        <div className="bg-sidebar-shiny-gradient p-4 rounded-xl shadow-lg">
+          <div className="flex items-center justify-center gap-2">
+            <Building2 className="w-8 h-8 text-sidebar-primary-foreground" />
+            <span className="text-xl font-semibold font-headline text-sidebar-primary-foreground">THE CRAFT SHOP</span>
+          </div>
         </div>
       </SidebarHeader>
       <SidebarContent className="p-4">
