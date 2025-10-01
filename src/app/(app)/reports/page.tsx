@@ -15,7 +15,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, toDate } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Receipt } from "@/components/app/sales/receipt";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,14 +30,8 @@ import { DataTable } from "@/components/app/products/data-table";
 import { documentColumns } from "@/components/app/reports/document-columns";
 import { EditEntitySheet } from "@/components/app/products/edit-entity-sheet";
 import { DocumentForm } from "@/components/app/sales/document-form";
+import { format } from "date-fns";
 
-
-const toDate = (date: Date | Timestamp): Date => {
-  if (date instanceof Date) {
-    return date;
-  }
-  return (date as Timestamp).toDate();
-};
 
 const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales: number, profit: number, totalQuantity: number }, periodLabel: string }) => (
     <Card className="shadow-drop-shadow-black">
@@ -142,7 +136,7 @@ const PurchaseHistoryTable = ({ data, stores, suppliers, onDelete }: { data: Pur
                     const purchaseDate = toDate(purchase.date);
                     return (
                         <TableRow key={purchase.id}>
-                            <TableCell className="font-medium">{purchaseDate.toLocaleDateString()}</TableCell>
+                            <TableCell className="font-medium">{format(purchaseDate, 'PP')}</TableCell>
                             <TableCell>{stores.find(s => s.id === purchase.storeId)?.name || 'N/A'}</TableCell>
                             <TableCell>{suppliers.find(s => s.id === purchase.supplierId)?.name || 'N/A'}</TableCell>
                             <TableCell className="text-right">MMK {purchase.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
@@ -241,7 +235,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                     const totalQty = sale.items.reduce((sum, item) => sum + item.quantity, 0);
                     return (
                         <TableRow key={sale.id} className={cn(isVoided && "text-muted-foreground bg-muted/30")}>
-                            <TableCell className="font-medium">{saleDate.toLocaleDateString()}</TableCell>
+                            <TableCell className="font-medium">{format(saleDate, 'PP')}</TableCell>
                             <TableCell>{stores.find(s => s.id === sale.storeId)?.name || 'NA'}</TableCell>
                             <TableCell>{customerName}</TableCell>
                             <TableCell>{sale.paymentType}</TableCell>
@@ -352,12 +346,18 @@ export default function ReportsPage() {
     
     includedSales.forEach(sale => {
         const d = toDate(sale.date);
-        const key = period === 'daily' 
-            ? d.toISOString().split('T')[0] 
-            : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        let key, dateLabel;
+
+        if (period === 'daily') {
+            key = d.toISOString().split('T')[0];
+            dateLabel = format(d, 'PP');
+        } else {
+            key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            dateLabel = format(d, 'MMMM yyyy');
+        }
 
         if (!reports[key]) {
-            reports[key] = { date: key, sales: 0, cogs: 0, profit: 0, totalQuantity: 0 };
+            reports[key] = { date: dateLabel, sales: 0, cogs: 0, profit: 0, totalQuantity: 0 };
         }
 
         reports[key].sales += sale.total;
@@ -461,7 +461,7 @@ export default function ReportsPage() {
       case 'sales':
         return {
           data: salesHistory.map(s => ({
-            Date: toDate(s.date).toLocaleDateString(),
+            Date: format(toDate(s.date), 'PP'),
             Store: stores.find(st => st.id === s.storeId)?.name || 'N/A',
             Customer: customers.find(c => c.id === s.customerId)?.name || 'N/A',
             Payment: s.paymentType,
@@ -476,7 +476,7 @@ export default function ReportsPage() {
        case 'invoice':
         return {
           data: invoiceHistory.map(s => ({
-            Date: toDate(s.date).toLocaleDateString(),
+            Date: format(toDate(s.date), 'PP'),
             Store: stores.find(st => st.id === s.storeId)?.name || 'N/A',
             Customer: customers.find(c => c.id === s.customerId)?.name || 'N/A',
             Total: s.total
@@ -486,7 +486,7 @@ export default function ReportsPage() {
       case 'quotation':
         return {
           data: quotationHistory.map(s => ({
-            Date: toDate(s.date).toLocaleDateString(),
+            Date: format(toDate(s.date), 'PP'),
             Store: stores.find(st => st.id === s.storeId)?.name || 'N/A',
             Customer: customers.find(c => c.id === s.customerId)?.name || 'N/A',
             Total: s.total
@@ -496,7 +496,7 @@ export default function ReportsPage() {
       case 'purchase':
         return {
           data: purchaseHistory.map(p => ({
-            Date: toDate(p.date).toLocaleDateString(),
+            Date: format(toDate(p.date), 'PP'),
             Store: stores.find(s => s.id === p.storeId)?.name || 'N/A',
             Supplier: suppliers.find(s => s.id === p.supplierId)?.name || 'N/A',
             Total: p.total
@@ -667,6 +667,7 @@ export default function ReportsPage() {
     
 
     
+
 
 
 

@@ -9,7 +9,7 @@ export const toDate = (date: Date | any): Date => {
   if (date instanceof Date) {
     return date;
   }
-  if (typeof date === 'string') {
+  if (typeof date === 'string' || typeof date === 'number') {
     return new Date(date);
   }
   return date.toDate();
