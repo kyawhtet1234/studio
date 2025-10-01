@@ -58,8 +58,8 @@ export function SalesChart({ sales, className, style }: { sales: SaleTransaction
   return (
     <Card className={cn(className, "shadow-drop-shadow-black")} style={style}>
       <CardHeader>
-        <CardTitle>Sales of the Month</CardTitle>
-        <CardDescription>Showing sales data for the last 30 days.</CardDescription>
+        <CardTitle className="text-white">Sales of the Month</CardTitle>
+        <CardDescription className="text-white/80">Showing sales data for the last 30 days.</CardDescription>
       </CardHeader>
       <CardContent>
         {hasSales ? (
