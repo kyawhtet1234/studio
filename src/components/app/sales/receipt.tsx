@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -8,8 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import type { SaleTransaction, Store } from '@/lib/types';
 import { format } from 'date-fns';
 import { Printer } from 'lucide-react';
-
-const LOGO_STORAGE_KEY = 'receipt-logo';
+import { useData } from '@/lib/data-context';
 
 interface ReceiptProps {
   sale: SaleTransaction;
@@ -71,15 +71,9 @@ ReceiptContent.displayName = 'ReceiptContent';
 
 export const Receipt: React.FC<ReceiptProps> = ({ sale, store }) => {
     const receiptRef = React.useRef<HTMLDivElement>(null);
-    const [logo, setLogo] = useState<string | null>(null);
+    const { settings } = useData();
+    const logo = settings.receipt?.companyLogo || null;
 
-    useEffect(() => {
-        // Must be in useEffect to avoid server/client mismatch with localStorage
-        const savedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
-        if (savedLogo) {
-            setLogo(savedLogo);
-        }
-    }, []);
 
     const handlePrint = () => {
         const printContent = receiptRef.current;

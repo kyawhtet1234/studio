@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,38 +11,39 @@ import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Upload, X } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { useData } from '@/lib/data-context';
+import type { DocumentSettings } from '@/lib/types';
 
-const QUOTATION_COMPANY_NAME_KEY = 'quotation-company-name';
-const QUOTATION_COMPANY_ADDRESS_KEY = 'quotation-company-address';
-const QUOTATION_COMPANY_PHONE_KEY = 'quotation-company-phone';
-const QUOTATION_COMPANY_LOGO_KEY = 'quotation-company-logo';
-const QUOTATION_TERMS_KEY = 'quotation-terms';
-const QUOTATION_PAYMENT_INFO_KEY = 'quotation-payment-info';
 
 export function QuotationSettings() {
   const { toast } = useToast();
+  const { settings, updateQuotationSettings } = useData();
   
   const [companyName, setCompanyName] = useState('');
   const [companyAddress, setCompanyAddress] = useState('');
   const [companyPhone, setCompanyPhone] = useState('');
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [terms, setTerms] = useState('');
   const [paymentInfo, setPaymentInfo] = useState('');
 
   useEffect(() => {
-    setCompanyName(localStorage.getItem(QUOTATION_COMPANY_NAME_KEY) || '');
-    setCompanyAddress(localStorage.getItem(QUOTATION_COMPANY_ADDRESS_KEY) || '');
-    setCompanyPhone(localStorage.getItem(QUOTATION_COMPANY_PHONE_KEY) || '');
-    setTerms(localStorage.getItem(QUOTATION_TERMS_KEY) || '');
-    setPaymentInfo(localStorage.getItem(QUOTATION_PAYMENT_INFO_KEY) || '');
-    
-    const savedLogo = localStorage.getItem(QUOTATION_COMPANY_LOGO_KEY);
-    if (savedLogo) {
-      setCompanyLogo(savedLogo);
-      setLogoPreview(savedLogo);
+    if(settings.quotation) {
+        setCompanyName(settings.quotation.companyName || '');
+        setCompanyAddress(settings.quotation.companyAddress || '');
+        setCompanyPhone(settings.quotation.companyPhone || '');
+        setCompanyLogo(settings.quotation.companyLogo || null);
+        setTerms(settings.quotation.terms || '');
+        setPaymentInfo(settings.quotation.paymentInfo || '');
+    } else if (settings.invoice) {
+        // Fallback to invoice settings if quotation settings are not set
+        setCompanyName(settings.invoice.companyName || '');
+        setCompanyAddress(settings.invoice.companyAddress || '');
+        setCompanyPhone(settings.invoice.companyPhone || '');
+        setCompanyLogo(settings.invoice.companyLogo || null);
+        setTerms(settings.invoice.terms || '');
+        setPaymentInfo(settings.invoice.paymentInfo || '');
     }
-  }, []);
+  }, [settings]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -56,23 +58,23 @@ export function QuotationSettings() {
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
+        setCompanyLogo(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSave = () => {
-    localStorage.setItem(QUOTATION_COMPANY_NAME_KEY, companyName);
-    localStorage.setItem(QUOTATION_COMPANY_ADDRESS_KEY, companyAddress);
-    localStorage.setItem(QUOTATION_COMPANY_PHONE_KEY, companyPhone);
-    localStorage.setItem(QUOTATION_TERMS_KEY, terms);
-    localStorage.setItem(QUOTATION_PAYMENT_INFO_KEY, paymentInfo);
+  const handleSave = async () => {
+    const newSettings: DocumentSettings = {
+        companyName,
+        companyAddress,
+        companyPhone,
+        companyLogo,
+        terms,
+        paymentInfo,
+    };
+    await updateQuotationSettings(newSettings);
 
-    if (logoPreview) {
-      localStorage.setItem(QUOTATION_COMPANY_LOGO_KEY, logoPreview);
-      setCompanyLogo(logoPreview);
-    }
     toast({
       title: 'Settings Saved',
       description: 'Your quotation details have been updated.',
@@ -80,12 +82,10 @@ export function QuotationSettings() {
   };
 
   const handleRemoveLogo = () => {
-    localStorage.removeItem(QUOTATION_COMPANY_LOGO_KEY);
     setCompanyLogo(null);
-    setLogoPreview(null);
     toast({
         title: 'Logo removed',
-        description: 'The logo has been removed from quotations.',
+        description: 'The logo has been removed. Click Save to confirm.',
     });
   };
 
@@ -122,8 +122,8 @@ export function QuotationSettings() {
           <Label htmlFor="quotation-logo-upload">Company Logo</Label>
           <div className="flex items-center gap-4">
             <div className="w-24 h-24 rounded-md border border-dashed flex items-center justify-center bg-muted/50">
-              {logoPreview ? (
-                <Image src={logoPreview} alt="Logo preview" width={96} height={96} className="object-contain w-full h-full rounded-md" />
+              {companyLogo ? (
+                <Image src={companyLogo} alt="Logo preview" width={96} height={96} className="object-contain w-full h-full rounded-md" />
               ) : (
                 <div className="text-center text-muted-foreground">
                   <Upload className="mx-auto h-8 w-8" />

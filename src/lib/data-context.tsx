@@ -1,12 +1,13 @@
 
 
+
 'use client';
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup } from 'firebase/firestore';
+import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup, setDoc } from 'firebase/firestore';
 
-import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability } from '@/lib/types';
+import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability, BusinessSettings, DocumentSettings } from '@/lib/types';
 
 interface DataContextProps {
     products: Product[];
@@ -24,6 +25,7 @@ interface DataContextProps {
     cashTransactions: CashTransaction[];
     cashAllocations: CashAllocation[];
     liabilities: Liability[];
+    settings: BusinessSettings;
     addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<void>;
     updateProduct: (productId: string, product: Partial<Omit<Product, 'id'>>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
@@ -64,6 +66,9 @@ interface DataContextProps {
     updateLiability: (liabilityId: string, liability: Partial<Omit<Liability, 'id'>>) => Promise<void>;
     deleteLiability: (liabilityId: string) => Promise<void>;
     updateInventory: (newInventory: InventoryItem[]) => Promise<void>;
+    updateInvoiceSettings: (settings: DocumentSettings) => Promise<void>;
+    updateQuotationSettings: (settings: DocumentSettings) => Promise<void>;
+    updateReceiptSettings: (settings: { companyLogo?: string }) => Promise<void>;
     loading: boolean;
 }
 
@@ -86,85 +91,42 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [cashTransactions, setCashTransactions] = useState<CashTransaction[]>([]);
     const [cashAllocations, setCashAllocations] = useState<CashAllocation[]>([]);
     const [liabilities, setLiabilities] = useState<Liability[]>([]);
+    const [settings, setSettings] = useState<BusinessSettings>({});
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async (uid: string) => {
         setLoading(true);
         try {
-            const productsSnap = await getDocs(query(collection(db, 'users', uid, 'products')));
-            const fetchedProducts = productsSnap.docs.map(doc => {
-              const data = doc.data();
-              return { 
-                ...data,
-                id: doc.id,
-                createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : new Date(0) // Handle legacy data
-              } as Product
-            });
-            setProducts(fetchedProducts);
+            const collectionsToFetch = [
+                { name: 'products', setter: setProducts, process: (doc: any) => ({ ...doc.data(), id: doc.id, createdAt: doc.data().createdAt ? (doc.data().createdAt as Timestamp).toDate() : new Date(0) }) },
+                { name: 'categories', setter: setCategories },
+                { name: 'expenseCategories', setter: setExpenseCategories },
+                { name: 'suppliers', setter: setSuppliers },
+                { name: 'stores', setter: setStores },
+                { name: 'customers', setter: setCustomers },
+                { name: 'paymentTypes', setter: setPaymentTypes },
+                { name: 'inventory', setter: setInventory, process: (doc: any) => ({ ...doc.data(), id: doc.id, productId: doc.id.split('_')[0], storeId: doc.id.split('_')[1] }) },
+                { name: 'sales', setter: setSales, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate() }) },
+                { name: 'purchases', setter: setPurchases, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate() }) },
+                { name: 'expenses', setter: setExpenses, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate() }) },
+                { name: 'cashAccounts', setter: setCashAccounts },
+                { name: 'cashTransactions', setter: setCashTransactions, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate() }) },
+                { name: 'cashAllocations', setter: setCashAllocations },
+                { name: 'liabilities', setter: setLiabilities },
+            ];
 
-            const categoriesSnap = await getDocs(query(collection(db, 'users', uid, 'categories')));
-            const fetchedCategories = categoriesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Category));
-            setCategories(fetchedCategories);
+            for (const { name, setter, process } of collectionsToFetch) {
+                const snap = await getDocs(query(collection(db, 'users', uid, name)));
+                const data = snap.docs.map(doc => process ? process(doc) : ({ ...doc.data(), id: doc.id }));
+                setter(data as any);
+            }
             
-            const expenseCategoriesSnap = await getDocs(query(collection(db, 'users', uid, 'expenseCategories')));
-            const fetchedExpenseCategories = expenseCategoriesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as ExpenseCategory));
-            setExpenseCategories(fetchedExpenseCategories);
-
-            const suppliersSnap = await getDocs(query(collection(db, 'users', uid, 'suppliers')));
-            const fetchedSuppliers = suppliersSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Supplier));
-            setSuppliers(fetchedSuppliers);
-
-            const storesSnap = await getDocs(query(collection(db, 'users', uid, 'stores')));
-            const fetchedStores = storesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Store));
-            setStores(fetchedStores);
-
-            const customersSnap = await getDocs(query(collection(db, 'users', uid, 'customers')));
-            const fetchedCustomers = customersSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Customer));
-            setCustomers(fetchedCustomers);
-
-            const paymentTypesSnap = await getDocs(query(collection(db, 'users', uid, 'paymentTypes')));
-            const fetchedPaymentTypes = paymentTypesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as PaymentType));
-            setPaymentTypes(fetchedPaymentTypes);
-
-            const inventorySnap = await getDocs(query(collection(db, 'users', uid, 'inventory')));
-            const fetchedInventory = inventorySnap.docs.map(doc => {
-              const [productId, storeId] = doc.id.split('_');
-              return { ...doc.data(), productId, storeId, id: doc.id } as InventoryItem
-            });
-            setInventory(fetchedInventory);
-
-            const salesSnap = await getDocs(query(collection(db, 'users', uid, 'sales')));
-            setSales(salesSnap.docs.map(doc => {
-                const data = doc.data();
-                return { ...data, id: doc.id, date: (data.date as Timestamp).toDate() } as SaleTransaction
-            }));
-
-            const purchasesSnap = await getDocs(query(collection(db, 'users', uid, 'purchases')));
-            setPurchases(purchasesSnap.docs.map(doc => {
-                const data = doc.data();
-                return { ...data, id: doc.id, date: (data.date as Timestamp).toDate() } as PurchaseTransaction
-            }));
-
-            const expensesSnap = await getDocs(query(collection(db, 'users', uid, 'expenses')));
-            setExpenses(expensesSnap.docs.map(doc => {
-                const data = doc.data();
-                return { ...data, id: doc.id, date: (data.date as Timestamp).toDate() } as Expense
-            }));
-
-            const cashAccountsSnap = await getDocs(query(collection(db, 'users', uid, 'cashAccounts')));
-            setCashAccounts(cashAccountsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as CashAccount)));
-
-            const cashTransactionsSnap = await getDocs(query(collection(db, 'users', uid, 'cashTransactions')));
-            setCashTransactions(cashTransactionsSnap.docs.map(doc => {
-                const data = doc.data();
-                return { ...data, id: doc.id, date: (data.date as Timestamp).toDate() } as CashTransaction
-            }));
-
-            const cashAllocationsSnap = await getDocs(query(collection(db, 'users', uid, 'cashAllocations')));
-            setCashAllocations(cashAllocationsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as CashAllocation)));
-
-            const liabilitiesSnap = await getDocs(query(collection(db, 'users', uid, 'liabilities')));
-            setLiabilities(liabilitiesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Liability)));
+            const settingsSnap = await getDoc(doc(db, 'users', uid, 'settings', 'business'));
+            if (settingsSnap.exists()) {
+                setSettings(settingsSnap.data() as BusinessSettings);
+            } else {
+                setSettings({});
+            }
 
         } catch (error) {
             console.error("Error fetching data:", error);
@@ -193,6 +155,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setCashTransactions([]);
             setCashAllocations([]);
             setLiabilities([]);
+            setSettings({});
             setLoading(false);
         }
     }, [user, fetchData]);
@@ -722,6 +685,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await fetchData(user.uid);
     };
 
+    const updateSettings = async (newSettings: Partial<BusinessSettings>) => {
+        if (!user) return;
+        const settingsRef = doc(db, 'users', user.uid, 'settings', 'business');
+        await setDoc(settingsRef, newSettings, { merge: true });
+        await fetchData(user.uid);
+    };
+
+    const updateInvoiceSettings = async (invoiceSettings: DocumentSettings) => {
+        await updateSettings({ invoice: invoiceSettings });
+    };
+
+    const updateQuotationSettings = async (quotationSettings: DocumentSettings) => {
+        await updateSettings({ quotation: quotationSettings });
+    };
+
+    const updateReceiptSettings = async (receiptSettings: { companyLogo?: string }) => {
+        await updateSettings({ receipt: receiptSettings });
+    };
+
     return (
         <DataContext.Provider value={{ 
             products, addProduct, updateProduct, deleteProduct,
@@ -739,6 +721,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
             cashTransactions, addCashTransaction,
             cashAllocations, addCashAllocation, updateCashAllocation, deleteCashAllocation,
             liabilities, addLiability, updateLiability, deleteLiability,
+            settings,
+            updateInvoiceSettings,
+            updateQuotationSettings,
+            updateReceiptSettings,
             loading
         }}>
             {children}

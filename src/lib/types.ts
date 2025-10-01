@@ -1,4 +1,5 @@
 
+
 import type { Timestamp } from 'firebase/firestore';
 
 export type Category = {
@@ -132,3 +133,20 @@ export type Liability = {
   name: string;
   amount: number;
 };
+
+export interface DocumentSettings {
+  companyName?: string;
+  companyAddress?: string;
+  companyPhone?: string;
+  companyLogo?: string;
+  terms?: string;
+  paymentInfo?: string;
+}
+
+export interface BusinessSettings {
+  invoice?: DocumentSettings;
+  quotation?: DocumentSettings;
+  receipt?: {
+    companyLogo?: string;
+  };
+}

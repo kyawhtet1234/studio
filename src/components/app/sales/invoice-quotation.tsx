@@ -1,45 +1,20 @@
 
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import type { SaleTransaction, Store, Customer } from '@/lib/types';
+import type { SaleTransaction, Store, Customer, DocumentSettings } from '@/lib/types';
 import { format } from 'date-fns';
 import { Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-
-// LocalStorage Keys
-const SETTINGS_KEYS = {
-  invoice: {
-    companyName: 'invoice-company-name',
-    companyAddress: 'invoice-company-address',
-    companyPhone: 'invoice-company-phone',
-    companyLogo: 'invoice-company-logo',
-    terms: 'invoice-terms',
-    paymentInfo: 'invoice-payment-info',
-  },
-  quotation: {
-    companyName: 'quotation-company-name',
-    companyAddress: 'quotation-company-address',
-    companyPhone: 'quotation-company-phone',
-    companyLogo: 'quotation-company-logo',
-    terms: 'quotation-terms',
-    paymentInfo: 'quotation-payment-info',
-  }
-};
+import { useData } from '@/lib/data-context';
 
 
-interface CompanyInfo {
-  name: string;
-  address: string;
-  phone: string;
-  logo: string | null;
-  terms: string;
-  paymentInfo: string;
-}
+interface CompanyInfo extends DocumentSettings {}
 
 interface InvoiceOrQuotationProps {
   sale: SaleTransaction;
@@ -79,16 +54,16 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
             
             {/* Left side - Logo */}
              <div className="h-full flex items-center relative w-1/3">
-                {companyInfo?.logo && (
-                    <Image src={companyInfo.logo} alt="Company Logo" layout="fill" objectFit="contain" />
+                {companyInfo?.companyLogo && (
+                    <Image src={companyInfo.companyLogo} alt="Company Logo" layout="fill" objectFit="contain" />
                 )}
             </div>
             
             {/* Right side - Company Info */}
             <div className="text-right" style={titleStyle}>
-              <h1 className="text-xl font-bold">{companyInfo?.name || 'Your Company'}</h1>
-              <p className="text-[11px] whitespace-pre-line">{companyInfo?.address}</p>
-              <p className="text-[11px]">{companyInfo?.phone}</p>
+              <h1 className="text-xl font-bold">{companyInfo?.companyName || 'Your Company'}</h1>
+              <p className="text-[11px] whitespace-pre-line">{companyInfo?.companyAddress}</p>
+              <p className="text-[11px]">{companyInfo?.companyPhone}</p>
             </div>
 
           </div>
@@ -188,21 +163,8 @@ InvoiceContent.displayName = 'InvoiceContent';
 
 export const InvoiceOrQuotation: React.FC<InvoiceOrQuotationProps> = ({ sale, store, customer, type }) => {
     const documentRef = React.useRef<HTMLDivElement>(null);
-    const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
-
-    useEffect(() => {
-        // Must be in useEffect to avoid server/client mismatch with localStorage
-        const keys = SETTINGS_KEYS[type];
-        const info = {
-          name: localStorage.getItem(keys.companyName) || 'Your Company Name',
-          address: localStorage.getItem(keys.companyAddress) || 'Your Company Address',
-          phone: localStorage.getItem(keys.companyPhone) || '',
-          logo: localStorage.getItem(keys.companyLogo),
-          terms: localStorage.getItem(keys.terms) || 'Thank you for your business.',
-          paymentInfo: localStorage.getItem(keys.paymentInfo) || 'Please make payments to the account below.',
-        };
-        setCompanyInfo(info);
-    }, [type]);
+    const { settings } = useData();
+    const companyInfo = type === 'invoice' ? settings.invoice : settings.quotation;
 
     const handleDownload = async () => {
         const input = documentRef.current;
@@ -251,7 +213,7 @@ export const InvoiceOrQuotation: React.FC<InvoiceOrQuotationProps> = ({ sale, st
                 </Button>
             </div>
             <div className="max-h-[60vh] overflow-y-auto border shadow-lg">
-                <InvoiceContent ref={documentRef} sale={sale} store={store} customer={customer} type={type} companyInfo={companyInfo} />
+                <InvoiceContent ref={documentRef} sale={sale} store={store} customer={customer} type={type} companyInfo={companyInfo || null} />
             </div>
         </div>
     );
