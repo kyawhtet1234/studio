@@ -33,7 +33,7 @@ export function InvoiceSettings() {
         setCompanyPhone(settings.invoice.companyPhone || '');
         setCompanyLogo(settings.invoice.companyLogo || null);
         setTerms(settings.invoice.terms || '');
-        setPaymentInfo(settingsinvoice.paymentInfo || '');
+        setPaymentInfo(settings.invoice.paymentInfo || '');
     }
   }, [settings.invoice]);
 
