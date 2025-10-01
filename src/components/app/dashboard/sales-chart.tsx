@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 const chartConfig = {
   sales: {
     label: "Sales",
-    color: "hsl(var(--chart-2))",
+    color: "hsl(var(--chart-3))",
   },
 };
 
@@ -72,7 +72,7 @@ export function SalesChart({ sales, className, style }: { sales: SaleTransaction
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fontSize: 12, fill: 'white' }}
+                  tick={{ fill: 'white' }}
                 />
                 <YAxis 
                   tickFormatter={(value) => `MMK ${Number(value).toLocaleString()}`}
@@ -80,7 +80,7 @@ export function SalesChart({ sales, className, style }: { sales: SaleTransaction
                   axisLine={false}
                   tickMargin={8}
                   width={80}
-                  tick={{ fontSize: 12, fill: 'white' }}
+                  tick={{ fill: 'white' }}
                 />
                 <ChartTooltip
                   cursor={false}
@@ -106,4 +106,3 @@ export function SalesChart({ sales, className, style }: { sales: SaleTransaction
     </Card>
   );
 }
-
