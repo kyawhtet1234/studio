@@ -327,6 +327,7 @@ export default function ReportsPage() {
   const [editingDocument, setEditingDocument] = useState<SaleTransaction | null>(null);
   const [selectedStore, setSelectedStore] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('daily');
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
   const filteredSales = useMemo(() => {
     if (selectedStore === 'all') return sales;
@@ -408,7 +409,29 @@ export default function ReportsPage() {
 
 
   const { data: dailyReports, total: dailyTotal } = useMemo(() => getReportData('daily'), [filteredSales, products]);
-  const { data: monthlyReports, total: monthlyTotal } = useMemo(() => getReportData('monthly'), [filteredSales, products]);
+  const { data: monthlyReportsAll, total: monthlyTotalAll } = useMemo(() => getReportData('monthly'), [filteredSales, products]);
+  
+  const availableMonths = useMemo(() => {
+      return monthlyReportsAll.map(report => report.date);
+  }, [monthlyReportsAll]);
+  
+  const filteredMonthlyReports = useMemo(() => {
+    if (selectedMonth === 'all') {
+      return monthlyReportsAll;
+    }
+    return monthlyReportsAll.filter(report => report.date === selectedMonth);
+  }, [monthlyReportsAll, selectedMonth]);
+  
+  const filteredMonthlyTotal = useMemo(() => {
+     return filteredMonthlyReports.reduce((acc, report) => {
+        acc.sales += report.sales;
+        acc.profit += report.profit;
+        acc.totalQuantity += report.totalQuantity;
+        return acc;
+    }, { sales: 0, profit: 0, totalQuantity: 0 });
+  }, [filteredMonthlyReports]);
+
+
   const salesByCustomer = useMemo(() => getSalesByCustomerData(), [filteredSales, customers]);
   
   const purchaseHistory = useMemo(() => {
@@ -450,7 +473,7 @@ export default function ReportsPage() {
         };
       case 'monthly':
         return {
-          data: monthlyReports.map(r => ({ Period: r.date, 'Total Items': r.totalQuantity, Sales: r.sales, Profit: r.profit })),
+          data: filteredMonthlyReports.map(r => ({ Period: r.date, 'Total Items': r.totalQuantity, Sales: r.sales, Profit: r.profit })),
           title: 'Monthly Sales Report'
         };
       case 'salesByCustomer':
@@ -610,8 +633,21 @@ export default function ReportsPage() {
         <TabsContent value="daily" className="overflow-x-auto">
             <ReportTable data={dailyReports} total={dailyTotal} periodLabel="Date" />
         </TabsContent>
-        <TabsContent value="monthly" className="overflow-x-auto">
-            <ReportTable data={monthlyReports} total={monthlyTotal} period-label="Month" />
+        <TabsContent value="monthly" className="overflow-x-auto space-y-4">
+             <div className="flex justify-end">
+                <Select onValueChange={setSelectedMonth} value={selectedMonth}>
+                    <SelectTrigger className="w-full sm:w-[240px]">
+                        <SelectValue placeholder="Filter by month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Months</SelectItem>
+                        {availableMonths.map(month => (
+                            <SelectItem key={month} value={month}>{month}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <ReportTable data={filteredMonthlyReports} total={filteredMonthlyTotal} period-label="Month" />
         </TabsContent>
         <TabsContent value="salesByCustomer" className="overflow-x-auto">
             <SalesByCustomerTable data={salesByCustomer} />
@@ -667,6 +703,7 @@ export default function ReportsPage() {
     
 
     
+
 
 
 
