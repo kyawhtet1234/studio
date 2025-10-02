@@ -370,7 +370,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     type="number"
                     step="0.01"
                     value={sellPrice}
-                    readOnly
+                    onChange={(e) => setSellPrice(e.target.value)}
                   />
               </div>
               <div className="w-full sm:w-20 space-y-2">
