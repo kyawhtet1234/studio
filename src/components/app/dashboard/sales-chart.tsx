@@ -55,11 +55,13 @@ export function SalesChart({ sales, className, style }: { sales: SaleTransaction
     return { monthlySales: data, hasSales };
   }, [sales]);
 
+  const darkBlueStyle = { fill: 'hsl(220 25% 10%)', fontWeight: 'bold' };
+
   return (
     <Card className={cn(className, "shadow-drop-shadow-black")} style={style}>
       <CardHeader>
-        <CardTitle>Sales of the Month</CardTitle>
-        <CardDescription>Showing sales data for the last 30 days.</CardDescription>
+        <CardTitle className="text-[hsl(220_25%_10%)] font-bold">Sales of the Month</CardTitle>
+        <CardDescription className="text-[hsl(220_25%_10%)] font-bold">Showing sales data for the last 30 days.</CardDescription>
       </CardHeader>
       <CardContent>
         {hasSales ? (
@@ -72,7 +74,7 @@ export function SalesChart({ sales, className, style }: { sales: SaleTransaction
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tick={{ fill: 'white' }}
+                  tick={darkBlueStyle}
                 />
                 <YAxis 
                   tickFormatter={(value) => `MMK ${Number(value).toLocaleString()}`}
@@ -80,7 +82,7 @@ export function SalesChart({ sales, className, style }: { sales: SaleTransaction
                   axisLine={false}
                   tickMargin={8}
                   width={80}
-                  tick={{ fill: 'white' }}
+                  tick={darkBlueStyle}
                 />
                 <ChartTooltip
                   cursor={false}
