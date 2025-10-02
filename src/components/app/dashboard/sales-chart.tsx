@@ -67,7 +67,7 @@ export function SalesChart({ sales, className, style }: { sales: SaleTransaction
         {hasSales ? (
           <ChartContainer config={chartConfig} className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlySales} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+              <BarChart data={monthlySales} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis 
                   dataKey="date" 
