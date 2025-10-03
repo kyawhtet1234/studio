@@ -195,7 +195,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
   
   async function onSubmit(data: DocumentFormValues) {
     const status = type === 'invoice' 
-      ? (balance === 0 ? 'paid' : (data.paidAmount ?? 0) > 0 ? 'partially-paid' : 'invoice')
+      ? (balance <= 0 ? 'paid' : (data.paidAmount ?? 0) > 0 ? 'partially-paid' : 'invoice')
       : 'quotation';
 
     const docData: Omit<SaleTransaction, 'id'> = {
@@ -388,7 +388,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
                     type="number"
                     step="0.01"
                     value={sellPrice}
-                    readOnly
+                    onChange={(e) => setSellPrice(e.target.value)}
                   />
               </div>
               <div className="w-full sm:w-20 space-y-2">
@@ -533,3 +533,5 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
     </>
   );
 }
+
+    

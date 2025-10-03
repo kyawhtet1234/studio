@@ -64,7 +64,6 @@ const formSchema = z.object({
     })
   ).min(1, "Cart cannot be empty."),
   discount: z.coerce.number().min(0).optional(),
-  paidAmount: z.coerce.number().min(0).optional(),
 });
 
 type SalesFormValues = z.infer<typeof formSchema>;
@@ -98,7 +97,6 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
       date: new Date(),
       cart: [],
       discount: 0,
-      paidAmount: 0,
     },
   });
 
@@ -110,16 +108,9 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
   const watchCart = form.watch("cart");
   const watchDiscount = form.watch("discount");
   const watchStoreId = form.watch("storeId");
-  const watchPaidAmount = form.watch("paidAmount");
 
   const subtotal = watchCart.reduce((acc, item) => acc + item.total, 0);
   const total = subtotal - (watchDiscount || 0);
-  const balance = total - (watchPaidAmount || 0);
-
-  useEffect(() => {
-    // When total changes, if paid amount is not manually set, update it to the total
-    form.setValue("paidAmount", total);
-  }, [total, form]);
 
   useEffect(() => {
     if (sku) {
@@ -186,8 +177,6 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
   
   async function onSubmit(data: SalesFormValues) {
     
-    const status = balance === 0 ? 'paid' : 'partially-paid';
-
     const saleData: Omit<SaleTransaction, 'id' | 'status'> = {
         storeId: data.storeId,
         customerId: data.customerId,
@@ -204,8 +193,8 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
         subtotal: subtotal,
         discount: data.discount || 0,
         total: total,
-        paidAmount: data.paidAmount || 0,
-        balance: balance,
+        paidAmount: total, // Assume fully paid
+        balance: 0, // Assume fully paid
     };
     
     try {
@@ -215,7 +204,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
         ...saleData,
         id: `sale-${Date.now()}`,
         date: data.date,
-        status: status,
+        status: 'completed',
       }
 
       setLastSale(completeSaleData);
@@ -468,24 +457,6 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                 <span>Total</span>
                 <span className="text-primary">MMK {total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
-             <div className="flex justify-between items-center w-full max-w-sm">
-                <FormLabel htmlFor="paidAmount">Amount Paid</FormLabel>
-                <FormField
-                  control={form.control}
-                  name="paidAmount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input id="paidAmount" type="number" step="0.01" className="w-32" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-            </div>
-             <div className="flex justify-between w-full max-w-sm font-medium">
-                <span className="text-muted-foreground">Balance Due</span>
-                <span>MMK {balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
           </CardFooter>
         </Card>
         {form.formState.errors.cart && (
@@ -538,3 +509,5 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     </>
   );
 }
+
+    
