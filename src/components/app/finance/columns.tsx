@@ -105,7 +105,7 @@ export const expenseColumns = ({ onDelete, categories }: { onDelete: (id: string
   { 
     accessorKey: "date", 
     header: "Date",
-    cell: ({ row }) => format(row.original.date as Date, 'PPP')
+    cell: ({ row }) => format(new Date(row.original.date as Date), "PPP")
   },
   { 
     accessorKey: "categoryId", 
@@ -126,19 +126,6 @@ export const expenseColumns = ({ onDelete, categories }: { onDelete: (id: string
   },
 ];
 
-
-export const expenseCategoryColumns = ({ onEdit, onDelete }: { onEdit: (item: ExpenseCategory) => void, onDelete: (id: string) => void }): ColumnDef<ExpenseCategory>[] => [
-  { accessorKey: "name", header: "Name" },
-  { 
-    id: "actions",
-    cell: ({ row }) => <ActionsCell 
-      row={row}
-      onEdit={onEdit}
-      onDelete={onDelete}
-      deleteConfirmationText={`This will permanently delete the category "${row.original.name}".`}
-    />
-  },
-];
 
 export const cashAllocationColumns = ({ onEdit, onDelete }: { onEdit: (item: CashAllocation) => void, onDelete: (id: string) => void }): ColumnDef<CashAllocation>[] => [
   { accessorKey: "name", header: "Name" },

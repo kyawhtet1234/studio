@@ -9,11 +9,11 @@ import { DollarSign, TrendingUp, TrendingDown } from "lucide-react";
 import type { Timestamp } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/app/products/data-table";
-import { expenseColumns, expenseCategoryColumns, cashAllocationColumns, liabilityColumns } from "@/components/app/finance/columns";
+import { expenseColumns, cashAllocationColumns, liabilityColumns } from "@/components/app/finance/columns";
 import { AddEntitySheet } from "@/components/app/products/add-entity-sheet";
 import { EditEntitySheet } from "@/components/app/products/edit-entity-sheet";
-import { AddExpenseForm, AddExpenseCategoryForm, AddCashAllocationForm, AddLiabilityForm } from "@/components/app/finance/forms";
-import type { Expense, ExpenseCategory, CashAllocation, Liability } from '@/lib/types';
+import { AddExpenseForm, AddCashAllocationForm, AddLiabilityForm } from "@/components/app/finance/forms";
+import type { Expense, CashAllocation, Liability } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CashFlowReport } from '@/components/app/finance/cash-flow-report';
 import { FinancialForecast } from '@/components/app/finance/financial-forecast';
@@ -40,9 +40,6 @@ export default function FinancePage() {
     addExpense, 
     deleteExpense, 
     expenseCategories,
-    addExpenseCategory,
-    updateExpenseCategory,
-    deleteExpenseCategory,
     cashAllocations,
     addCashAllocation,
     updateCashAllocation,
@@ -55,7 +52,6 @@ export default function FinancePage() {
     loading 
   } = useData();
   const [activeTab, setActiveTab] = useState("overview");
-  const [editingCategory, setEditingCategory] = useState<ExpenseCategory | null>(null);
   const [editingAllocation, setEditingAllocation] = useState<CashAllocation | null>(null);
   const [editingLiability, setEditingLiability] = useState<Liability | null>(null);
 
@@ -96,10 +92,6 @@ export default function FinancePage() {
 
   const { monthSales, monthExpenses, netProfit } = getFinancialMetrics();
   const expenseCols = expenseColumns({ onDelete: deleteExpense, categories: expenseCategories });
-  const categoryCols = expenseCategoryColumns({ 
-    onEdit: (data) => setEditingCategory(data), 
-    onDelete: deleteExpenseCategory 
-  });
   const allocationCols = cashAllocationColumns({
     onEdit: (data) => setEditingAllocation(data),
     onDelete: deleteCashAllocation,
@@ -115,12 +107,6 @@ export default function FinancePage() {
         return (
           <AddEntitySheet buttonText="Add Expense" title="Add a new expense" description="Enter the details for the new expense.">
             {(onSuccess) => <AddExpenseForm onSave={addExpense} onSuccess={onSuccess} categories={expenseCategories} />}
-          </AddEntitySheet>
-        );
-      case 'expenseCategories':
-         return (
-          <AddEntitySheet buttonText="Add Category" title="Add a new expense category" description="Enter a name for the new category.">
-            {(onSuccess) => <AddExpenseCategoryForm onSave={addExpenseCategory} onSuccess={onSuccess} />}
           </AddEntitySheet>
         );
        case 'allocations':
@@ -153,12 +139,11 @@ export default function FinancePage() {
                 <TabsTrigger value="cashFlow">Cash Flow</TabsTrigger>
                 <TabsTrigger value="netProfit">Net Profit</TabsTrigger>
                 <TabsTrigger value="expenses">Expenses</TabsTrigger>
-                <TabsTrigger value="expenseCategories">Expense Categories</TabsTrigger>
                 <TabsTrigger value="forecast">Forecast</TabsTrigger>
                 <TabsTrigger value="allocations">Cash Allocations</TabsTrigger>
                 <TabsTrigger value="liabilities">Liabilities</TabsTrigger>
             </TabsList>
-             {['expenses', 'expenseCategories', 'allocations', 'liabilities'].includes(activeTab) && (
+             {['expenses', 'allocations', 'liabilities'].includes(activeTab) && (
                 <div>
                   {renderAddButton()}
                 </div>
@@ -223,9 +208,6 @@ export default function FinancePage() {
         <TabsContent value="expenses">
             <DataTable columns={expenseCols} data={expenses} filterColumnId="description" filterPlaceholder="Filter expenses by description..."/>
         </TabsContent>
-        <TabsContent value="expenseCategories">
-            <DataTable columns={categoryCols} data={expenseCategories} filterColumnId="name" filterPlaceholder="Filter categories by name..."/>
-        </TabsContent>
         <TabsContent value="forecast">
              <FinancialForecast sales={sales} expenses={expenses} />
         </TabsContent>
@@ -239,18 +221,6 @@ export default function FinancePage() {
             <DataTable columns={liabilityCols} data={liabilities} filterColumnId="name" filterPlaceholder="Filter liabilities by name..."/>
         </TabsContent>
       </Tabs>
-      <EditEntitySheet
-        title="Edit Expense Category"
-        description="Update the name for this category."
-        isOpen={!!editingCategory}
-        onClose={() => setEditingCategory(null)}
-      >
-        {(onSuccess) => <AddExpenseCategoryForm 
-            onSave={(data) => updateExpenseCategory(editingCategory!.id, data)}
-            onSuccess={onSuccess} 
-            category={editingCategory!}
-            />}
-      </EditEntitySheet>
       <EditEntitySheet
         title="Edit Cash Allocation"
         description="Update the details for this allocation."

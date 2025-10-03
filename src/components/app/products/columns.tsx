@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import type { Product, Category, Supplier, Store, Customer, PaymentType } from "@/lib/types";
+import type { Product, Category, Supplier, Store, Customer, PaymentType, ExpenseCategory } from "@/lib/types";
 
 interface DeletableRow {
   id: string;
@@ -194,6 +194,20 @@ export const paymentTypeColumns = ({ onEdit, onDelete }: { onEdit: (item: Paymen
       onEdit={onEdit}
       onDelete={onDelete}
       deleteConfirmationText={`This will permanently delete the payment type "${row.original.name}".`}
+    />
+  },
+];
+
+export const expenseCategoryColumns = ({ onEdit, onDelete }: { onEdit: (item: ExpenseCategory) => void, onDelete: (id: string) => void }): ColumnDef<ExpenseCategory>[] => [
+  { accessorKey: "name", header: "Name" },
+  { 
+    id: "actions",
+    cell: ({ row }) => <ActionsCell 
+      row={row}
+      copyLabel="Copy category ID"
+      onEdit={onEdit}
+      onDelete={onDelete}
+      deleteConfirmationText={`This will permanently delete the category "${row.original.name}".`}
     />
   },
 ];
