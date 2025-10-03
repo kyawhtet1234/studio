@@ -14,12 +14,12 @@ import { AddEntitySheet } from "@/components/app/products/add-entity-sheet";
 import { EditEntitySheet } from "@/components/app/products/edit-entity-sheet";
 import { AddExpenseForm, AddCashAllocationForm, AddLiabilityForm } from "@/components/app/finance/forms";
 import type { Expense, CashAllocation, Liability } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CashFlowReport } from '@/components/app/finance/cash-flow-report';
 import { FinancialForecast } from '@/components/app/finance/financial-forecast';
 import { AffordabilityChecker } from '@/components/app/finance/affordability-checker';
 import { ExpenseBreakdownChart } from '@/components/app/finance/expense-breakdown-chart';
 import { BalanceSheet } from '@/components/app/finance/balance-sheet';
+import { NetProfitReport } from '@/components/app/finance/net-profit-report';
 
 
 // Helper function to safely convert date
@@ -195,15 +195,7 @@ export default function FinancePage() {
            <CashFlowReport sales={sales} purchases={purchases} expenses={expenses} />
         </TabsContent>
          <TabsContent value="netProfit">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Net Profit Report</CardTitle>
-                    <CardDescription>Detailed profit and loss analysis. Coming soon!</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground">This section will contain detailed reports for monthly and yearly profit and loss.</p>
-                </CardContent>
-            </Card>
+            <NetProfitReport sales={sales} products={products} expenses={expenses} />
         </TabsContent>
         <TabsContent value="expenses">
             <DataTable columns={expenseCols} data={expenses} filterColumnId="description" filterPlaceholder="Filter expenses by description..."/>
