@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { cn, toDate } from "@/lib/utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Receipt } from "@/components/app/sales/receipt";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +31,8 @@ import { documentColumns } from "@/components/app/reports/document-columns";
 import { EditEntitySheet } from "@/components/app/products/edit-entity-sheet";
 import { DocumentForm } from "@/components/app/sales/document-form";
 import { format } from "date-fns";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 
 const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales: number, profit: number, totalQuantity: number }, periodLabel: string }) => (
@@ -220,10 +222,9 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                 <TableHead>Customer</TableHead>
                 <TableHead>Payment</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total Qty</TableHead>
-                <TableHead className="text-right">Subtotal</TableHead>
-                <TableHead className="text-right">Discount</TableHead>
                 <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-right">Paid</TableHead>
+                <TableHead className="text-right">Balance</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
             </TableHeader>
@@ -232,7 +233,6 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                     const saleDate = toDate(sale.date);
                     const isVoided = sale.status === 'voided';
                     const customerName = customers.find(c => c.id === sale.customerId)?.name || 'N/A';
-                    const totalQty = sale.items.reduce((sum, item) => sum + item.quantity, 0);
                     return (
                         <TableRow key={sale.id} className={cn(isVoided && "text-muted-foreground bg-muted/30")}>
                             <TableCell className="font-medium">{format(saleDate, 'PP')}</TableCell>
@@ -242,10 +242,9 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                             <TableCell>
                                 <Badge variant={isVoided ? "destructive" : "secondary"} className="capitalize">{sale.status}</Badge>
                             </TableCell>
-                            <TableCell className="text-right">{totalQty}</TableCell>
-                            <TableCell className="text-right">MMK {sale.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                            <TableCell className="text-right">MMK {sale.discount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                             <TableCell className="text-right">MMK {sale.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                             <TableCell className="text-right">MMK {sale.paidAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                            <TableCell className="text-right">MMK {sale.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                             <TableCell>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -322,12 +321,15 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
 
 
 export default function ReportsPage() {
-  const { sales, products, purchases, stores, suppliers, customers, voidSale, deletePurchase, deleteSale, updateSale, addCustomer, markInvoiceAsPaid } = useData();
+  const { sales, products, purchases, stores, suppliers, customers, voidSale, deletePurchase, deleteSale, updateSale, addCustomer, markInvoiceAsPaid, recordPayment } = useData();
   const [documentToPrint, setDocumentToPrint] = useState<{ type: 'receipt' | 'invoice' | 'quotation', sale: SaleTransaction } | null>(null);
   const [editingDocument, setEditingDocument] = useState<SaleTransaction | null>(null);
+  const [paymentDocument, setPaymentDocument] = useState<SaleTransaction | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [selectedStore, setSelectedStore] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('daily');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const { toast } = useToast();
 
   const filteredSales = useMemo(() => {
     if (selectedStore === 'all') return sales;
@@ -343,7 +345,7 @@ export default function ReportsPage() {
   const getReportData = (period: 'daily' | 'monthly') => {
     const reports: { [key: string]: { date: string, sales: number, cogs: number, profit: number, totalQuantity: number } } = {};
     
-    const includedSales = filteredSales.filter(s => s.status === 'completed' || s.status === 'invoice');
+    const includedSales = filteredSales.filter(s => s.status === 'completed' || s.status === 'paid');
     
     includedSales.forEach(sale => {
         const d = toDate(sale.date);
@@ -388,7 +390,7 @@ export default function ReportsPage() {
   const getSalesByCustomerData = () => {
     const customerSales: { [key: string]: { customerId: string, customerName: string, totalSales: number } } = {};
 
-    const includedSales = filteredSales.filter(s => s.status === 'completed' || s.status === 'invoice');
+    const includedSales = filteredSales.filter(s => s.status === 'completed' || s.status === 'paid');
 
     includedSales.forEach(sale => {
         if (!sale.customerId) return;
@@ -444,17 +446,13 @@ export default function ReportsPage() {
 
   const salesHistory = useMemo(() => {
       return filteredSales
-        .filter(s => s.status === 'completed' || s.status === 'voided')
-        .sort((a, b) => {
-            const dateA = toDate(a.date);
-            const dateB = toDate(b.date);
-            return dateB.getTime() - dateA.getTime();
-      });
+        .filter(s => ['completed', 'paid', 'partially-paid', 'voided'].includes(s.status))
+        .sort((a, b) => toDate(b.date).getTime() - toDate(a.date).getTime());
   }, [filteredSales]);
 
   const invoiceHistory = useMemo(() => {
       return filteredSales
-        .filter(s => s.status === 'invoice' || s.status === 'completed')
+        .filter(s => s.status === 'invoice' || s.status === 'partially-paid' || s.status === 'paid' || (s.status === 'completed' && s.balance >= 0))
         .sort((a, b) => toDate(b.date).getTime() - toDate(a.date).getTime());
   }, [filteredSales]);
 
@@ -489,10 +487,9 @@ export default function ReportsPage() {
             Customer: customers.find(c => c.id === s.customerId)?.name || 'N/A',
             Payment: s.paymentType,
             Status: s.status,
-            'Total Qty': s.items.reduce((sum, i) => sum + i.quantity, 0),
-            Subtotal: s.subtotal,
-            Discount: s.discount,
-            Total: s.total
+            Total: s.total,
+            Paid: s.paidAmount,
+            Balance: s.balance
           })),
           title: 'Sales History'
         };
@@ -500,9 +497,12 @@ export default function ReportsPage() {
         return {
           data: invoiceHistory.map(s => ({
             Date: format(toDate(s.date), 'PP'),
-            Store: stores.find(st => st.id === s.storeId)?.name || 'N/A',
+            'Invoice #': s.id.slice(-6).toUpperCase(),
             Customer: customers.find(c => c.id === s.customerId)?.name || 'N/A',
-            Total: s.total
+            Status: s.status,
+            Total: s.total,
+            Paid: s.paidAmount,
+            Balance: s.balance
           })),
           title: 'Invoice History'
         };
@@ -510,7 +510,7 @@ export default function ReportsPage() {
         return {
           data: quotationHistory.map(s => ({
             Date: format(toDate(s.date), 'PP'),
-            Store: stores.find(st => st.id === s.storeId)?.name || 'N/A',
+            'Quotation #': `QUO-${s.id.slice(-6).toUpperCase()}`,
             Customer: customers.find(c => c.id === s.customerId)?.name || 'N/A',
             Total: s.total
           })),
@@ -552,6 +552,26 @@ export default function ReportsPage() {
     }
   };
 
+  const handleRecordPayment = async () => {
+    if (!paymentDocument || paymentAmount <= 0) {
+      toast({ variant: 'destructive', title: 'Invalid amount', description: 'Please enter a valid payment amount.'});
+      return;
+    }
+    if (paymentAmount > paymentDocument.balance) {
+      toast({ variant: 'destructive', title: 'Invalid amount', description: 'Payment cannot exceed balance due.'});
+      return;
+    }
+
+    try {
+      await recordPayment(paymentDocument.id, paymentAmount);
+      toast({ title: 'Payment Recorded', description: `MMK ${paymentAmount} recorded for invoice #${paymentDocument.id.slice(-6).toUpperCase()}`});
+      setPaymentDocument(null);
+      setPaymentAmount(0);
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Error', description: (e as Error).message });
+    }
+  };
+
   const renderPrintDialog = () => {
     if (!documentToPrint) return null;
 
@@ -578,6 +598,10 @@ export default function ReportsPage() {
     onDelete: deleteSale,
     onPrint: (doc) => setDocumentToPrint({ type: 'invoice', sale: doc }),
     onMarkAsPaid: markInvoiceAsPaid,
+    onRecordPayment: (doc) => {
+      setPaymentDocument(doc);
+      setPaymentAmount(doc.balance); // Pre-fill with remaining balance
+    },
     type: 'invoice'
   });
   
@@ -587,6 +611,7 @@ export default function ReportsPage() {
       onDelete: deleteSale,
       onPrint: (doc) => setDocumentToPrint({ type: 'quotation', sale: doc }),
       onMarkAsPaid: markInvoiceAsPaid,
+      onRecordPayment: () => {},
       type: 'quotation'
   });
 
@@ -692,19 +717,27 @@ export default function ReportsPage() {
           />
         )}
       </EditEntitySheet>
+      <Dialog open={!!paymentDocument} onOpenChange={() => setPaymentDocument(null)}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Record Payment for Invoice #{paymentDocument?.id.slice(-6).toUpperCase()}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <div className="flex justify-between font-medium">
+                    <span>Balance Due:</span>
+                    <span>MMK {paymentDocument?.balance.toLocaleString()}</span>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="payment-amount">Payment Amount</Label>
+                    <Input id="payment-amount" type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(Number(e.target.value))}/>
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setPaymentDocument(null)}>Cancel</Button>
+                <Button onClick={handleRecordPayment}>Record Payment</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-    
-
-
-
-    
-
-    
-
-
-
-
-

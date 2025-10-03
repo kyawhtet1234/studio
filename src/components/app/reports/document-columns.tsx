@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Printer, Edit, Trash2, CheckCircle } from "lucide-react";
+import { MoreHorizontal, Printer, Edit, Trash2, CheckCircle, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { SaleTransaction, Customer } from "@/lib/types";
 import { format } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface ActionsCellProps {
   row: any,
@@ -33,10 +34,11 @@ interface ActionsCellProps {
   onDelete: (id: string) => void,
   onPrint: (item: SaleTransaction) => void,
   onMarkAsPaid: (id: string) => void,
+  onRecordPayment: (item: SaleTransaction) => void,
   type: 'invoice' | 'quotation'
 }
 
-const ActionsCell = ({ row, onEdit, onDelete, onPrint, onMarkAsPaid, type }: ActionsCellProps) => {
+const ActionsCell = ({ row, onEdit, onDelete, onPrint, onMarkAsPaid, onRecordPayment, type }: ActionsCellProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const item = row.original as SaleTransaction;
   const { toast } = useToast();
@@ -58,7 +60,8 @@ const ActionsCell = ({ row, onEdit, onDelete, onPrint, onMarkAsPaid, type }: Act
     });
   };
 
-  const isPaid = item.status === 'completed';
+  const isPaid = item.status === 'completed' || item.status === 'paid';
+  const isQuotation = type === 'quotation';
 
   return (
     <>
@@ -71,11 +74,17 @@ const ActionsCell = ({ row, onEdit, onDelete, onPrint, onMarkAsPaid, type }: Act
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          {type === 'invoice' && (
-            <DropdownMenuItem onClick={handleMarkAsPaid} disabled={isPaid}>
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Mark as Paid
-            </DropdownMenuItem>
+          {!isQuotation && (
+            <>
+              <DropdownMenuItem onClick={() => onRecordPayment(item)} disabled={isPaid}>
+                <CreditCard className="mr-2 h-4 w-4" />
+                Record Payment
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleMarkAsPaid} disabled={isPaid || item.balance > 0}>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Mark as Paid
+              </DropdownMenuItem>
+            </>
           )}
           <DropdownMenuItem onClick={() => onPrint(item)}>
             <Printer className="mr-2 h-4 w-4" />
@@ -114,7 +123,25 @@ const ActionsCell = ({ row, onEdit, onDelete, onPrint, onMarkAsPaid, type }: Act
   );
 };
 
-export const documentColumns = ({ customers, onEdit, onDelete, onPrint, onMarkAsPaid, type }: { customers: Customer[], onEdit: (item: SaleTransaction) => void, onDelete: (id: string) => void, onPrint: (item: SaleTransaction) => void, onMarkAsPaid: (id: string) => void, type: 'invoice' | 'quotation' }): ColumnDef<SaleTransaction>[] => [
+const getStatusVariant = (status: SaleTransaction['status'], balance: number) => {
+    if (status === 'voided') return 'destructive';
+    if (status === 'completed' || status === 'paid' || balance === 0) return 'default';
+    if (status === 'partially-paid' || balance > 0) return 'secondary';
+    if (status === 'invoice' || status === 'quotation') return 'outline';
+    return 'default';
+}
+
+const getStatusText = (status: SaleTransaction['status'], balance: number, type: 'invoice' | 'quotation') => {
+    if (status === 'voided') return 'Voided';
+    if (type === 'quotation') return 'Quotation';
+    if (status === 'completed' || status === 'paid' || (status==='invoice' && balance === 0)) return 'Paid';
+    if (balance > 0 && status !== 'invoice' && status !== 'partially-paid') return 'Partially Paid';
+    if (status === 'partially-paid') return 'Partially Paid';
+    return 'Unpaid';
+}
+
+
+export const documentColumns = ({ customers, onEdit, onDelete, onPrint, onMarkAsPaid, onRecordPayment, type }: { customers: Customer[], onEdit: (item: SaleTransaction) => void, onDelete: (id: string) => void, onPrint: (item: SaleTransaction) => void, onMarkAsPaid: (id: string) => void, onRecordPayment: (item: SaleTransaction) => void, type: 'invoice' | 'quotation' }): ColumnDef<SaleTransaction>[] => [
   { 
     accessorKey: "date", 
     header: "Date",
@@ -134,18 +161,26 @@ export const documentColumns = ({ customers, onEdit, onDelete, onPrint, onMarkAs
     accessorKey: 'status',
     header: 'Status',
     cell: ({row}) => {
-        const status = row.original.status;
-        const isPaid = status === 'completed';
-        if (type === 'invoice') {
-            return <Badge variant={isPaid ? 'default' : 'secondary'}>{isPaid ? 'Paid' : 'Unpaid'}</Badge>
-        }
-        return <Badge variant="secondary">{status}</Badge>
+        const { status, balance } = row.original;
+        const variant = getStatusVariant(status, balance);
+        const text = getStatusText(status, balance, type);
+        return <Badge variant={variant} className={cn("capitalize")}>{text}</Badge>
     }
   },
   { 
     accessorKey: "total", 
-    header: "Amount", 
+    header: "Total Amount", 
     cell: ({ row }) => `MMK ${row.original.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+  },
+    { 
+    accessorKey: "paidAmount", 
+    header: "Paid Amount", 
+    cell: ({ row }) => `MMK ${row.original.paidAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+  },
+    { 
+    accessorKey: "balance", 
+    header: "Balance Due", 
+    cell: ({ row }) => `MMK ${row.original.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
   },
   {
     id: "actions",
@@ -156,6 +191,7 @@ export const documentColumns = ({ customers, onEdit, onDelete, onPrint, onMarkAs
         onDelete={onDelete}
         onPrint={onPrint}
         onMarkAsPaid={onMarkAsPaid}
+        onRecordPayment={onRecordPayment}
         type={type}
       />
     ),

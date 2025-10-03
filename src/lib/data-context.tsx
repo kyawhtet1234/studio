@@ -1,6 +1,4 @@
 
-
-
 'use client';
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
@@ -49,6 +47,7 @@ interface DataContextProps {
     voidSale: (saleId: string) => Promise<void>;
     deleteSale: (saleId: string) => Promise<void>;
     markInvoiceAsPaid: (saleId: string) => Promise<void>;
+    recordPayment: (saleId: string, amount: number) => Promise<void>;
     addPurchase: (purchase: Omit<PurchaseTransaction, 'id'>) => Promise<void>;
     deletePurchase: (purchaseId: string) => Promise<void>;
     addExpense: (expense: Omit<Expense, 'id'>) => Promise<void>;
@@ -302,9 +301,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const addSale = async (saleData: Omit<SaleTransaction, 'id'>) => {
         if (!user) return;
         
-        const isActualSale = saleData.status === 'completed';
+        const isInventoryDeducted = saleData.status === 'paid' || saleData.status === 'partially-paid' || saleData.status === 'completed';
 
-        if (isActualSale) {
+        if (isInventoryDeducted) {
              try {
                 await runTransaction(db, async (transaction) => {
                     const inventoryRefs = saleData.items.map(item => {
@@ -366,6 +365,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 if (!saleSnap.exists()) throw new Error("Invoice not found");
 
                 const saleData = saleSnap.data() as SaleTransaction;
+                if(saleData.balance > 0) throw new Error("Cannot mark as paid. Balance is not zero.");
+
+                const isAlreadyCompleted = saleData.status === 'completed' || saleData.status === 'paid';
+                if(isAlreadyCompleted) return;
+
 
                 // Deduct inventory
                 for (const item of saleData.items) {
@@ -382,10 +386,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
 
                 // Update sale status
-                transaction.update(saleRef, { status: 'completed' });
+                transaction.update(saleRef, { status: 'paid' });
             });
         } catch (e) {
             console.error("Mark as paid transaction failed: ", e);
+            throw e;
+        }
+        await fetchData(user.uid);
+    };
+
+    const recordPayment = async (saleId: string, amount: number) => {
+        if(!user) return;
+        const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
+        try {
+            await runTransaction(db, async (transaction) => {
+                const saleSnap = await transaction.get(saleRef);
+                if (!saleSnap.exists()) throw new Error("Invoice not found");
+                const saleData = saleSnap.data() as SaleTransaction;
+                const newPaidAmount = saleData.paidAmount + amount;
+                const newBalance = saleData.total - newPaidAmount;
+                const newStatus = newBalance <= 0 ? 'paid' : 'partially-paid';
+
+                transaction.update(saleRef, {
+                    paidAmount: newPaidAmount,
+                    balance: newBalance,
+                    status: newStatus
+                });
+            });
+        } catch (e) {
+            console.error("Record payment failed: ", e);
             throw e;
         }
         await fetchData(user.uid);
@@ -405,8 +434,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
                 const saleData = saleSnap.data() as SaleTransaction;
                 
-                // Only adjust inventory for completed sales
-                if (saleData.status === 'completed') {
+                // Only adjust inventory for sales that affected stock
+                const inventoryAdjustingStatus: SaleTransaction['status'][] = ['completed', 'paid', 'partially-paid'];
+                if (inventoryAdjustingStatus.includes(saleData.status)) {
                     const inventoryRefs = saleData.items.map(item => {
                         const inventoryId = `${item.productId}_${saleData.storeId}`;
                         return doc(db, 'users', user.uid, 'inventory', inventoryId);
@@ -432,7 +462,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     }
                 }
                 
-                transaction.update(saleRef, { status: 'voided' });
+                transaction.update(saleRef, { status: 'voided', balance: saleData.total, paidAmount: 0 });
             });
         } catch(e) {
             console.error("Void sale transaction failed: ", e);
@@ -713,7 +743,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             customers, addCustomer, updateCustomer, deleteCustomer,
             paymentTypes, addPaymentType, updatePaymentType, deletePaymentType,
             inventory, updateInventory,
-            sales, addSale, updateSale, voidSale, deleteSale, markInvoiceAsPaid,
+            sales, addSale, updateSale, voidSale, deleteSale, markInvoiceAsPaid, recordPayment,
             purchases, addPurchase, deletePurchase,
             expenses, addExpense, deleteExpense,
             expenseCategories, addExpenseCategory, updateExpenseCategory, deleteExpenseCategory,
@@ -739,5 +769,3 @@ export function useData() {
     }
     return context;
 }
-
-    

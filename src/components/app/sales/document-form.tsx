@@ -61,6 +61,7 @@ const formSchema = z.object({
     })
   ).min(1, "Cart cannot be empty."),
   discount: z.coerce.number().min(0).optional(),
+  paidAmount: z.coerce.number().min(0).optional(),
 });
 
 type DocumentFormValues = z.infer<typeof formSchema>;
@@ -97,21 +98,9 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
       date: sale ? (sale.date as Date) : new Date(),
       cart: sale?.items || [],
       discount: sale?.discount || 0,
+      paidAmount: sale?.paidAmount || 0,
     },
   });
-
-  useEffect(() => {
-    if (sale) {
-        form.reset({
-            storeId: sale.storeId,
-            customerId: sale.customerId,
-            date: sale.date as Date,
-            cart: sale.items,
-            discount: sale.discount,
-        })
-    }
-  }, [sale, form]);
-
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -121,6 +110,25 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
   const watchCart = form.watch("cart");
   const watchDiscount = form.watch("discount");
   const watchStoreId = form.watch("storeId");
+  const watchPaidAmount = form.watch("paidAmount");
+
+  const subtotal = watchCart.reduce((acc, item) => acc + item.total, 0);
+  const total = subtotal - (watchDiscount || 0);
+  const balance = total - (watchPaidAmount || 0);
+  
+  useEffect(() => {
+    if (sale) {
+        form.reset({
+            storeId: sale.storeId,
+            customerId: sale.customerId,
+            date: sale.date as Date,
+            cart: sale.items.map(i => ({...i, total: i.sellPrice * i.quantity})),
+            discount: sale.discount,
+            paidAmount: sale.paidAmount,
+        })
+    }
+  }, [sale, form]);
+
 
   useEffect(() => {
     if (sku) {
@@ -184,10 +192,12 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
     }
   }
 
-  const subtotal = watchCart.reduce((acc, item) => acc + item.total, 0);
-  const total = subtotal - (watchDiscount || 0);
   
   async function onSubmit(data: DocumentFormValues) {
+    const status = type === 'invoice' 
+      ? (balance === 0 ? 'paid' : (data.paidAmount ?? 0) > 0 ? 'partially-paid' : 'invoice')
+      : 'quotation';
+
     const docData: Omit<SaleTransaction, 'id'> = {
         storeId: data.storeId,
         customerId: data.customerId,
@@ -203,8 +213,10 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
         subtotal: subtotal,
         discount: data.discount || 0,
         total: total,
-        status: type, // Set status to 'invoice' or 'quotation'
-        paymentType: type === 'invoice' ? 'Invoice' : 'Quotation' // Differentiate payment type
+        paidAmount: data.paidAmount || 0,
+        balance: balance,
+        status: status,
+        paymentType: type === 'invoice' ? 'Invoice' : 'Quotation'
     };
     
     try {
@@ -225,7 +237,14 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
       if (onSuccess) {
           onSuccess();
       } else {
-        form.reset();
+        form.reset({
+          storeId: '',
+          customerId: '',
+          date: new Date(),
+          cart: [],
+          discount: 0,
+          paidAmount: 0
+        });
         remove();
       }
 
@@ -448,10 +467,32 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
                   )}
                 />
             </div>
-            <div className="flex justify-between w-full max-w-sm border-t pt-4">
-                <span className="text-lg font-bold">Total</span>
-                <span className="text-lg font-bold text-primary">MMK {total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <div className="flex justify-between w-full max-w-sm font-bold text-lg border-t pt-4">
+                <span>Total</span>
+                <span className="text-primary">MMK {total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
+            {type === 'invoice' && (
+              <>
+                <div className="flex justify-between items-center w-full max-w-sm">
+                    <FormLabel htmlFor="paidAmount">Amount Paid</FormLabel>
+                    <FormField
+                      control={form.control}
+                      name="paidAmount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input id="paidAmount" type="number" step="0.01" className="w-32" {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                </div>
+                 <div className="flex justify-between w-full max-w-sm font-medium">
+                    <span className="text-muted-foreground">Balance Due</span>
+                    <span>MMK {balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              </>
+            )}
           </CardFooter>
         </Card>
         {form.formState.errors.cart && (
@@ -492,10 +533,3 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
     </>
   );
 }
-
-    
-
-    
-
-    
-    

@@ -64,7 +64,9 @@ export type SaleTransaction = {
   subtotal: number;
   discount: number;
   total: number;
-  status: 'completed' | 'voided' | 'invoice' | 'quotation' | 'paid';
+  paidAmount: number;
+  balance: number;
+  status: 'completed' | 'voided' | 'invoice' | 'quotation' | 'partially-paid' | 'paid';
   paymentType: string;
 };
 
@@ -150,3 +152,4 @@ export interface BusinessSettings {
     companyLogo?: string;
   };
 }
+
