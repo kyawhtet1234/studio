@@ -34,6 +34,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useData } from "@/lib/data-context";
 import type { InventoryItem } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
+import { FileDown } from "lucide-react";
+import * as XLSX from 'xlsx';
+import { format } from "date-fns";
 
 interface AdjustmentItem {
   productId: string;
@@ -107,6 +110,29 @@ export default function InventoryPage() {
     setAdjustmentItem(null);
   };
 
+  const handleExportToExcel = () => {
+    if (inventoryData.length === 0) {
+      toast({ variant: 'destructive', title: 'No Data', description: 'There is no inventory data to export for the selected filters.' });
+      return;
+    }
+
+    const dataToExport = inventoryData.map(item => ({
+      SKU: item.sku,
+      'Product Name': item.productName,
+      Category: item.categoryName,
+      Store: item.storeName,
+      Stock: item.stock,
+    }));
+    
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Inventory');
+
+    const storeName = selectedStore === 'all' ? 'All_Stores' : stores.find(s => s.id === selectedStore)?.name.replace(/ /g, '_') || 'Store';
+    const date = format(new Date(), 'yyyy-MM-dd');
+    XLSX.writeFile(workbook, `Inventory_${storeName}_${date}.xlsx`);
+  };
+
   return (
     <div>
       <PageHeader title="Inventory">
@@ -142,6 +168,10 @@ export default function InventoryPage() {
                     ))}
                 </SelectContent>
             </Select>
+            <Button variant="outline" onClick={handleExportToExcel}>
+              <FileDown className="mr-2 h-4 w-4" />
+              Export to Excel
+            </Button>
         </div>
       </PageHeader>
       <Card className="shadow-drop-shadow-black">
@@ -180,7 +210,7 @@ export default function InventoryPage() {
                   </TableRow>
               )}
             </TableBody>
-          </Table>>
+          </Table>
         </CardContent>
       </Card>
       <Dialog open={!!adjustmentItem} onOpenChange={() => setAdjustmentItem(null)}>
