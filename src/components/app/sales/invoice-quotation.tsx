@@ -164,7 +164,27 @@ InvoiceContent.displayName = 'InvoiceContent';
 export const InvoiceOrQuotation: React.FC<InvoiceOrQuotationProps> = ({ sale, store, customer, type }) => {
     const documentRef = React.useRef<HTMLDivElement>(null);
     const { settings } = useData();
-    const companyInfo = type === 'invoice' ? settings.invoice : settings.quotation;
+    
+    const getCompanyInfo = () => {
+        if (type === 'quotation') {
+            // Prioritize quotation settings, but fall back to invoice settings if a field is missing.
+            const quotationSettings = settings.quotation || {};
+            const invoiceSettings = settings.invoice || {};
+            return {
+                companyName: quotationSettings.companyName || invoiceSettings.companyName,
+                companyAddress: quotationSettings.companyAddress || invoiceSettings.companyAddress,
+                companyPhone: quotationSettings.companyPhone || invoiceSettings.companyPhone,
+                companyLogo: quotationSettings.companyLogo || invoiceSettings.companyLogo,
+                terms: quotationSettings.terms || invoiceSettings.terms,
+                paymentInfo: quotationSettings.paymentInfo || invoiceSettings.paymentInfo,
+            };
+        }
+        // For invoices, just use invoice settings.
+        return settings.invoice;
+    };
+
+    const companyInfo = getCompanyInfo();
+
 
     const handleDownload = async () => {
         const input = documentRef.current;
