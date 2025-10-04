@@ -27,23 +27,16 @@ export function QuotationSettings() {
   const [paymentInfo, setPaymentInfo] = useState('');
 
   useEffect(() => {
-    if(settings.quotation) {
-        setCompanyName(settings.quotation.companyName || '');
-        setCompanyAddress(settings.quotation.companyAddress || '');
-        setCompanyPhone(settings.quotation.companyPhone || '');
-        setCompanyLogo(settings.quotation.companyLogo || null);
-        setTerms(settings.quotation.terms || '');
-        setPaymentInfo(settings.quotation.paymentInfo || '');
-    } else if (settings.invoice) {
-        // Fallback to invoice settings if quotation settings are not set
-        setCompanyName(settings.invoice.companyName || '');
-        setCompanyAddress(settings.invoice.companyAddress || '');
-        setCompanyPhone(settings.invoice.companyPhone || '');
-        setCompanyLogo(settings.invoice.companyLogo || null);
-        setTerms(settings.invoice.terms || '');
-        setPaymentInfo(settings.invoice.paymentInfo || '');
-    }
-  }, [settings]);
+    const quotationSettings = settings.quotation || {};
+    const invoiceSettings = settings.invoice || {};
+
+    setCompanyName(quotationSettings.companyName || invoiceSettings.companyName || '');
+    setCompanyAddress(quotationSettings.companyAddress || invoiceSettings.companyAddress || '');
+    setCompanyPhone(quotationSettings.companyPhone || invoiceSettings.companyPhone || '');
+    setCompanyLogo(quotationSettings.companyLogo || invoiceSettings.companyLogo || null);
+    setTerms(quotationSettings.terms || invoiceSettings.terms || '');
+    setPaymentInfo(quotationSettings.paymentInfo || invoiceSettings.paymentInfo || '');
+  }, [settings.quotation, settings.invoice]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
