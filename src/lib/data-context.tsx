@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup, setDoc } from 'firebase/firestore';
 
-import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability, BusinessSettings, DocumentSettings } from '@/lib/types';
+import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability, BusinessSettings, DocumentSettings, Employee, SalaryAdvance, LeaveRecord } from '@/lib/types';
 
 interface DataContextProps {
     products: Product[];
@@ -23,6 +23,9 @@ interface DataContextProps {
     cashTransactions: CashTransaction[];
     cashAllocations: CashAllocation[];
     liabilities: Liability[];
+    employees: Employee[];
+    salaryAdvances: SalaryAdvance[];
+    leaveRecords: LeaveRecord[];
     settings: BusinessSettings;
     addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<void>;
     updateProduct: (productId: string, product: Partial<Omit<Product, 'id'>>) => Promise<void>;
@@ -64,6 +67,13 @@ interface DataContextProps {
     addLiability: (liability: Omit<Liability, 'id'>) => Promise<void>;
     updateLiability: (liabilityId: string, liability: Partial<Omit<Liability, 'id'>>) => Promise<void>;
     deleteLiability: (liabilityId: string) => Promise<void>;
+    addEmployee: (employee: Omit<Employee, 'id'>) => Promise<void>;
+    updateEmployee: (employeeId: string, employee: Partial<Omit<Employee, 'id'>>) => Promise<void>;
+    deleteEmployee: (employeeId: string) => Promise<void>;
+    addSalaryAdvance: (advance: Omit<SalaryAdvance, 'id'>) => Promise<void>;
+    deleteSalaryAdvance: (advanceId: string) => Promise<void>;
+    addLeaveRecord: (leave: Omit<LeaveRecord, 'id'>) => Promise<void>;
+    deleteLeaveRecord: (leaveId: string) => Promise<void>;
     updateInventory: (newInventory: InventoryItem[]) => Promise<void>;
     updateInvoiceSettings: (settings: DocumentSettings) => Promise<void>;
     updateQuotationSettings: (settings: DocumentSettings) => Promise<void>;
@@ -90,6 +100,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [cashTransactions, setCashTransactions] = useState<CashTransaction[]>([]);
     const [cashAllocations, setCashAllocations] = useState<CashAllocation[]>([]);
     const [liabilities, setLiabilities] = useState<Liability[]>([]);
+    const [employees, setEmployees] = useState<Employee[]>([]);
+    const [salaryAdvances, setSalaryAdvances] = useState<SalaryAdvance[]>([]);
+    const [leaveRecords, setLeaveRecords] = useState<LeaveRecord[]>([]);
     const [settings, setSettings] = useState<BusinessSettings>({});
     const [loading, setLoading] = useState(true);
 
@@ -112,6 +125,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 { name: 'cashTransactions', setter: setCashTransactions, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate() }) },
                 { name: 'cashAllocations', setter: setCashAllocations },
                 { name: 'liabilities', setter: setLiabilities },
+                { name: 'employees', setter: setEmployees },
+                { name: 'salaryAdvances', setter: setSalaryAdvances, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate() }) },
+                { name: 'leaveRecords', setter: setLeaveRecords, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate() }) },
             ];
 
             for (const { name, setter, process } of collectionsToFetch) {
@@ -154,6 +170,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setCashTransactions([]);
             setCashAllocations([]);
             setLiabilities([]);
+            setEmployees([]);
+            setSalaryAdvances([]);
+            setLeaveRecords([]);
             setSettings({});
             setLoading(false);
         }
@@ -691,6 +710,67 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await fetchData(user.uid);
     };
 
+    const addEmployee = async (employeeData: Omit<Employee, 'id'>) => {
+        if (!user) return;
+        await addDoc(collection(db, 'users', user.uid, 'employees'), employeeData);
+        await fetchData(user.uid);
+    };
+    
+    const updateEmployee = async (employeeId: string, employeeData: Partial<Omit<Employee, 'id'>>) => {
+        if (!user) return;
+        const employeeRef = doc(db, 'users', user.uid, 'employees', employeeId);
+        await updateDoc(employeeRef, employeeData);
+        await fetchData(user.uid);
+    };
+    
+    const deleteEmployee = async (employeeId: string) => {
+        if (!user) return;
+        const batch = writeBatch(db);
+        
+        batch.delete(doc(db, 'users', user.uid, 'employees', employeeId));
+        
+        const advancesQuery = query(collection(db, 'users', user.uid, 'salaryAdvances'), where('employeeId', '==', employeeId));
+        const advancesSnap = await getDocs(advancesQuery);
+        advancesSnap.forEach(doc => batch.delete(doc.ref));
+        
+        const leavesQuery = query(collection(db, 'users', user.uid, 'leaveRecords'), where('employeeId', '==', employeeId));
+        const leavesSnap = await getDocs(leavesQuery);
+        leavesSnap.forEach(doc => batch.delete(doc.ref));
+
+        await batch.commit();
+        await fetchData(user.uid);
+    };
+    
+    const addSalaryAdvance = async (advanceData: Omit<SalaryAdvance, 'id'>) => {
+        if (!user) return;
+        await addDoc(collection(db, 'users', user.uid, 'salaryAdvances'), {
+            ...advanceData,
+            date: Timestamp.fromDate(advanceData.date as Date)
+        });
+        await fetchData(user.uid);
+    };
+    
+    const deleteSalaryAdvance = async (advanceId: string) => {
+        if (!user) return;
+        await deleteDoc(doc(db, 'users', user.uid, 'salaryAdvances', advanceId));
+        await fetchData(user.uid);
+    };
+    
+    const addLeaveRecord = async (leaveData: Omit<LeaveRecord, 'id'>) => {
+        if (!user) return;
+        await addDoc(collection(db, 'users', user.uid, 'leaveRecords'), {
+            ...leaveData,
+            date: Timestamp.fromDate(leaveData.date as Date)
+        });
+        await fetchData(user.uid);
+    };
+    
+    const deleteLeaveRecord = async (leaveId: string) => {
+        if (!user) return;
+        await deleteDoc(doc(db, 'users', user.uid, 'leaveRecords', leaveId));
+        await fetchData(user.uid);
+    };
+
     const updateInventory = async (updatedItems: InventoryItem[]) => {
         if (!user) return;
         const batch = writeBatch(db);
@@ -751,6 +831,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
             cashTransactions, addCashTransaction,
             cashAllocations, addCashAllocation, updateCashAllocation, deleteCashAllocation,
             liabilities, addLiability, updateLiability, deleteLiability,
+            employees, addEmployee, updateEmployee, deleteEmployee,
+            salaryAdvances, addSalaryAdvance, deleteSalaryAdvance,
+            leaveRecords, addLeaveRecord, deleteLeaveRecord,
             settings,
             updateInvoiceSettings,
             updateQuotationSettings,

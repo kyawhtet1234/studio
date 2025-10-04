@@ -24,6 +24,7 @@ import {
   LogOut,
   Landmark,
   Wallet,
+  Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
@@ -40,6 +41,7 @@ const menuItems = [
   { href: '/reports', label: 'Reports', icon: BarChart3, color: 'bg-rose-500' },
   { href: '/finance', label: 'Finance', icon: Landmark, color: 'bg-purple-500' },
   { href: '/cash', label: 'Cash', icon: Wallet, color: 'bg-indigo-500' },
+  { href: '/employees', label: 'Employees', icon: Users, color: 'bg-pink-500' },
 ];
 
 export function AppSidebar() {

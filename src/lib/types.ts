@@ -136,6 +136,27 @@ export type Liability = {
   amount: number;
 };
 
+export type Employee = {
+  id: string;
+  name: string;
+  baseSalary: number;
+};
+
+export type SalaryAdvance = {
+  id: string;
+  employeeId: string;
+  date: Date | Timestamp;
+  amount: number;
+  notes?: string;
+};
+
+export type LeaveRecord = {
+    id: string;
+    employeeId: string;
+    date: Date | Timestamp;
+};
+
+
 export interface DocumentSettings {
   companyName?: string;
   companyAddress?: string;
