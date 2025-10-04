@@ -115,7 +115,7 @@ export default function EmployeesPage() {
         </AddEntitySheet>
       </PageHeader>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {employees.map(employee => {
           const advances = currentMonthAdvances.filter(a => a.employeeId === employee.id);
           const totalAdvance = advances.reduce((sum, a) => sum + a.amount, 0);
