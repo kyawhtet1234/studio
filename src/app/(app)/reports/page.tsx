@@ -243,8 +243,8 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                                 <Badge variant={isVoided ? "destructive" : "secondary"} className="capitalize">{sale.status}</Badge>
                             </TableCell>
                             <TableCell className="text-right">MMK {sale.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                             <TableCell className="text-right">MMK {sale.paidAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                            <TableCell className="text-right">MMK {sale.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                             <TableCell className="text-right">MMK {(sale.paidAmount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                            <TableCell className="text-right">MMK {(sale.balance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                             <TableCell>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
