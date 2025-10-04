@@ -178,12 +178,12 @@ export default function InventoryPage() {
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>SKU</TableHead>
-                <TableHead>Product Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Store</TableHead>
-                <TableHead className="text-right">Stock</TableHead>
+              <TableRow className="bg-yellow-200 hover:bg-yellow-200/90">
+                <TableHead className="text-black font-bold">SKU</TableHead>
+                <TableHead className="text-black font-bold">Product Name</TableHead>
+                <TableHead className="text-black font-bold">Category</TableHead>
+                <TableHead className="text-black font-bold">Store</TableHead>
+                <TableHead className="text-right text-black font-bold">Stock</TableHead>
                 <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
