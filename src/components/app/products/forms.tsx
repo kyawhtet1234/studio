@@ -257,6 +257,19 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
 
   async function onSubmit(data: z.infer<typeof productSchema>) {
       if (!isEditMode) {
+        const duplicateExists = allProducts.some(p => p.sku === data.sku && p.name === data.name);
+        if (duplicateExists) {
+            form.setError("sku", {
+                type: "manual",
+                message: "This SKU and Name combination already exists.",
+            });
+            form.setError("name", {
+                type: "manual",
+                message: "This SKU and Name combination already exists.",
+            });
+            return;
+        }
+
         const skuExists = allProducts.some(p => p.sku === data.sku);
         if (skuExists) {
             form.setError("sku", {
