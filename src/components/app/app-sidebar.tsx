@@ -115,18 +115,6 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </Link>
           </SidebarMenuItem>
-          <SidebarMenuItem className="mt-auto">
-            <SidebarMenuButton tooltip={user?.email || 'Profile'} className="justify-start w-full">
-              <UserCircle />
-              <span className="truncate text-sm">{user?.email}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Logout" onClick={handleLogout} className="justify-start w-full">
-              <LogOut />
-              <span className="text-sm">Logout</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>

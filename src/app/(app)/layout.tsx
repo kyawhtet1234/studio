@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { AppHeader } from '@/components/app/app-header';
 
 function AppContent({ children }: { children: React.ReactNode }) {
   const { loading: dataLoading } = useData();
@@ -37,8 +38,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
         <div className="flex min-h-screen bg-background">
             <AppSidebar />
             <SidebarInset>
-                <div className="p-4 sm:p-6 lg:p-8">
-                    {children}
+                <div className="flex flex-col flex-1">
+                    <AppHeader />
+                    <main className="p-4 sm:p-6 lg:p-8">
+                        {children}
+                    </main>
                 </div>
             </SidebarInset>
         </div>
