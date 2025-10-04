@@ -175,12 +175,12 @@ export const documentColumns = ({ customers, onEdit, onDelete, onPrint, onMarkAs
     { 
     accessorKey: "paidAmount", 
     header: "Paid Amount", 
-    cell: ({ row }) => `MMK ${row.original.paidAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+    cell: ({ row }) => `MMK ${(row.original.paidAmount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
   },
     { 
     accessorKey: "balance", 
     header: "Balance Due", 
-    cell: ({ row }) => `MMK ${row.original.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+    cell: ({ row }) => `MMK ${(row.original.balance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
   },
   {
     id: "actions",
