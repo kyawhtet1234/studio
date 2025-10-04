@@ -59,7 +59,7 @@ export default function EmployeesPage() {
 
   const currentMonth = new Date();
   const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(current_month);
+  const monthEnd = endOfMonth(currentMonth);
 
   const currentMonthAdvances = useMemo(() => {
     return salaryAdvances.filter(a => {
