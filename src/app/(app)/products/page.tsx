@@ -161,7 +161,7 @@ export default function ProductsPage() {
         </div>
 
         <TabsContent value="items">
-          <Card className="shadow-drop-shadow-black">
+          <Card className="bg-shiny-blue rounded-xl shadow-lg">
             <CardContent className="p-4 md:p-6">
                 <DataTable columns={productCols} data={sortedProducts} filterColumnId="name" filterPlaceholder="Filter items by name..."/>
             </CardContent>
