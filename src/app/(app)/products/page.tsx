@@ -163,7 +163,14 @@ export default function ProductsPage() {
         <TabsContent value="items">
           <Card className="bg-shiny-blue rounded-xl shadow-lg">
             <CardContent className="p-4 md:p-6">
-                <DataTable columns={productCols} data={sortedProducts} filterColumnId="sku" filterPlaceholder="Find items by SKU..."/>
+                <DataTable 
+                  columns={productCols} 
+                  data={sortedProducts} 
+                  filterConfig={[
+                    { columnId: 'sku', placeholder: 'Find items by SKU...' },
+                    { columnId: 'name', placeholder: 'Find items by Name...' }
+                  ]}
+                />
             </CardContent>
           </Card>
         </TabsContent>

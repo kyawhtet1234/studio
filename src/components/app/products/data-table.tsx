@@ -25,16 +25,23 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+interface FilterConfig {
+  columnId: string;
+  placeholder: string;
+}
+
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  filterColumnId: string;
-  filterPlaceholder: string;
+  filterConfig?: FilterConfig[];
+  filterColumnId?: string;
+  filterPlaceholder?: string;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  filterConfig,
   filterColumnId,
   filterPlaceholder,
 }: DataTableProps<TData, TValue>) {
@@ -56,17 +63,22 @@ export function DataTable<TData, TValue>({
     },
   });
 
+  const filters = filterConfig || (filterColumnId && filterPlaceholder ? [{ columnId: filterColumnId, placeholder: filterPlaceholder }] : []);
+
   return (
     <div>
-      <div className="flex items-center py-4">
-        <Input
-          placeholder={filterPlaceholder}
-          value={(table.getColumn(filterColumnId)?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn(filterColumnId)?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
+      <div className="flex items-center py-4 gap-4 flex-wrap">
+        {filters.map(({ columnId, placeholder }) => (
+          <Input
+            key={columnId}
+            placeholder={placeholder}
+            value={(table.getColumn(columnId)?.getFilterValue() as string) ?? ""}
+            onChange={(event) =>
+              table.getColumn(columnId)?.setFilterValue(event.target.value)
+            }
+            className="max-w-sm"
+          />
+        ))}
       </div>
       <div className="rounded-md border">
         <Table>
