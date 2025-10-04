@@ -123,7 +123,7 @@ export default function TransferPage() {
   return (
     <div>
       <PageHeader title="Stock Transfer" />
-      <Card>
+      <Card className="bg-shiny-pink rounded-xl shadow-lg">
         <CardHeader>
           <CardTitle>Transfer Items</CardTitle>
         </CardHeader>

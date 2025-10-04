@@ -34,6 +34,7 @@ export default {
         'shiny-green': 'linear-gradient(135deg, hsl(150 50% 55%) 0%, hsl(150 60% 30%) 100%)',
         'shiny-teal': 'linear-gradient(135deg, hsl(173 58% 60%) 0%, hsl(173 58% 39%) 100%)',
         'shiny-orange': 'linear-gradient(135deg, hsl(30 100% 80%) 0%, hsl(25 95% 55%) 100%)',
+        'shiny-pink': 'linear-gradient(135deg, hsl(340 100% 92%) 0%, hsl(340 80% 60%) 100%)',
         'shiny-rose-gold': 'linear-gradient(135deg, hsl(25, 80%, 80%), hsl(10, 70%, 60%))',
         'sidebar-gradient': 'radial-gradient(circle at 50% 0, hsl(var(--sidebar-accent)) 0%, hsl(var(--sidebar-background)) 100%)',
         'sidebar-shiny-gradient': 'linear-gradient(180deg, hsl(var(--sidebar-accent)) 0%, hsl(var(--sidebar-background)) 100%)',
