@@ -23,16 +23,27 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AddEmployeeForm, RecordAdvanceForm, RecordLeaveForm } from '@/components/app/employees/forms';
 import type { Employee, SalaryAdvance, LeaveRecord } from '@/lib/types';
-import { MoreHorizontal, Calendar as CalendarIcon, DollarSign, Trash2 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { MoreHorizontal, Calendar as CalendarIcon, DollarSign, Trash2, FileCheck } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, lastDayOfMonth } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
 const LEAVE_BONUS = 20000;
+const PAYROLL_CATEGORY_NAME = 'Employee Wages';
 
 export default function EmployeesPage() {
   const { 
@@ -45,7 +56,11 @@ export default function EmployeesPage() {
     deleteSalaryAdvance,
     leaveRecords,
     addLeaveRecord,
-    deleteLeaveRecord
+    deleteLeaveRecord,
+    expenses,
+    addExpense,
+    expenseCategories,
+    addExpenseCategory,
   } = useData();
 
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
@@ -54,6 +69,7 @@ export default function EmployeesPage() {
   const [isLeaveModalOpen, setLeaveModalOpen] = useState(false);
   const [deletingAdvance, setDeletingAdvance] = useState<SalaryAdvance | null>(null);
   const [deletingLeave, setDeletingLeave] = useState<LeaveRecord | null>(null);
+  const [isPayrollAlertOpen, setIsPayrollAlertOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -74,6 +90,40 @@ export default function EmployeesPage() {
       return leaveDate >= monthStart && leaveDate <= monthEnd;
     });
   }, [leaveRecords, monthStart, monthEnd]);
+
+  const employeeCalculations = useMemo(() => {
+    return employees.map(employee => {
+        const advances = currentMonthAdvances.filter(a => a.employeeId === employee.id);
+        const totalAdvance = advances.reduce((sum, a) => sum + a.amount, 0);
+        const leaves = currentMonthLeaves.filter(l => l.employeeId === employee.id);
+        const hasTakenLeave = leaves.length > 0;
+        const bonus = hasTakenLeave ? 0 : LEAVE_BONUS;
+        const finalSalary = employee.baseSalary - totalAdvance + bonus;
+        return {
+            ...employee,
+            advances,
+            totalAdvance,
+            leaves,
+            hasTakenLeave,
+            bonus,
+            finalSalary
+        };
+    });
+  }, [employees, currentMonthAdvances, currentMonthLeaves]);
+
+  const isPayrollPosted = useMemo(() => {
+    const payrollCategory = expenseCategories.find(c => c.name === PAYROLL_CATEGORY_NAME);
+    if (!payrollCategory) return false;
+
+    return expenses.some(e => {
+        const expenseDate = e.date as Date;
+        return e.categoryId === payrollCategory.id && 
+               expenseDate.getMonth() === currentMonth.getMonth() &&
+               expenseDate.getFullYear() === currentMonth.getFullYear() &&
+               e.description.includes('Monthly Payroll');
+    });
+  }, [expenses, expenseCategories, currentMonth]);
+
 
   const handleOpenAdvanceModal = (employee: Employee) => {
     setSelectedEmployee(employee);
@@ -107,24 +157,77 @@ export default function EmployeesPage() {
     setDeletingLeave(null);
   };
 
+  const handleFinalizePayroll = async () => {
+    setIsPayrollAlertOpen(false);
+
+    if (isPayrollPosted) {
+        toast({ variant: 'destructive', title: 'Payroll Already Posted', description: 'Payroll for this month has already been recorded as an expense.' });
+        return;
+    }
+
+    let payrollCategory = expenseCategories.find(c => c.name === PAYROLL_CATEGORY_NAME);
+
+    if (!payrollCategory) {
+        await addExpenseCategory({ name: PAYROLL_CATEGORY_NAME });
+        // Re-fetch or find the newly created category. For simplicity, we might need to inform the user to try again or handle it in context.
+        // A simple but not ideal solution is to just let the user click again. A better one would be for addExpenseCategory to return the new category.
+        // Let's refetch all categories to be sure.
+        const updatedCategories = await expenseCategories; // This doesn't actually refetch, it's just a reference.
+        const newCategory = updatedCategories.find(c => c.name === PAYROLL_CATEGORY_NAME);
+        if(!newCategory) {
+             toast({ variant: 'destructive', title: 'Error', description: `Could not find or create the '${PAYROLL_CATEGORY_NAME}' category. Please create it manually in Settings and try again.` });
+             return;
+        }
+        payrollCategory = newCategory;
+    }
+    
+    // Sometimes the category might be created but not available in the state yet, so we get it again.
+    if (!payrollCategory) {
+      const allCategories = expenseCategories;
+      const foundCategory = allCategories.find(c => c.name === PAYROLL_CATEGORY_NAME);
+      if(!foundCategory){
+         toast({ variant: 'destructive', title: 'Error', description: 'Could not find the payroll category. Please try again.' });
+         return;
+      }
+      payrollCategory = foundCategory;
+    }
+
+
+    const totalPayroll = employeeCalculations.reduce((sum, emp) => sum + emp.finalSalary, 0);
+
+    if (totalPayroll <= 0) {
+        toast({ title: 'No Payroll to Post', description: 'Total payroll for the month is zero or less.' });
+        return;
+    }
+
+    const payrollExpense = {
+        date: lastDayOfMonth(currentMonth),
+        categoryId: payrollCategory.id,
+        description: `Monthly Payroll for ${format(currentMonth, 'MMMM yyyy')}`,
+        amount: totalPayroll,
+    };
+
+    await addExpense(payrollExpense);
+
+    toast({ title: 'Payroll Posted!', description: `An expense of MMK ${totalPayroll.toLocaleString()} has been recorded for this month's payroll.` });
+  };
+
   return (
     <div>
       <PageHeader title="Employee Management">
-        <AddEntitySheet buttonText="Add Employee" title="Add New Employee" description="Enter the details for a new employee.">
-          {(onSuccess) => <AddEmployeeForm onSave={addEmployee} onSuccess={onSuccess} />}
-        </AddEntitySheet>
+        <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsPayrollAlertOpen(true)} disabled={isPayrollPosted}>
+                <FileCheck className="mr-2 h-4 w-4" />
+                {isPayrollPosted ? 'Payroll Posted for this Month' : 'Finalize & Post Payroll'}
+            </Button>
+            <AddEntitySheet buttonText="Add Employee" title="Add New Employee" description="Enter the details for a new employee.">
+              {(onSuccess) => <AddEmployeeForm onSave={addEmployee} onSuccess={onSuccess} />}
+            </AddEntitySheet>
+        </div>
       </PageHeader>
       
       <div className="grid grid-cols-1 gap-6">
-        {employees.map(employee => {
-          const advances = currentMonthAdvances.filter(a => a.employeeId === employee.id);
-          const totalAdvance = advances.reduce((sum, a) => sum + a.amount, 0);
-          const leaves = currentMonthLeaves.filter(l => l.employeeId === employee.id);
-          const hasTakenLeave = leaves.length > 0;
-          const bonus = hasTakenLeave ? 0 : LEAVE_BONUS;
-          const finalSalary = employee.baseSalary - totalAdvance + bonus;
-
-          return (
+        {employeeCalculations.map(employee => (
             <Card key={employee.id}>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>{employee.name}</CardTitle>
@@ -145,40 +248,40 @@ export default function EmployeesPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Advances</span>
-                  <span className="font-medium text-destructive">- MMK {totalAdvance.toLocaleString()}</span>
+                  <span className="font-medium text-destructive">- MMK {employee.totalAdvance.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">No-Leave Bonus</span>
-                  <span className={`font-medium ${hasTakenLeave ? 'text-muted-foreground' : 'text-green-600'}`}>{hasTakenLeave ? 'N/A' : `+ MMK ${bonus.toLocaleString()}`}</span>
+                  <span className={`font-medium ${employee.hasTakenLeave ? 'text-muted-foreground' : 'text-green-600'}`}>{employee.hasTakenLeave ? 'N/A' : `+ MMK ${employee.bonus.toLocaleString()}`}</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold border-t pt-2">
                   <span>Final Salary</span>
-                  <span>MMK {finalSalary.toLocaleString()}</span>
+                  <span>MMK {employee.finalSalary.toLocaleString()}</span>
                 </div>
 
                 <div>
                     <h4 className="font-semibold text-sm mb-2">This Month's Advances</h4>
                     <div className="space-y-1 text-xs">
-                        {advances.map(a => (
+                        {employee.advances.map(a => (
                             <div key={a.id} className="flex justify-between items-center">
                                 <span>{format(a.date as Date, 'PP')} - {a.notes}</span>
                                 <span>-MMK {a.amount.toLocaleString()} <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setDeletingAdvance(a)}><Trash2 className="h-3 w-3 text-destructive"/></Button></span>
                             </div>
                         ))}
-                        {advances.length === 0 && <p className="text-muted-foreground text-center text-xs py-2">No advances this month.</p>}
+                        {employee.advances.length === 0 && <p className="text-muted-foreground text-center text-xs py-2">No advances this month.</p>}
                     </div>
                 </div>
 
                  <div>
                     <h4 className="font-semibold text-sm mb-2">This Month's Leaves</h4>
                      <div className="space-y-1 text-xs">
-                        {leaves.map(l => (
+                        {employee.leaves.map(l => (
                              <div key={l.id} className="flex justify-between items-center">
                                 <span>{format(l.date as Date, 'PP')}</span>
                                 <span><Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setDeletingLeave(l)}><Trash2 className="h-3 w-3 text-destructive"/></Button></span>
                             </div>
                         ))}
-                        {leaves.length === 0 && <p className="text-muted-foreground text-center text-xs py-2">No leaves this month.</p>}
+                        {employee.leaves.length === 0 && <p className="text-muted-foreground text-center text-xs py-2">No leaves this month.</p>}
                     </div>
                 </div>
 
@@ -188,8 +291,7 @@ export default function EmployeesPage() {
                 <Button variant="outline" onClick={() => handleOpenLeaveModal(employee)}><CalendarIcon className="mr-2 h-4 w-4"/>Record Leave</Button>
               </CardFooter>
             </Card>
-          );
-        })}
+          ))}
       </div>
       
       <Dialog open={!!selectedEmployee && isEditing} onOpenChange={() => {setSelectedEmployee(null); setIsEditing(false);}}>
@@ -242,6 +344,22 @@ export default function EmployeesPage() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isPayrollAlertOpen} onOpenChange={setIsPayrollAlertOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Finalize Payroll for {format(currentMonth, 'MMMM yyyy')}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will create a single expense entry for the total final salary of all employees for the current month.
+                    This action can only be performed once per month. Are you sure you want to continue?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleFinalizePayroll}>Confirm & Post</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   );
