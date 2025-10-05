@@ -166,11 +166,16 @@ export interface DocumentSettings {
   paymentInfo?: string;
 }
 
+export interface GoalsSettings {
+    dailySalesGoal?: number;
+}
+
 export interface BusinessSettings {
   invoice?: DocumentSettings;
   quotation?: DocumentSettings;
   receipt?: {
     companyLogo?: string;
   };
+  goals?: GoalsSettings;
 }
 

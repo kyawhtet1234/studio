@@ -16,6 +16,7 @@ import { ReceiptSettings } from '@/components/app/settings/receipt-settings';
 import { InvoiceSettings } from '@/components/app/settings/invoice-settings';
 import { QuotationSettings } from '@/components/app/settings/quotation-settings';
 import { ThemeSettings } from '@/components/app/settings/theme-settings';
+import { BusinessGoalsSettings } from '@/components/app/settings/business-goals-settings';
 
 type EditingState = 
   | { type: 'store', data: Store }
@@ -124,6 +125,7 @@ export default function SettingsPage() {
             <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                 <TabsList className="overflow-x-auto self-start h-auto">
                     <TabsTrigger value="theme">Theme</TabsTrigger>
+                    <TabsTrigger value="goals">Goals</TabsTrigger>
                     <TabsTrigger value="receipt">Receipt</TabsTrigger>
                     <TabsTrigger value="invoice">Invoice</TabsTrigger>
                     <TabsTrigger value="quotation">Quotation</TabsTrigger>
@@ -139,6 +141,9 @@ export default function SettingsPage() {
             </div>
             <TabsContent value="theme">
                 <ThemeSettings />
+            </TabsContent>
+            <TabsContent value="goals">
+                <BusinessGoalsSettings />
             </TabsContent>
             <TabsContent value="receipt">
                 <ReceiptSettings />

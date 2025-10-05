@@ -3,11 +3,12 @@
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, CartesianGrid, XAxis, YAxis, ResponsiveContainer, ReferenceLine } from "recharts";
 import { useMemo } from "react";
 import type { SaleTransaction } from "@/lib/types";
 import type { Timestamp } from 'firebase/firestore';
 import { cn } from "@/lib/utils";
+import { useData } from "@/lib/data-context";
 
 const chartConfig = {
   sales: {
@@ -24,6 +25,9 @@ const toDate = (date: Date | Timestamp): Date => {
 };
 
 export function SalesChart({ sales, className, style }: { sales: SaleTransaction[], className?: string, style?: React.CSSProperties}) {
+  const { settings } = useData();
+  const dailySalesGoal = settings.goals?.dailySalesGoal;
+
   const { monthlySales, hasSales } = useMemo(() => {
     const data = new Array(30).fill(0).map((_, i) => {
       const date = new Date();
@@ -96,6 +100,14 @@ export function SalesChart({ sales, className, style }: { sales: SaleTransaction
                   fill={chartConfig.sales.color} 
                   radius={4}
                 />
+                {dailySalesGoal && (
+                  <ReferenceLine
+                    y={dailySalesGoal}
+                    label={{ value: `Goal: ${dailySalesGoal.toLocaleString()}`, position: 'insideTopRight', fill: 'hsl(var(--destructive))' }}
+                    stroke="hsl(var(--destructive))"
+                    strokeDasharray="3 3"
+                  />
+                )}
               </BarChart>
             </ResponsiveContainer>
           </ChartContainer>

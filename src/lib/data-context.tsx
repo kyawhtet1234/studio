@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup, setDoc } from 'firebase/firestore';
 
-import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability, BusinessSettings, DocumentSettings, Employee, SalaryAdvance, LeaveRecord } from '@/lib/types';
+import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability, BusinessSettings, DocumentSettings, Employee, SalaryAdvance, LeaveRecord, GoalsSettings } from '@/lib/types';
 
 interface DataContextProps {
     products: Product[];
@@ -78,6 +78,7 @@ interface DataContextProps {
     updateInvoiceSettings: (settings: DocumentSettings) => Promise<void>;
     updateQuotationSettings: (settings: DocumentSettings) => Promise<void>;
     updateReceiptSettings: (settings: { companyLogo?: string }) => Promise<void>;
+    updateGoalsSettings: (settings: GoalsSettings) => Promise<void>;
     loading: boolean;
 }
 
@@ -814,6 +815,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await updateSettings({ receipt: receiptSettings });
     };
 
+    const updateGoalsSettings = async (goalsSettings: GoalsSettings) => {
+        await updateSettings({ goals: goalsSettings });
+    };
+
     return (
         <DataContext.Provider value={{ 
             products, addProduct, updateProduct, deleteProduct,
@@ -838,6 +843,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             updateInvoiceSettings,
             updateQuotationSettings,
             updateReceiptSettings,
+            updateGoalsSettings,
             loading
         }}>
             {children}
