@@ -24,7 +24,7 @@ const toDate = (date: Date | Timestamp): Date => {
   return (date as Timestamp).toDate();
 };
 
-export function SalesChart({ sales, className, style, isFiltered }: { sales: SaleTransaction[], className?: string, style?: React.CSSProperties, isFiltered?: boolean}) {
+export function SalesChart({ sales, className, style }: { sales: SaleTransaction[], className?: string, style?: React.CSSProperties, isFiltered?: boolean}) {
   const { settings } = useData();
   const dailySalesGoal = settings.goals?.dailySalesGoal;
 
@@ -100,7 +100,7 @@ export function SalesChart({ sales, className, style, isFiltered }: { sales: Sal
                   fill={chartConfig.sales.color} 
                   radius={4}
                 />
-                {dailySalesGoal && !isFiltered && (
+                {dailySalesGoal && (
                   <ReferenceLine
                     y={dailySalesGoal}
                     label={{ value: `Goal: ${dailySalesGoal.toLocaleString()}`, position: 'insideTopRight', fill: 'hsl(var(--destructive))' }}
