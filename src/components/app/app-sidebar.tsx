@@ -18,7 +18,7 @@ import {
   Boxes,
   ArrowRightLeft,
   BarChart3,
-  Building2,
+  TrendingUp,
   Settings,
   UserCircle,
   LogOut,
@@ -66,7 +66,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         <div className="bg-shiny-orange p-4 rounded-xl shadow-lg">
           <div className="flex items-center justify-center gap-2">
-            <Building2 className="w-8 h-8 text-white" />
+            <TrendingUp className="w-8 h-8 text-white" />
             <span className="text-xl font-semibold font-headline text-white">THE CRAFT SHOP LEDGER</span>
           </div>
         </div>
