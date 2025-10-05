@@ -18,7 +18,7 @@ const HistoricalEntrySchema = z.object({
     amount: z.number(),
 });
 
-export const FinancialForecastInputSchema = z.object({
+const FinancialForecastInputSchema = z.object({
   sales: z.array(HistoricalEntrySchema).describe("A list of historical sales records with date and amount."),
   expenses: z.array(HistoricalEntrySchema).describe("A list of historical expense records with date and amount."),
   products: z.array(z.object({
