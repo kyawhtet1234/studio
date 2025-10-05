@@ -25,6 +25,7 @@ import {
   Landmark,
   Wallet,
   Users,
+  Building2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
@@ -43,27 +44,6 @@ const menuItems = [
   { href: '/cash', label: 'Cash', icon: Wallet, color: 'bg-indigo-500' },
   { href: '/employees', label: 'Employees', icon: Users, color: 'bg-pink-500' },
 ];
-
-const CustomLogo = ({ className }: { className?: string }) => (
-    <svg
-        viewBox="0 0 100 100"
-        xmlns="http://www.w3.org/2000/svg"
-        className={className}
-        fill="none"
-    >
-        <path
-            d="M50,9A41,41,0,1,1,9,50,41,41,0,0,1,50,9m0-8a49,49,0,1,0,49,49A49,49,0,0,0,50,1Z"
-            fill="white"
-        />
-        <path
-            d="M58.2,33.4l-4.6,4.6-7-7L35.8,41.8V68.5h8.5V52.8l6.1-6.1,7.1,7.1,11-11V23.5H58.2Z"
-            fill="hsl(var(--primary))"
-        />
-        <path d="M44.2,58.8V68.5h8.5V54.2Z" fill="hsl(var(--primary))" />
-        <path d="M52.8,47.2V68.5h8.5V41.8Z" fill="hsl(var(--primary))" />
-    </svg>
-);
-
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -87,8 +67,11 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         <div className="bg-shiny-orange p-4 rounded-xl shadow-lg">
           <div className="flex items-center justify-center gap-2">
-            <CustomLogo className="w-8 h-8" />
-            <span className="text-xl font-semibold font-headline text-white">THE CRAFT SHOP LEDGER</span>
+            <Building2 className="w-8 h-8 text-white" />
+            <div className="flex flex-col items-center">
+                <span className="text-sm font-semibold font-headline text-white leading-tight">THE CRAFT SHOP</span>
+                <span className="text-sm font-semibold font-headline text-white leading-tight">LEDGER</span>
+            </div>
           </div>
         </div>
       </SidebarHeader>
