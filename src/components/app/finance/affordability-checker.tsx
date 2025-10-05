@@ -11,7 +11,7 @@ import { analyzeAffordability, type AffordabilityAnalysisOutput } from '@/ai/flo
 import type { SaleTransaction, Expense, CashAccount } from '@/lib/types';
 import { Loader2, Sparkles, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { cn } from '@/lib/utils';
+import { cn, toDate } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface AffordabilityCheckerProps {
@@ -40,8 +40,8 @@ export function AffordabilityChecker({ sales, expenses, cashAccounts }: Affordab
     setAnalysisResult(null);
 
     try {
-      const historicalSales = sales.map(s => ({ date: s.date.toISOString(), amount: s.total }));
-      const historicalExpenses = expenses.map(e => ({ date: e.date.toISOString(), amount: e.amount }));
+      const historicalSales = sales.map(s => ({ date: toDate(s.date).toISOString(), amount: s.total }));
+      const historicalExpenses = expenses.map(e => ({ date: toDate(e.date).toISOString(), amount: e.amount }));
       const totalCashBalance = cashAccounts.reduce((sum, acc) => sum + acc.balance, 0);
 
       const result = await analyzeAffordability({
