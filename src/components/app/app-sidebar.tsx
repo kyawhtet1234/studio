@@ -18,10 +18,7 @@ import {
   Boxes,
   ArrowRightLeft,
   BarChart3,
-  TrendingUp,
   Settings,
-  UserCircle,
-  LogOut,
   Landmark,
   Wallet,
   Users,
@@ -65,12 +62,12 @@ export function AppSidebar() {
   return (
     <Sidebar className="bg-background border-r" side="left" collapsible="icon" variant="sidebar">
       <SidebarHeader className="p-4">
-        <div className="bg-shiny-orange p-4 rounded-xl shadow-lg">
+        <div className="bg-shiny-yellow p-4 rounded-xl shadow-lg border-2 border-black">
           <div className="flex items-center justify-center gap-2">
-            <Building2 className="w-8 h-8 text-white" />
+            <Building2 className="w-8 h-8 text-black" />
             <div className="flex flex-col items-center">
-                <span className="text-sm font-semibold font-headline text-white leading-tight">THE CRAFT SHOP</span>
-                <span className="text-sm font-semibold font-headline text-white leading-tight">LEDGER</span>
+                <span className="text-sm font-semibold font-headline text-black leading-tight">THE CRAFT SHOP</span>
+                <span className="text-sm font-semibold font-headline text-black leading-tight">LEDGER</span>
             </div>
           </div>
         </div>
