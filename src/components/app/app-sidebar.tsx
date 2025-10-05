@@ -62,7 +62,7 @@ export function AppSidebar() {
   return (
     <Sidebar className="bg-background border-r" side="left" collapsible="icon" variant="sidebar">
       <SidebarHeader className="p-4">
-        <div className="bg-shiny-yellow p-4 rounded-xl shadow-lg border-2 border-black">
+        <div className="bg-shiny-yellow p-4 rounded-xl shadow-[0_8px_16px_rgba(234,179,8,0.4)] border-2 border-black">
           <div className="flex items-center justify-center gap-2">
             <Building2 className="w-8 h-8 text-black" />
             <div className="flex flex-col items-center">
