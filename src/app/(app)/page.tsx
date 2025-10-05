@@ -59,6 +59,7 @@ export default function DashboardPage() {
   }
 
   const { todaySales, todayProfit } = useMemo(() => getTodayMetrics(filteredSales), [filteredSales, products]);
+  const isFiltered = selectedStore !== 'all';
 
   return (
     <div>
@@ -94,7 +95,7 @@ export default function DashboardPage() {
         />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-        <SalesChart sales={filteredSales} className="bg-shiny-orange rounded-xl shadow-drop-shadow-black" />
+        <SalesChart sales={filteredSales} isFiltered={isFiltered} className="bg-shiny-orange rounded-xl shadow-drop-shadow-black" />
         <BestSellers sales={filteredSales} products={products} className="bg-shiny-purple rounded-xl shadow-lg" />
       </div>
       <div className="mt-6">
