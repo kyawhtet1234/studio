@@ -13,7 +13,7 @@ import { expenseColumns, cashAllocationColumns, liabilityColumns } from "@/compo
 import { AddEntitySheet } from "@/components/app/products/add-entity-sheet";
 import { EditEntitySheet } from "@/components/app/products/edit-entity-sheet";
 import { AddExpenseForm, AddCashAllocationForm, AddLiabilityForm } from "@/components/app/finance/forms";
-import type { Expense, CashAllocation, Liability } from '@/lib/types';
+import type { Expense, CashAllocation, Liability, SaleTransaction } from '@/lib/types';
 import { CashFlowReport } from '@/components/app/finance/cash-flow-report';
 import { FinancialForecast } from '@/components/app/finance/financial-forecast';
 import { AffordabilityChecker } from '@/components/app/finance/affordability-checker';
@@ -100,6 +100,9 @@ export default function FinancePage() {
     onEdit: (data) => setEditingLiability(data),
     onDelete: deleteLiability,
   });
+  
+  const allSaleItems = sales.flatMap(s => s.items.map(i => ({...i, date: s.date})));
+
 
   const renderAddButton = () => {
      switch (activeTab) {
@@ -201,7 +204,12 @@ export default function FinancePage() {
             <DataTable columns={expenseCols} data={expenses} filterColumnId="description" filterPlaceholder="Filter expenses by description..."/>
         </TabsContent>
         <TabsContent value="forecast">
-             <FinancialForecast sales={sales} expenses={expenses} />
+             <FinancialForecast 
+                sales={sales.filter(s => s.status === 'completed') as SaleTransaction[]} 
+                expenses={expenses} 
+                products={products}
+                saleItems={allSaleItems}
+             />
         </TabsContent>
         <TabsContent value="allocations">
             <div className="space-y-6">

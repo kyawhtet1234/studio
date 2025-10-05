@@ -4,30 +4,33 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { generateFinancialForecast, type FinancialForecastOutput } from '@/ai/flows/financial-forecast-flow';
-import type { SaleTransaction, Expense } from '@/lib/types';
+import { generateFinancialForecast, type FinancialForecastOutput, type FinancialForecastInput } from '@/ai/flows/financial-forecast-flow';
+import type { SaleTransaction, Expense, Product } from '@/lib/types';
 import { Loader2, Wand } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toDate } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+type ForecastPeriod = 'weekly' | 'monthly' | 'yearly';
 
 interface FinancialForecastProps {
   sales: SaleTransaction[];
   expenses: Expense[];
+  products: Product[];
+  saleItems: FinancialForecastInput['saleItems'];
 }
 
 const chartConfig = {
-  historicalSales: { label: 'Historical Sales', color: 'hsl(var(--chart-1))' },
-  forecastedSales: { label: 'Forecasted Sales', color: 'hsl(var(--chart-2))' },
-  historicalExpenses: { label: 'Historical Expenses', color: 'hsl(var(--chart-3))' },
-  forecastedExpenses: { label: 'Forecasted Expenses', color: 'hsl(var(--chart-4))' },
+  forecastedSales: { label: 'Sales', color: 'hsl(var(--chart-2))' },
+  forecastedProfit: { label: 'Profit', color: 'hsl(var(--chart-3))' },
 };
 
-export function FinancialForecast({ sales, expenses }: FinancialForecastProps) {
+export function FinancialForecast({ sales, expenses, products, saleItems }: FinancialForecastProps) {
   const [forecast, setForecast] = useState<FinancialForecastOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [forecastPeriod, setForecastPeriod] = useState<ForecastPeriod>('monthly');
 
   const handleGenerateForecast = async () => {
     setIsLoading(true);
@@ -36,7 +39,13 @@ export function FinancialForecast({ sales, expenses }: FinancialForecastProps) {
       const historicalSales = sales.map(s => ({ date: toDate(s.date).toISOString(), amount: s.total }));
       const historicalExpenses = expenses.map(e => ({ date: toDate(e.date).toISOString(), amount: e.amount }));
 
-      const result = await generateFinancialForecast({ sales: historicalSales, expenses: historicalExpenses });
+      const result = await generateFinancialForecast({ 
+          sales: historicalSales, 
+          expenses: historicalExpenses,
+          products: products.map(p => ({ id: p.id, buyPrice: p.buyPrice })),
+          saleItems: saleItems.map(si => ({ ...si, date: toDate(si.date).toISOString() })),
+          period: forecastPeriod 
+      });
       setForecast(result);
     } catch (error) {
       console.error("Error generating forecast:", error);
@@ -47,49 +56,42 @@ export function FinancialForecast({ sales, expenses }: FinancialForecastProps) {
 
   const chartData = useMemo(() => {
     if (!forecast) return [];
+    
+    if (forecastPeriod === 'weekly') {
+        const order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        return forecast.forecast.sort((a,b) => order.indexOf(a.period) - order.indexOf(b.period));
+    }
 
-    const combinedData: { [key: string]: any } = {};
-
-    const processHistory = (data: any[], key: string) => {
-        data.forEach(item => {
-            const date = toDate(item.date);
-            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            if (!combinedData[monthKey]) combinedData[monthKey] = { month: monthKey };
-            combinedData[monthKey][key] = (combinedData[monthKey][key] || 0) + item.amount;
-        });
-    };
-
-    processHistory(sales, 'historicalSales');
-    processHistory(expenses, 'historicalExpenses');
-
-    forecast.forecast.forEach(f => {
-        if (!combinedData[f.month]) combinedData[f.month] = { month: f.month };
-        combinedData[f.month].forecastedSales = f.forecastedSales;
-        combinedData[f.month].forecastedExpenses = f.forecastedExpenses;
-    });
-
-    return Object.values(combinedData).sort((a, b) => a.month.localeCompare(b.month));
-
-  }, [forecast, sales, expenses]);
+    return forecast.forecast.sort((a, b) => a.period.localeCompare(b.period));
+  }, [forecast, forecastPeriod]);
 
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>AI-Powered Financial Forecast</CardTitle>
-        <CardDescription>Generate a 6-month sales and expense forecast based on your historical data.</CardDescription>
+        <CardDescription>Generate a sales and profit forecast based on your historical data.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {!forecast && !isLoading && (
-          <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
-            <Wand className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">Click the button to generate your financial forecast.</p>
-            <Button onClick={handleGenerateForecast}>
-              <Wand className="mr-2 h-4 w-4" />
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 p-8 border-2 border-dashed rounded-lg">
+            <div className="w-full sm:w-auto">
+                <Select value={forecastPeriod} onValueChange={(value) => setForecastPeriod(value as ForecastPeriod)}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="Select period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <Button onClick={handleGenerateForecast} disabled={isLoading}>
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand className="mr-2 h-4 w-4" />}
               Generate Forecast
             </Button>
-          </div>
-        )}
+        </div>
+        
         {isLoading && (
           <div className="flex items-center justify-center p-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -109,14 +111,12 @@ export function FinancialForecast({ sales, expenses }: FinancialForecastProps) {
                     <ResponsiveContainer>
                         <BarChart data={chartData}>
                         <CartesianGrid vertical={false} />
-                        <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+                        <XAxis dataKey="period" tickLine={false} axisLine={false} tickMargin={8} />
                         <YAxis tickFormatter={(value) => `MMK ${Number(value / 1000).toFixed(0)}k`} />
                         <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
                         <Legend />
-                        <Bar dataKey="historicalSales" fill={chartConfig.historicalSales.color} radius={4} />
                         <Bar dataKey="forecastedSales" fill={chartConfig.forecastedSales.color} radius={4} />
-                        <Bar dataKey="historicalExpenses" fill={chartConfig.historicalExpenses.color} radius={4} />
-                        <Bar dataKey="forecastedExpenses" fill={chartConfig.forecastedExpenses.color} radius={4} />
+                        <Bar dataKey="forecastedProfit" fill={chartConfig.forecastedProfit.color} radius={4} />
                         </BarChart>
                     </ResponsiveContainer>
                 </ChartContainer>
@@ -127,28 +127,22 @@ export function FinancialForecast({ sales, expenses }: FinancialForecastProps) {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Month</TableHead>
+                            <TableHead className="capitalize">{forecastPeriod.slice(0, -2)}</TableHead>
                             <TableHead className="text-right">Forecasted Sales</TableHead>
-                            <TableHead className="text-right">Forecasted Expenses</TableHead>
+                            <TableHead className="text-right">Forecasted Profit</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {forecast.forecast.map((item) => (
-                            <TableRow key={item.month}>
-                                <TableCell className="font-medium">{item.month}</TableCell>
+                        {chartData.map((item) => (
+                            <TableRow key={item.period}>
+                                <TableCell className="font-medium">{item.period}</TableCell>
                                 <TableCell className="text-right">MMK {item.forecastedSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                <TableCell className="text-right">MMK {item.forecastedExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                <TableCell className="text-right">MMK {item.forecastedProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
                 </Table>
                 </div>
-            </div>
-             <div className="text-center">
-                <Button variant="outline" onClick={handleGenerateForecast}>
-                    <Wand className="mr-2 h-4 w-4" />
-                    Regenerate Forecast
-                </Button>
             </div>
           </div>
         )}
