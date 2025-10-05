@@ -17,7 +17,7 @@ import { toDate } from '@/lib/utils';
 // Types are derived from them and exported instead.
 
 const HistoricalEntrySchema = z.object({
-    date: z.union([z.date(), z.string()]).transform(arg => toDate(arg)),
+    date: z.union([z.date(), z.string()]),
     amount: z.number(),
 });
 

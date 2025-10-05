@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { toDate } from '@/lib/utils';
 
 const HistoricalEntrySchema = z.object({
-    date: z.union([z.date(), z.string()]).transform(arg => toDate(arg)),
+    date: z.union([z.date(), z.string()]),
     amount: z.number(),
 });
 
@@ -29,7 +29,7 @@ export const FinancialForecastInputSchema = z.object({
       productId: z.string(),
       quantity: z.number(),
       total: z.number(),
-      date: z.union([z.date(), z.string()]).transform(arg => toDate(arg)),
+      date: z.union([z.date(), z.string()]),
   })).describe("A list of all items sold to help calculate historical COGS."),
   period: z.enum(['weekly', 'monthly', 'yearly']).describe("The forecast period to generate."),
 });
