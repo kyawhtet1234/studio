@@ -23,6 +23,7 @@ import {
   Wallet,
   Users,
   Building2,
+  TrendingUp,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
@@ -77,7 +78,7 @@ export function AppSidebar() {
         <div className={cn("p-4 rounded-xl shadow-[0_8px_16px_rgba(234,179,8,0.4)] border-2 border-black", "bg-shiny-yellow dark:bg-shiny-yellow-dark")}>
           <div className="flex items-center justify-center gap-2">
             {appLogo ? (
-                <Image src={appLogo} alt="App Logo" width={32} height={32} className="w-8 h-8" />
+                <Image src={appLogo} alt="App Logo" width={40} height={40} className="w-10 h-10 object-contain" />
             ) : (
                 <Building2 className="w-8 h-8 text-black" />
             )}
