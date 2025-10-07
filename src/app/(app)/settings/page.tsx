@@ -17,6 +17,7 @@ import { InvoiceSettings } from '@/components/app/settings/invoice-settings';
 import { QuotationSettings } from '@/components/app/settings/quotation-settings';
 import { ThemeSettings } from '@/components/app/settings/theme-settings';
 import { BusinessGoalsSettings } from '@/components/app/settings/business-goals-settings';
+import { BrandingSettings } from '@/components/app/settings/branding-settings';
 
 type EditingState = 
   | { type: 'store', data: Store }
@@ -26,7 +27,7 @@ type EditingState =
 
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("receipt");
+  const [activeTab, setActiveTab] = useState("branding");
   const [editingEntity, setEditingEntity] = useState<EditingState>(null);
 
   const {
@@ -121,9 +122,10 @@ export default function SettingsPage() {
   return (
     <div>
       <PageHeader title="Settings" />
-        <Tabs defaultValue="receipt" onValueChange={setActiveTab} value={activeTab}>
+        <Tabs defaultValue="branding" onValueChange={setActiveTab} value={activeTab}>
             <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                 <TabsList className="overflow-x-auto self-start h-auto">
+                    <TabsTrigger value="branding">Branding</TabsTrigger>
                     <TabsTrigger value="theme">Theme</TabsTrigger>
                     <TabsTrigger value="goals">Goals</TabsTrigger>
                     <TabsTrigger value="receipt">Receipt</TabsTrigger>
@@ -139,6 +141,9 @@ export default function SettingsPage() {
                   </div>
                 )}
             </div>
+            <TabsContent value="branding">
+                <BrandingSettings />
+            </TabsContent>
             <TabsContent value="theme">
                 <ThemeSettings />
             </TabsContent>

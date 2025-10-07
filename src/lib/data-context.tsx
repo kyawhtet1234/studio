@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup, setDoc } from 'firebase/firestore';
 
-import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability, BusinessSettings, DocumentSettings, Employee, SalaryAdvance, LeaveRecord, GoalsSettings } from '@/lib/types';
+import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability, BusinessSettings, DocumentSettings, Employee, SalaryAdvance, LeaveRecord, GoalsSettings, BrandingSettings } from '@/lib/types';
 
 interface DataContextProps {
     products: Product[];
@@ -79,6 +79,7 @@ interface DataContextProps {
     updateQuotationSettings: (settings: DocumentSettings) => Promise<void>;
     updateReceiptSettings: (settings: { companyLogo?: string }) => Promise<void>;
     updateGoalsSettings: (settings: GoalsSettings) => Promise<void>;
+    updateBrandingSettings: (settings: BrandingSettings) => Promise<void>;
     loading: boolean;
 }
 
@@ -819,6 +820,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await updateSettings({ goals: goalsSettings });
     };
 
+    const updateBrandingSettings = async (brandingSettings: BrandingSettings) => {
+        await updateSettings({ branding: brandingSettings });
+    };
+
     return (
         <DataContext.Provider value={{ 
             products, addProduct, updateProduct, deleteProduct,
@@ -844,6 +849,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             updateQuotationSettings,
             updateReceiptSettings,
             updateGoalsSettings,
+            updateBrandingSettings,
             loading
         }}>
             {children}

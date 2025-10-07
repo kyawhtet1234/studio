@@ -28,6 +28,8 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useData } from '@/lib/data-context';
+import Image from 'next/image';
 
 const menuItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, color: 'bg-blue-500' },
@@ -45,6 +47,7 @@ const menuItems = [
 export function AppSidebar() {
   const pathname = usePathname();
   const { logOut, user } = useAuth();
+  const { settings } = useData();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -59,15 +62,28 @@ export function AppSidebar() {
     return pathname.startsWith(href);
   }
 
+  const appName = settings.branding?.appName || "THE CRAFT SHOP LEDGER";
+  const appLogo = settings.branding?.appLogo;
+  
+  // Split app name into two lines if it contains "LEDGER"
+  const nameParts = appName.split(' LEDGER');
+  const firstLine = nameParts[0];
+  const secondLine = nameParts.length > 1 ? 'LEDGER' : '';
+
+
   return (
     <Sidebar className="bg-background border-r" side="left" collapsible="icon" variant="sidebar">
       <SidebarHeader className="p-4">
         <div className={cn("p-4 rounded-xl shadow-[0_8px_16px_rgba(234,179,8,0.4)] border-2 border-black", "bg-shiny-yellow dark:bg-shiny-yellow-dark")}>
           <div className="flex items-center justify-center gap-2">
-            <Building2 className="w-8 h-8 text-black" />
+            {appLogo ? (
+                <Image src={appLogo} alt="App Logo" width={32} height={32} className="w-8 h-8" />
+            ) : (
+                <Building2 className="w-8 h-8 text-black" />
+            )}
             <div className="flex flex-col items-center">
-                <span className="text-sm font-semibold font-headline text-black leading-tight">THE CRAFT SHOP</span>
-                <span className="text-sm font-semibold font-headline text-black leading-tight">LEDGER</span>
+                <span className="text-sm font-semibold font-headline text-black leading-tight">{firstLine}</span>
+                {secondLine && <span className="text-sm font-semibold font-headline text-black leading-tight">{secondLine}</span>}
             </div>
           </div>
         </div>

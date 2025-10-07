@@ -170,7 +170,13 @@ export interface GoalsSettings {
     dailySalesGoal?: number;
 }
 
+export interface BrandingSettings {
+  appName?: string;
+  appLogo?: string | null;
+}
+
 export interface BusinessSettings {
+  branding?: BrandingSettings;
   invoice?: DocumentSettings;
   quotation?: DocumentSettings;
   receipt?: {
@@ -178,4 +184,3 @@ export interface BusinessSettings {
   };
   goals?: GoalsSettings;
 }
-
