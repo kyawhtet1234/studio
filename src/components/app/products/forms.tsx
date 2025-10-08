@@ -161,7 +161,7 @@ export function AddCustomerForm({ onSave, onSuccess, customer }: FormProps<Omit<
 
     async function onSubmit(data: z.infer<typeof customerSchema>) {
         await onSave(data);
-        toast({ title: `Customer ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated'_ : 'added'}.` });
+        toast({ title: `Customer ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
         form.reset();
         onSuccess();
     }
