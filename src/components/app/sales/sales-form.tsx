@@ -59,7 +59,7 @@ const formSchema = z.object({
       name: z.string(),
       sku: z.string(),
       sellPrice: z.number(),
-      quantity: z.number(),
+      quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
       total: z.number(),
     })
   ).min(1, "Cart cannot be empty."),
@@ -100,7 +100,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     },
   });
 
-  const { fields, append, remove, replace } = useFieldArray({
+  const { fields, append, remove, replace, update } = useFieldArray({
     control: form.control,
     name: "cart",
   });
@@ -174,6 +174,20 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     }
   }
 
+  const handleQuantityChange = (index: number, newQuantity: number) => {
+    const item = fields[index];
+    const inventoryItem = inventory.find(i => i.productId === item.productId && i.storeId === watchStoreId);
+    const availableStock = inventoryItem?.stock || 0;
+
+    if (newQuantity > availableStock) {
+        toast({ variant: 'destructive', title: 'Not enough stock', description: `Only ${availableStock} of ${item.name} available.` });
+        return;
+    }
+
+    if (newQuantity > 0) {
+      update(index, { ...item, quantity: newQuantity, total: item.sellPrice * newQuantity });
+    }
+  };
   
   async function onSubmit(data: SalesFormValues) {
     
@@ -404,7 +418,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                         <TableHead className="w-[120px] text-black">SKU</TableHead>
                         <TableHead className="text-black">Item Name</TableHead>
                         <TableHead className="text-right text-black">Price</TableHead>
-                        <TableHead className="text-right text-black">Qty</TableHead>
+                        <TableHead className="w-24 text-right text-black">Qty</TableHead>
                         <TableHead className="text-right text-black">Total</TableHead>
                         <TableHead className="w-[50px] text-black"></TableHead>
                         </TableRow>
@@ -416,7 +430,14 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                                 <TableCell>{item.sku}</TableCell>
                                 <TableCell>{item.name}</TableCell>
                                 <TableCell className="text-right">MMK {item.sellPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                <TableCell className="text-right">{item.quantity}</TableCell>
+                                <TableCell className="text-right">
+                                  <Input
+                                      type="number"
+                                      className="w-20 text-right ml-auto"
+                                      value={item.quantity}
+                                      onChange={(e) => handleQuantityChange(index, parseInt(e.target.value))}
+                                  />
+                                </TableCell>
                                 <TableCell className="text-right">MMK {item.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                 <TableCell>
                                     <Button variant="ghost" size="icon" onClick={() => remove(index)}>
@@ -509,7 +530,5 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     </>
   );
 }
-
-    
 
     
