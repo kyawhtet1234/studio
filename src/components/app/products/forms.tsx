@@ -35,6 +35,9 @@ const productSchema = z.object({
   supplierId: z.string().min(1, "Please select a supplier."),
   sellPrice: z.coerce.number().positive(),
   buyPrice: z.coerce.number().positive(),
+}).refine(data => data.sellPrice >= data.buyPrice, {
+    message: "Sell price cannot be less than buy price.",
+    path: ["sellPrice"],
 });
 
 const storeSchema = baseSchema.extend({ location: z.string().min(5) });
@@ -158,7 +161,7 @@ export function AddCustomerForm({ onSave, onSuccess, customer }: FormProps<Omit<
 
     async function onSubmit(data: z.infer<typeof customerSchema>) {
         await onSave(data);
-        toast({ title: `Customer ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
+        toast({ title: `Customer ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated'_ : 'added'}.` });
         form.reset();
         onSuccess();
     }
