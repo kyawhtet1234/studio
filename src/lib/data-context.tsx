@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup, setDoc } from 'firebase/firestore';
 
 import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability, BusinessSettings, DocumentSettings, Employee, SalaryAdvance, LeaveRecord, GoalsSettings, BrandingSettings } from '@/lib/types';
+import { toDate } from './utils';
 
 interface DataContextProps {
     products: Product[];
@@ -112,7 +113,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setLoading(true);
         try {
             const collectionsToFetch = [
-                { name: 'products', setter: setProducts, process: (doc: any) => ({ ...doc.data(), id: doc.id, createdAt: doc.data().createdAt ? (doc.data().createdAt as Timestamp).toDate() : new Date(0) }) },
+                { name: 'products', setter: setProducts, process: (doc: any) => ({ ...doc.data(), id: doc.id, createdAt: doc.data().createdAt ? toDate(doc.data().createdAt) : new Date(0) }) },
                 { name: 'categories', setter: setCategories },
                 { name: 'expenseCategories', setter: setExpenseCategories },
                 { name: 'suppliers', setter: setSuppliers },
@@ -120,16 +121,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 { name: 'customers', setter: setCustomers },
                 { name: 'paymentTypes', setter: setPaymentTypes },
                 { name: 'inventory', setter: setInventory, process: (doc: any) => ({ ...doc.data(), id: doc.id, productId: doc.id.split('_')[0], storeId: doc.id.split('_')[1] }) },
-                { name: 'sales', setter: setSales, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate() }) },
-                { name: 'purchases', setter: setPurchases, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate() }) },
-                { name: 'expenses', setter: setExpenses, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate() }) },
+                { name: 'sales', setter: setSales, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: toDate(doc.data().date) }) },
+                { name: 'purchases', setter: setPurchases, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: toDate(doc.data().date) }) },
+                { name: 'expenses', setter: setExpenses, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: toDate(doc.data().date) }) },
                 { name: 'cashAccounts', setter: setCashAccounts },
-                { name: 'cashTransactions', setter: setCashTransactions, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate() }) },
+                { name: 'cashTransactions', setter: setCashTransactions, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: toDate(doc.data().date) }) },
                 { name: 'cashAllocations', setter: setCashAllocations },
                 { name: 'liabilities', setter: setLiabilities },
                 { name: 'employees', setter: setEmployees },
-                { name: 'salaryAdvances', setter: setSalaryAdvances, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate() }) },
-                { name: 'leaveRecords', setter: setLeaveRecords, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate() }) },
+                { name: 'salaryAdvances', setter: setSalaryAdvances, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: toDate(doc.data().date) }) },
+                { name: 'leaveRecords', setter: setLeaveRecords, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: toDate(doc.data().date) }) },
             ];
 
             for (const { name, setter, process } of collectionsToFetch) {
@@ -183,159 +184,158 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const addProduct = async (productData: Omit<Product, 'id' | 'createdAt'>) => {
         if (!user) return;
         const newProductData = { ...productData, createdAt: Timestamp.now() };
-        await addDoc(collection(db, 'users', user.uid, 'products'), newProductData);
-        await fetchData(user.uid);
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'products'), newProductData);
+        setProducts(prev => [...prev, { ...productData, id: docRef.id, createdAt: new Date() }]);
     };
 
     const updateProduct = async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {
         if (!user) return;
         const productRef = doc(db, 'users', user.uid, 'products', productId);
         await updateDoc(productRef, productData);
-        await fetchData(user.uid);
+        setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...productData } : p));
     }
 
     const deleteProduct = async (productId: string) => {
         if (!user) return;
-        
         const batch = writeBatch(db);
-        
         const productRef = doc(db, 'users', user.uid, 'products', productId);
         batch.delete(productRef);
 
-        const q = query(collection(db, 'users', user.uid, 'inventory'), where("productId", "==", productId));
-        const inventoryToDeleteSnap = await getDocs(q);
-        inventoryToDeleteSnap.forEach(doc => {
-            batch.delete(doc.ref);
+        const inventoryToDelete = inventory.filter(i => i.productId === productId);
+        inventoryToDelete.forEach(item => {
+            const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${item.storeId}`);
+            batch.delete(invRef);
         });
         
         await batch.commit();
-        await fetchData(user.uid);
+        
+        setProducts(prev => prev.filter(p => p.id !== productId));
+        setInventory(prev => prev.filter(i => i.productId !== productId));
     };
     
     const addCategory = async (categoryData: Omit<Category, 'id'>) => {
         if (!user) return;
-        await addDoc(collection(db, 'users', user.uid, 'categories'), categoryData);
-        await fetchData(user.uid);
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'categories'), categoryData);
+        setCategories(prev => [...prev, { ...categoryData, id: docRef.id }]);
     };
 
     const updateCategory = async (categoryId: string, categoryData: Partial<Omit<Category, 'id'>>) => {
         if (!user) return;
         const categoryRef = doc(db, 'users', user.uid, 'categories', categoryId);
         await updateDoc(categoryRef, categoryData);
-        await fetchData(user.uid);
+        setCategories(prev => prev.map(c => c.id === categoryId ? { ...c, ...categoryData } : c));
     };
     
     const deleteCategory = async (categoryId: string) => {
         if (!user) return;
         await deleteDoc(doc(db, 'users', user.uid, 'categories', categoryId));
-        await fetchData(user.uid);
+        setCategories(prev => prev.filter(c => c.id !== categoryId));
     };
 
     const addSupplier = async (supplierData: Omit<Supplier, 'id'>) => {
         if (!user) return;
-        await addDoc(collection(db, 'users', user.uid, 'suppliers'), supplierData);
-        await fetchData(user.uid);
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'suppliers'), supplierData);
+        setSuppliers(prev => [...prev, { ...supplierData, id: docRef.id }]);
     };
 
     const updateSupplier = async (supplierId: string, supplierData: Partial<Omit<Supplier, 'id'>>) => {
         if (!user) return;
         const supplierRef = doc(db, 'users', user.uid, 'suppliers', supplierId);
         await updateDoc(supplierRef, supplierData);
-        await fetchData(user.uid);
+        setSuppliers(prev => prev.map(s => s.id === supplierId ? { ...s, ...supplierData } : s));
     };
     
     const deleteSupplier = async (supplierId: string) => {
         if (!user) return;
         await deleteDoc(doc(db, 'users', user.uid, 'suppliers', supplierId));
-        await fetchData(user.uid);
+        setSuppliers(prev => prev.filter(s => s.id !== supplierId));
     };
 
     const addStore = async (storeData: Omit<Store, 'id'>) => {
         if (!user) return;
-        await addDoc(collection(db, 'users', user.uid, 'stores'), storeData);
-        await fetchData(user.uid);
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'stores'), storeData);
+        setStores(prev => [...prev, { ...storeData, id: docRef.id }]);
     };
 
     const updateStore = async (storeId: string, storeData: Partial<Omit<Store, 'id'>>) => {
         if (!user) return;
         const storeRef = doc(db, 'users', user.uid, 'stores', storeId);
         await updateDoc(storeRef, storeData);
-        await fetchData(user.uid);
+        setStores(prev => prev.map(s => s.id === storeId ? { ...s, ...storeData } : s));
     };
     
     const deleteStore = async (storeId: string) => {
         if (!user) return;
-
         const batch = writeBatch(db);
-
         const storeRef = doc(db, 'users', user.uid, 'stores', storeId);
         batch.delete(storeRef);
         
-        const q = query(collection(db, 'users', user.uid, 'inventory'), where("storeId", "==", storeId));
-        const inventoryToDeleteSnap = await getDocs(q);
-        inventoryToDeleteSnap.forEach(doc => {
-            batch.delete(doc.ref);
+        const inventoryToDelete = inventory.filter(i => i.storeId === storeId);
+        inventoryToDelete.forEach(item => {
+            const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${item.storeId}`);
+            batch.delete(invRef);
         });
         
         await batch.commit();
-        await fetchData(user.uid);
+        
+        setStores(prev => prev.filter(s => s.id !== storeId));
+        setInventory(prev => prev.filter(i => i.storeId !== storeId));
     };
 
     const addCustomer = async (customerData: Omit<Customer, 'id'>) => {
         if (!user) return;
-        await addDoc(collection(db, 'users', user.uid, 'customers'), customerData);
-        await fetchData(user.uid);
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'customers'), customerData);
+        setCustomers(prev => [...prev, { ...customerData, id: docRef.id }]);
     };
 
     const updateCustomer = async (customerId: string, customerData: Partial<Omit<Customer, 'id'>>) => {
         if (!user) return;
         const customerRef = doc(db, 'users', user.uid, 'customers', customerId);
         await updateDoc(customerRef, customerData);
-        await fetchData(user.uid);
+        setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, ...customerData } : c));
     };
     
     const deleteCustomer = async (customerId: string) => {
         if (!user) return;
         await deleteDoc(doc(db, 'users', user.uid, 'customers', customerId));
-        await fetchData(user.uid);
+        setCustomers(prev => prev.filter(c => c.id !== customerId));
     };
 
     const addPaymentType = async (paymentTypeData: Omit<PaymentType, 'id'>) => {
         if (!user) return;
-        await addDoc(collection(db, 'users', user.uid, 'paymentTypes'), paymentTypeData);
-        await fetchData(user.uid);
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'paymentTypes'), paymentTypeData);
+        setPaymentTypes(prev => [...prev, { ...paymentTypeData, id: docRef.id }]);
     };
 
     const updatePaymentType = async (paymentTypeId: string, paymentTypeData: Partial<Omit<PaymentType, 'id'>>) => {
         if (!user) return;
         const paymentTypeRef = doc(db, 'users', user.uid, 'paymentTypes', paymentTypeId);
         await updateDoc(paymentTypeRef, paymentTypeData);
-        await fetchData(user.uid);
+        setPaymentTypes(prev => prev.map(pt => pt.id === paymentTypeId ? { ...pt, ...paymentTypeData } : pt));
     };
     
     const deletePaymentType = async (paymentTypeId: string) => {
         if (!user) return;
         await deleteDoc(doc(db, 'users', user.uid, 'paymentTypes', paymentTypeId));
-        await fetchData(user.uid);
+        setPaymentTypes(prev => prev.filter(pt => pt.id !== paymentTypeId));
     };
 
     const addSale = async (saleData: Omit<SaleTransaction, 'id'>) => {
         if (!user) return;
+        
+        let newSale: SaleTransaction | null = null;
         
         const isInventoryDeducted = saleData.status === 'paid' || saleData.status === 'partially-paid' || saleData.status === 'completed';
 
         if (isInventoryDeducted) {
              try {
                 await runTransaction(db, async (transaction) => {
-                    const inventoryRefs = saleData.items.map(item => {
-                        const inventoryId = `${item.productId}_${saleData.storeId}`;
-                        return doc(db, 'users', user.uid, 'inventory', inventoryId);
-                    });
-
+                    const inventoryRefs = saleData.items.map(item => doc(db, 'users', user.uid, 'inventory', `${item.productId}_${saleData.storeId}`));
                     const inventorySnaps = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
 
                     const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
-                    transaction.set(newSaleRef, { ...saleData, date: Timestamp.fromDate(saleData.date as Date) });
+                    newSale = { ...saleData, id: newSaleRef.id, date: toDate(saleData.date) };
+                    transaction.set(newSaleRef, { ...saleData, date: Timestamp.fromDate(toDate(saleData.date)) });
 
                     for (let i = 0; i < saleData.items.length; i++) {
                         const item = saleData.items[i];
@@ -352,29 +352,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
                         transaction.update(inventorySnap.ref, { stock: newStock });
                     }
                 });
+                
+                if (newSale) {
+                    setSales(prev => [...prev, newSale!]);
+                    await fetchData(user.uid); // Fetch only inventory and sales to keep it fast
+                }
+
             } catch (e) {
                 console.error("Sale transaction failed: ", e);
                 throw e;
             }
         } else {
-            // For invoices and quotations, just add the document without touching inventory.
-            await addDoc(collection(db, 'users', user.uid, 'sales'), { ...saleData, date: Timestamp.fromDate(saleData.date as Date) });
+            const docRef = await addDoc(collection(db, 'users', user.uid, 'sales'), { ...saleData, date: Timestamp.fromDate(toDate(saleData.date)) });
+            setSales(prev => [...prev, { ...saleData, id: docRef.id, date: toDate(saleData.date) }]);
         }
-
-        await fetchData(user.uid);
     };
     
     const updateSale = async (saleId: string, saleData: Partial<Omit<SaleTransaction, 'id'>>) => {
         if (!user) return;
         const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
-        await updateDoc(saleRef, { ...saleData, date: Timestamp.fromDate(saleData.date as Date) });
-        await fetchData(user.uid);
+        await updateDoc(saleRef, { ...saleData, date: Timestamp.fromDate(toDate(saleData.date!)) });
+        setSales(prev => prev.map(s => s.id === saleId ? { ...s, ...saleData, date: toDate(saleData.date!) } as SaleTransaction : s));
     };
     
     const deleteSale = async (saleId: string) => {
         if (!user) return;
         await deleteDoc(doc(db, 'users', user.uid, 'sales', saleId));
-        await fetchData(user.uid);
+        setSales(prev => prev.filter(s => s.id !== saleId));
     };
 
     const markInvoiceAsPaid = async (saleId: string) => {
@@ -387,33 +391,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
                 const saleData = saleSnap.data() as SaleTransaction;
                 if(saleData.balance > 0) throw new Error("Cannot mark as paid. Balance is not zero.");
+                if(saleData.status === 'completed' || saleData.status === 'paid') return;
 
-                const isAlreadyCompleted = saleData.status === 'completed' || saleData.status === 'paid';
-                if(isAlreadyCompleted) return;
-
-
-                // Deduct inventory
                 for (const item of saleData.items) {
                     const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${saleData.storeId}`);
                     const invSnap = await transaction.get(invRef);
                     if (!invSnap.exists()) throw new Error(`Inventory for ${item.name} not found.`);
                     
                     const currentStock = invSnap.data().stock || 0;
-                    if (currentStock < item.quantity) {
-                        throw new Error(`Not enough stock for ${item.name}.`);
-                    }
-                    const newStock = currentStock - item.quantity;
-                    transaction.update(invRef, { stock: newStock });
+                    if (currentStock < item.quantity) throw new Error(`Not enough stock for ${item.name}.`);
+                    
+                    transaction.update(invRef, { stock: currentStock - item.quantity });
                 }
-
-                // Update sale status
                 transaction.update(saleRef, { status: 'paid' });
             });
+            await fetchData(user.uid);
         } catch (e) {
             console.error("Mark as paid transaction failed: ", e);
             throw e;
         }
-        await fetchData(user.uid);
     };
 
     const recordPayment = async (saleId: string, amount: number) => {
@@ -424,7 +420,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 const saleSnap = await transaction.get(saleRef);
                 if (!saleSnap.exists()) throw new Error("Invoice not found");
                 const saleData = saleSnap.data() as SaleTransaction;
-                const newPaidAmount = saleData.paidAmount + amount;
+                const newPaidAmount = (saleData.paidAmount || 0) + amount;
                 const newBalance = saleData.total - newPaidAmount;
                 const newStatus = newBalance <= 0 ? 'paid' : 'partially-paid';
 
@@ -434,11 +430,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     status: newStatus
                 });
             });
+            await fetchData(user.uid);
         } catch (e) {
             console.error("Record payment failed: ", e);
             throw e;
         }
-        await fetchData(user.uid);
     };
 
     const voidSale = async (saleId: string) => {
@@ -448,49 +444,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
             await runTransaction(db, async (transaction) => {
                 const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
                 const saleSnap = await transaction.get(saleRef);
-                
-                if (!saleSnap.exists() || saleSnap.data().status === 'voided') {
-                    throw new Error("Sale to void not found or already voided.");
-                }
+                if (!saleSnap.exists() || saleSnap.data().status === 'voided') throw new Error("Sale not found or already voided.");
 
                 const saleData = saleSnap.data() as SaleTransaction;
                 
-                // Only adjust inventory for sales that affected stock
                 const inventoryAdjustingStatus: SaleTransaction['status'][] = ['completed', 'paid', 'partially-paid'];
                 if (inventoryAdjustingStatus.includes(saleData.status)) {
-                    const inventoryRefs = saleData.items.map(item => {
-                        const inventoryId = `${item.productId}_${saleData.storeId}`;
-                        return doc(db, 'users', user.uid, 'inventory', inventoryId);
-                    });
-
-                    const inventorySnaps = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
-
-                    for (let i = 0; i < saleData.items.length; i++) {
-                        const item = saleData.items[i];
-                        const inventorySnap = inventorySnaps[i];
-                        const inventoryRef = inventoryRefs[i];
-
-                        if (inventorySnap.exists()) {
-                            const currentStock = inventorySnap.data().stock || 0;
-                            transaction.update(inventoryRef, { stock: currentStock + item.quantity });
+                    for (const item of saleData.items) {
+                        const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${saleData.storeId}`);
+                        const invSnap = await transaction.get(invRef);
+                        if (invSnap.exists()) {
+                            transaction.update(invRef, { stock: invSnap.data().stock + item.quantity });
                         } else {
-                            transaction.set(inventoryRef, {
-                                productId: item.productId,
-                                storeId: saleData.storeId,
-                                stock: item.quantity,
-                            });
+                            transaction.set(invRef, { productId: item.productId, storeId: saleData.storeId, stock: item.quantity });
                         }
                     }
                 }
                 
                 transaction.update(saleRef, { status: 'voided', balance: saleData.total, paidAmount: 0 });
             });
+            await fetchData(user.uid);
         } catch(e) {
             console.error("Void sale transaction failed: ", e);
             throw e;
         }
-        
-        await fetchData(user.uid);
     };
 
     const addPurchase = async (purchaseData: Omit<PurchaseTransaction, 'id'>) => {
@@ -498,144 +475,100 @@ export function DataProvider({ children }: { children: ReactNode }) {
     
         try {
             await runTransaction(db, async (transaction) => {
-                // ===== READS FIRST =====
-                const inventoryRefs = purchaseData.items.map(item => {
-                    const inventoryId = `${item.productId}_${purchaseData.storeId}`;
-                    return doc(db, 'users', user.uid, 'inventory', inventoryId);
-                });
-
-                const inventorySnaps = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
-
-                // ===== WRITES SECOND =====
                 const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
-                transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.fromDate(purchaseData.date as Date) });
+                transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.fromDate(toDate(purchaseData.date)) });
 
-                for (let i = 0; i < purchaseData.items.length; i++) {
-                    const item = purchaseData.items[i];
-                    const inventorySnap = inventorySnaps[i];
-                    const inventoryRef = inventoryRefs[i];
-
-                    if (inventorySnap.exists()) {
-                        const currentStock = inventorySnap.data().stock || 0;
-                        const newStock = currentStock + item.quantity;
-                        transaction.update(inventoryRef, { stock: newStock });
+                for (const item of purchaseData.items) {
+                    const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${purchaseData.storeId}`);
+                    const invSnap = await transaction.get(invRef);
+                    if (invSnap.exists()) {
+                        transaction.update(invRef, { stock: invSnap.data().stock + item.quantity });
                     } else {
-                        // Inventory record does not exist, so create it.
-                        transaction.set(inventoryRef, {
-                            productId: item.productId,
-                            storeId: purchaseData.storeId,
-                            stock: item.quantity,
-                        });
+                        transaction.set(invRef, { productId: item.productId, storeId: purchaseData.storeId, stock: item.quantity });
                     }
                 }
             });
+            await fetchData(user.uid);
         } catch (e) {
             console.error("Purchase transaction failed: ", e);
             throw e;
         }
-    
-        await fetchData(user.uid);
     };
     
     const deletePurchase = async (purchaseId: string) => {
         if (!user) return;
-        
         try {
             await runTransaction(db, async (transaction) => {
-                // ===== READS FIRST =====
                 const purchaseRef = doc(db, 'users', user.uid, 'purchases', purchaseId);
                 const purchaseSnap = await transaction.get(purchaseRef);
-
-                if (!purchaseSnap.exists()) {
-                    throw new Error("Purchase to delete not found");
-                }
-
+                if (!purchaseSnap.exists()) throw new Error("Purchase not found");
                 const purchaseData = purchaseSnap.data() as PurchaseTransaction;
 
-                const inventoryRefs = purchaseData.items.map(item => {
-                    const inventoryId = `${item.productId}_${purchaseData.storeId}`;
-                    return doc(db, 'users', user.uid, 'inventory', inventoryId);
-                });
-
-                const inventorySnaps = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
-                // ===== WRITES SECOND =====
                 transaction.delete(purchaseRef);
                 
-                for(let i = 0; i < purchaseData.items.length; i++) {
-                    const item = purchaseData.items[i];
-                    const inventorySnap = inventorySnaps[i];
-
-                    if (inventorySnap.exists()) {
-                        const currentStock = inventorySnap.data().stock || 0;
-                        const newStock = Math.max(0, currentStock - item.quantity);
-                        transaction.update(inventorySnap.ref, { stock: newStock });
+                for(const item of purchaseData.items) {
+                    const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${purchaseData.storeId}`);
+                    const invSnap = await transaction.get(invRef);
+                    if (invSnap.exists()) {
+                        transaction.update(invRef, { stock: Math.max(0, invSnap.data().stock - item.quantity) });
                     }
                 }
             });
+            await fetchData(user.uid);
         } catch (e) {
             console.error("Delete purchase transaction failed: ", e);
             throw e;
         }
-
-        await fetchData(user.uid);
     };
 
     const addExpense = async (expenseData: Omit<Expense, 'id'>) => {
         if (!user) return;
-        const expensePayload = {
-            ...expenseData,
-            date: Timestamp.fromDate(expenseData.date as Date)
-        };
-        await addDoc(collection(db, 'users', user.uid, 'expenses'), expensePayload);
-        await fetchData(user.uid);
+        const expensePayload = { ...expenseData, date: Timestamp.fromDate(toDate(expenseData.date)) };
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'expenses'), expensePayload);
+        setExpenses(prev => [...prev, { ...expenseData, id: docRef.id, date: toDate(expenseData.date) }]);
     };
 
     const deleteExpense = async (expenseId: string) => {
         if (!user) return;
         await deleteDoc(doc(db, 'users', user.uid, 'expenses', expenseId));
-        await fetchData(user.uid);
+        setExpenses(prev => prev.filter(e => e.id !== expenseId));
     };
 
     const addExpenseCategory = async (categoryData: Omit<ExpenseCategory, 'id'>) => {
         if (!user) return;
-        await addDoc(collection(db, 'users', user.uid, 'expenseCategories'), categoryData);
-        await fetchData(user.uid);
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'expenseCategories'), categoryData);
+        setExpenseCategories(prev => [...prev, { ...categoryData, id: docRef.id }]);
     };
 
     const updateExpenseCategory = async (categoryId: string, categoryData: Partial<Omit<ExpenseCategory, 'id'>>) => {
         if (!user) return;
         const categoryRef = doc(db, 'users', user.uid, 'expenseCategories', categoryId);
         await updateDoc(categoryRef, categoryData);
-        await fetchData(user.uid);
+        setExpenseCategories(prev => prev.map(c => c.id === categoryId ? { ...c, ...categoryData } : c));
     };
 
     const deleteExpenseCategory = async (categoryId: string) => {
         if (!user) return;
         await deleteDoc(doc(db, 'users', user.uid, 'expenseCategories', categoryId));
-        await fetchData(user.uid);
+        setExpenseCategories(prev => prev.filter(c => c.id !== categoryId));
     };
 
     const addCashAccount = async (account: Omit<CashAccount, 'id'>) => {
         if (!user) return;
-        await addDoc(collection(db, 'users', user.uid, 'cashAccounts'), account);
-        await fetchData(user.uid);
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'cashAccounts'), account);
+        setCashAccounts(prev => [...prev, { ...account, id: docRef.id }]);
     };
 
     const deleteCashAccount = async (accountId: string) => {
         if (!user) return;
-
         const batch = writeBatch(db);
-        const accountRef = doc(db, 'users', user.uid, 'cashAccounts', accountId);
-        batch.delete(accountRef);
-
+        batch.delete(doc(db, 'users', user.uid, 'cashAccounts', accountId));
         const q = query(collection(db, 'users', user.uid, 'cashTransactions'), where("accountId", "==", accountId));
         const transactionsSnap = await getDocs(q);
-        transactionsSnap.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-
+        transactionsSnap.forEach(doc => batch.delete(doc.ref));
         await batch.commit();
-        await fetchData(user.uid);
+        setCashAccounts(prev => prev.filter(a => a.id !== accountId));
+        setCashTransactions(prev => prev.filter(t => t.accountId !== accountId));
     };
 
 
@@ -645,90 +578,76 @@ export function DataProvider({ children }: { children: ReactNode }) {
             await runTransaction(db, async (transaction) => {
                 const accountRef = doc(db, 'users', user.uid, 'cashAccounts', tx.accountId);
                 const accountSnap = await transaction.get(accountRef);
-
-                if (!accountSnap.exists()) {
-                    throw new Error("Cash account not found.");
-                }
+                if (!accountSnap.exists()) throw new Error("Cash account not found.");
 
                 const currentBalance = accountSnap.data().balance;
-                let newBalance;
-
-                if (tx.type === 'adjustment') {
-                    newBalance = tx.amount;
-                } else {
-                    newBalance = tx.type === 'deposit' 
-                        ? currentBalance + tx.amount 
-                        : currentBalance - tx.amount;
-                }
-
+                const newBalance = tx.type === 'adjustment' ? tx.amount : tx.type === 'deposit' ? currentBalance + tx.amount : currentBalance - tx.amount;
                 transaction.update(accountRef, { balance: newBalance });
 
                 const newTxRef = doc(collection(db, 'users', user.uid, 'cashTransactions'));
                 transaction.set(newTxRef, { ...tx, date: Timestamp.now() });
             });
+            await fetchData(user.uid);
         } catch (e) {
             console.error("Cash transaction failed: ", e);
             throw e;
         }
-
-        await fetchData(user.uid);
     };
     
     const addCashAllocation = async (allocation: Omit<CashAllocation, 'id'>) => {
         if (!user) return;
-        await addDoc(collection(db, 'users', user.uid, 'cashAllocations'), allocation);
-        await fetchData(user.uid);
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'cashAllocations'), allocation);
+        setCashAllocations(prev => [...prev, { ...allocation, id: docRef.id }]);
     };
 
     const updateCashAllocation = async (allocationId: string, allocation: Partial<Omit<CashAllocation, 'id'>>) => {
         if (!user) return;
         const allocationRef = doc(db, 'users', user.uid, 'cashAllocations', allocationId);
         await updateDoc(allocationRef, allocation);
-        await fetchData(user.uid);
+        setCashAllocations(prev => prev.map(a => a.id === allocationId ? { ...a, ...allocation } : a));
     };
 
     const deleteCashAllocation = async (allocationId: string) => {
         if (!user) return;
         await deleteDoc(doc(db, 'users', user.uid, 'cashAllocations', allocationId));
-        await fetchData(user.uid);
+        setCashAllocations(prev => prev.filter(a => a.id !== allocationId));
     };
 
     const addLiability = async (liabilityData: Omit<Liability, 'id'>) => {
         if (!user) return;
-        await addDoc(collection(db, 'users', user.uid, 'liabilities'), liabilityData);
-        await fetchData(user.uid);
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'liabilities'), liabilityData);
+        setLiabilities(prev => [...prev, { ...liabilityData, id: docRef.id }]);
     };
 
     const updateLiability = async (liabilityId: string, liabilityData: Partial<Omit<Liability, 'id'>>) => {
         if (!user) return;
         const liabilityRef = doc(db, 'users', user.uid, 'liabilities', liabilityId);
         await updateDoc(liabilityRef, liabilityData);
-        await fetchData(user.uid);
+        setLiabilities(prev => prev.map(l => l.id === liabilityId ? { ...l, ...liabilityData } : l));
     };
     
     const deleteLiability = async (liabilityId: string) => {
         if (!user) return;
         await deleteDoc(doc(db, 'users', user.uid, 'liabilities', liabilityId));
-        await fetchData(user.uid);
+        setLiabilities(prev => prev.filter(l => l.id !== liabilityId));
     };
 
     const addEmployee = async (employeeData: Omit<Employee, 'id'>) => {
         if (!user) return;
-        await addDoc(collection(db, 'users', user.uid, 'employees'), employeeData);
-        await fetchData(user.uid);
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'employees'), employeeData);
+        setEmployees(prev => [...prev, { ...employeeData, id: docRef.id }]);
     };
     
     const updateEmployee = async (employeeId: string, employeeData: Partial<Omit<Employee, 'id'>>) => {
         if (!user) return;
         const employeeRef = doc(db, 'users', user.uid, 'employees', employeeId);
         await updateDoc(employeeRef, employeeData);
-        await fetchData(user.uid);
+        setEmployees(prev => prev.map(e => e.id === employeeId ? { ...e, ...employeeData } : e));
     };
     
     const deleteEmployee = async (employeeId: string) => {
         if (!user) return;
         const batch = writeBatch(db);
-        
         batch.delete(doc(db, 'users', user.uid, 'employees', employeeId));
         
         const advancesQuery = query(collection(db, 'users', user.uid, 'salaryAdvances'), where('employeeId', '==', employeeId));
@@ -740,58 +659,49 @@ export function DataProvider({ children }: { children: ReactNode }) {
         leavesSnap.forEach(doc => batch.delete(doc.ref));
 
         await batch.commit();
-        await fetchData(user.uid);
+        setEmployees(prev => prev.filter(e => e.id !== employeeId));
+        setSalaryAdvances(prev => prev.filter(sa => sa.employeeId !== employeeId));
+        setLeaveRecords(prev => prev.filter(lr => lr.employeeId !== employeeId));
     };
     
     const addSalaryAdvance = async (advanceData: Omit<SalaryAdvance, 'id'>) => {
         if (!user) return;
-        await addDoc(collection(db, 'users', user.uid, 'salaryAdvances'), {
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'salaryAdvances'), {
             ...advanceData,
-            date: Timestamp.fromDate(advanceData.date as Date)
+            date: Timestamp.fromDate(toDate(advanceData.date))
         });
-        await fetchData(user.uid);
+        setSalaryAdvances(prev => [...prev, { ...advanceData, id: docRef.id, date: toDate(advanceData.date) }]);
     };
     
     const deleteSalaryAdvance = async (advanceId: string) => {
         if (!user) return;
         await deleteDoc(doc(db, 'users', user.uid, 'salaryAdvances', advanceId));
-        await fetchData(user.uid);
+        setSalaryAdvances(prev => prev.filter(sa => sa.id !== advanceId));
     };
     
     const addLeaveRecord = async (leaveData: Omit<LeaveRecord, 'id'>) => {
         if (!user) return;
-        await addDoc(collection(db, 'users', user.uid, 'leaveRecords'), {
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'leaveRecords'), {
             ...leaveData,
-            date: Timestamp.fromDate(leaveData.date as Date)
+            date: Timestamp.fromDate(toDate(leaveData.date))
         });
-        await fetchData(user.uid);
+        setLeaveRecords(prev => [...prev, { ...leaveData, id: docRef.id, date: toDate(leaveData.date) }]);
     };
     
     const deleteLeaveRecord = async (leaveId: string) => {
         if (!user) return;
         await deleteDoc(doc(db, 'users', user.uid, 'leaveRecords', leaveId));
-        await fetchData(user.uid);
+        setLeaveRecords(prev => prev.filter(lr => lr.id !== leaveId));
     };
 
     const updateInventory = async (updatedItems: InventoryItem[]) => {
         if (!user) return;
         const batch = writeBatch(db);
 
-        for (const item of updatedItems) {
-            const inventoryId = `${item.productId}_${item.storeId}`;
-            const inventoryRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
-            const docSnap = await getDoc(inventoryRef);
-
-            if (docSnap.exists()) {
-                 batch.update(inventoryRef, { stock: item.stock });
-            } else {
-                 batch.set(inventoryRef, { 
-                     productId: item.productId, 
-                     storeId: item.storeId, 
-                     stock: item.stock 
-                });
-            }
-        }
+        updatedItems.forEach(item => {
+            const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${item.storeId}`);
+            batch.set(invRef, { productId: item.productId, storeId: item.storeId, stock: item.stock }, { merge: true });
+        });
 
         await batch.commit();
         await fetchData(user.uid);
@@ -801,7 +711,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (!user) return;
         const settingsRef = doc(db, 'users', user.uid, 'settings', 'business');
         await setDoc(settingsRef, newSettings, { merge: true });
-        await fetchData(user.uid);
+        setSettings(prev => ({...prev, ...newSettings}));
     };
 
     const updateInvoiceSettings = async (invoiceSettings: DocumentSettings) => {
@@ -864,3 +774,5 @@ export function useData() {
     }
     return context;
 }
+
+    
