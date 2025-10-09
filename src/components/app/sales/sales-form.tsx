@@ -363,7 +363,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                 />
             </div>
             <div className="flex flex-col sm:flex-row flex-wrap items-end gap-4 pt-4 border-t">
-              <div className="flex-grow w-full sm:w-auto min-w-[120px] space-y-2">
+              <div className="w-full sm:w-auto sm:max-w-xs space-y-2">
                   <Label htmlFor="sku-input">SKU</Label>
                   <Input 
                     id="sku-input" 
@@ -530,5 +530,3 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     </>
   );
 }
-
-    
