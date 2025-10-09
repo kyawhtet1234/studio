@@ -174,43 +174,45 @@ export default function InventoryPage() {
             </Button>
         </div>
       </PageHeader>
-      <Card className="bg-shiny-blue rounded-xl shadow-lg w-full">
+      <Card className="shadow-lg w-full">
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-yellow-200 hover:bg-yellow-200/90">
-                <TableHead className="text-black font-bold">SKU</TableHead>
-                <TableHead className="text-black font-bold">Product Name</TableHead>
-                <TableHead className="text-black font-bold">Category</TableHead>
-                <TableHead className="text-black font-bold">Store</TableHead>
-                <TableHead className="text-right text-black font-bold">Stock</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {inventoryData.map((item) => (
-                  <TableRow key={`${item.productId}_${item.storeId}`}>
-                      <TableCell>{item.sku}</TableCell>
-                      <TableCell className="font-medium">{item.productName}</TableCell>
-                      <TableCell>{item.categoryName}</TableCell>
-                      <TableCell>{item.storeName}</TableCell>
-                      <TableCell className="text-right">{item.stock}</TableCell>
-                      <TableCell className="text-right">
-                          <Button variant="outline" size="sm" onClick={() => handleOpenAdjustDialog(item)}>
-                              Adjust
-                          </Button>
-                      </TableCell>
-                  </TableRow>
-              ))}
-              {inventoryData.length === 0 && (
-                  <TableRow>
-                      <TableCell colSpan={6} className="text-center h-24">
-                          No inventory found for the selected filters.
-                      </TableCell>
-                  </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          <div className="min-h-[400px]">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-shiny-yellow hover:bg-shiny-yellow/90">
+                  <TableHead className="text-black font-bold">SKU</TableHead>
+                  <TableHead className="text-black font-bold">Product Name</TableHead>
+                  <TableHead className="text-black font-bold">Category</TableHead>
+                  <TableHead className="text-black font-bold">Store</TableHead>
+                  <TableHead className="text-right text-black font-bold">Stock</TableHead>
+                  <TableHead className="w-[100px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inventoryData.map((item) => (
+                    <TableRow key={`${item.productId}_${item.storeId}`}>
+                        <TableCell>{item.sku}</TableCell>
+                        <TableCell className="font-medium">{item.productName}</TableCell>
+                        <TableCell>{item.categoryName}</TableCell>
+                        <TableCell>{item.storeName}</TableCell>
+                        <TableCell className="text-right">{item.stock}</TableCell>
+                        <TableCell className="text-right">
+                            <Button variant="outline" size="sm" onClick={() => handleOpenAdjustDialog(item)}>
+                                Adjust
+                            </Button>
+                        </TableCell>
+                    </TableRow>
+                ))}
+                {inventoryData.length === 0 && (
+                    <TableRow>
+                        <TableCell colSpan={6} className="text-center h-24">
+                            No inventory found for the selected filters.
+                        </TableCell>
+                    </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
       <Dialog open={!!adjustmentItem} onOpenChange={() => setAdjustmentItem(null)}>
