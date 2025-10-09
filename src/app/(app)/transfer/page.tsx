@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { PlusCircle, Trash2 } from "lucide-react";
-import type { InventoryItem } from "@/lib/types";
+import type { InventoryItem, Product } from "@/lib/types";
 import { useData } from "@/lib/data-context";
 
 interface TransferItem {
@@ -40,8 +40,26 @@ export default function TransferPage() {
     const [fromStoreId, setFromStoreId] = useState<string>('');
     const [toStoreId, setToStoreId] = useState<string>('');
     const [itemSku, setItemSku] = useState('');
-    const [itemQuantity, setItemQuantity] = useState(1);
+    const [itemName, setItemName] = useState('');
+    const [foundProduct, setFoundProduct] = useState<Product | null>(null);
+    const [itemQuantity, setItemQuantity] = useState<number | string>(1);
     const [transferItems, setTransferItems] = useState<TransferItem[]>([]);
+
+    useEffect(() => {
+        if (itemSku) {
+            const product = products.find(p => p.sku.toLowerCase().startsWith(itemSku.toLowerCase()));
+            if (product) {
+                setItemName(product.name);
+                setFoundProduct(product);
+            } else {
+                setItemName('');
+                setFoundProduct(null);
+            }
+        } else {
+            setItemName('');
+            setFoundProduct(null);
+        }
+    }, [itemSku, products]);
 
     const handleAddItem = () => {
         if (!fromStoreId || !toStoreId) {
@@ -53,14 +71,19 @@ export default function TransferPage() {
             return;
         }
 
-        const product = products.find(p => p.sku === itemSku);
-        if (!product) {
+        if (!foundProduct) {
             toast({ variant: 'destructive', title: 'Error', description: "Product with this SKU not found."});
             return;
         }
 
-        const sourceInventory = inventory.find(i => i.productId === product.id && i.storeId === fromStoreId);
-        if (!sourceInventory || sourceInventory.stock < itemQuantity) {
+        const currentQuantity = Number(itemQuantity);
+        if (currentQuantity <= 0) {
+            toast({ variant: 'destructive', title: 'Error', description: "Please enter a valid quantity."});
+            return;
+        }
+
+        const sourceInventory = inventory.find(i => i.productId === foundProduct.id && i.storeId === fromStoreId);
+        if (!sourceInventory || sourceInventory.stock < currentQuantity) {
             toast({ variant: 'destructive', title: 'Error', description: `Not enough stock in ${stores.find(s=>s.id === fromStoreId)?.name}. Available: ${sourceInventory?.stock || 0}`});
             return;
         }
@@ -70,8 +93,10 @@ export default function TransferPage() {
             return;
         }
 
-        setTransferItems(prev => [...prev, { sku: itemSku, productId: product.id, name: product.name, quantity: itemQuantity }]);
+        setTransferItems(prev => [...prev, { sku: itemSku, productId: foundProduct.id, name: foundProduct.name, quantity: currentQuantity }]);
         setItemSku('');
+        setItemName('');
+        setFoundProduct(null);
         setItemQuantity(1);
     };
 
@@ -159,16 +184,20 @@ export default function TransferPage() {
           <div>
             <h3 className="text-lg font-medium mb-4">Items to Transfer</h3>
             <div className="space-y-4">
-                <div className="flex items-end gap-4 p-4 border rounded-lg">
-                    <div className="flex-1 space-y-2">
+                <div className="flex flex-col sm:flex-row flex-wrap items-end gap-4 p-4 border rounded-lg">
+                    <div className="w-full sm:w-auto sm:max-w-[150px] space-y-2">
                         <Label htmlFor="sku">Item SKU</Label>
                         <Input id="sku" placeholder="Enter SKU" value={itemSku} onChange={(e) => setItemSku(e.target.value)} />
                     </div>
-                    <div className="w-24 space-y-2">
+                    <div className="flex-grow w-full sm:w-auto min-w-[150px] space-y-2">
+                        <Label htmlFor="item-name">Item Name</Label>
+                        <Input id="item-name" placeholder="Item name will appear here" value={itemName} readOnly />
+                    </div>
+                    <div className="w-full sm:w-24 space-y-2">
                         <Label htmlFor="qty">Quantity</Label>
                         <Input id="qty" type="number" placeholder="Qty" value={itemQuantity} onChange={(e) => setItemQuantity(Number(e.target.value))}/>
                     </div>
-                    <Button variant="outline" onClick={handleAddItem}>
+                    <Button type="button" variant="outline" onClick={handleAddItem}>
                         <PlusCircle className="mr-2 h-4 w-4"/>
                         Add Item
                     </Button>
