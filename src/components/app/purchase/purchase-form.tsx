@@ -281,7 +281,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                 />
             </div>
             <div className={cn("flex flex-col sm:flex-row flex-wrap items-end gap-4 pt-4 border-t", !watchSupplierId && "opacity-50 pointer-events-none")}>
-              <div className="w-full sm:w-auto sm:max-w-xs space-y-2">
+              <div className="w-full sm:w-auto sm:max-w-[150px] space-y-2">
                 <Label htmlFor="sku-input">SKU</Label>
                 <Input id="sku-input" placeholder="Enter SKU..." value={sku} onChange={(e) => setSku(e.target.value)} />
               </div>
@@ -370,3 +370,5 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
     </Form>
   );
 }
+
+    
