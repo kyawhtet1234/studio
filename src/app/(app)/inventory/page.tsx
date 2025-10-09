@@ -174,7 +174,7 @@ export default function InventoryPage() {
             </Button>
         </div>
       </PageHeader>
-      <Card className="bg-shiny-blue rounded-xl shadow-lg">
+      <Card className="bg-shiny-blue rounded-xl shadow-lg w-full">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
