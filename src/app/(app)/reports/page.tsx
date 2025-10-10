@@ -49,7 +49,7 @@ const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales
             </TableHeader>
             <TableBody>
               {data.map((report) => (
-                  <TableRow key={report.date}>
+                  <TableRow key={report.key}>
                       <TableCell className="font-medium">{report.date}</TableCell>
                       <TableCell className="text-right">{report.totalQuantity}</TableCell>
                       <TableCell className="text-right">MMK {report.sales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
@@ -343,7 +343,7 @@ export default function ReportsPage() {
 
 
   const getReportData = (period: 'daily' | 'monthly') => {
-    const reports: { [key: string]: { date: string, sales: number, cogs: number, profit: number, totalQuantity: number } } = {};
+    const reports: { [key: string]: { key: string, date: string, sales: number, cogs: number, profit: number, totalQuantity: number } } = {};
     
     const includedSales = filteredSales.filter(s => s.status === 'completed' || s.status === 'paid');
     
@@ -360,7 +360,7 @@ export default function ReportsPage() {
         }
 
         if (!reports[key]) {
-            reports[key] = { date: dateLabel, sales: 0, cogs: 0, profit: 0, totalQuantity: 0 };
+            reports[key] = { key, date: dateLabel, sales: 0, cogs: 0, profit: 0, totalQuantity: 0 };
         }
 
         reports[key].sales += sale.total;
@@ -376,7 +376,7 @@ export default function ReportsPage() {
         reports[key].totalQuantity += saleQuantity;
     });
 
-    const data = Object.values(reports).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const data = Object.values(reports).sort((a,b) => b.key.localeCompare(a.key));
     const total = data.reduce((acc, report) => {
         acc.sales += report.sales;
         acc.profit += report.profit;
@@ -414,7 +414,7 @@ export default function ReportsPage() {
   const { data: monthlyReportsAll, total: monthlyTotalAll } = useMemo(() => getReportData('monthly'), [filteredSales, products]);
   
   const availableMonths = useMemo(() => {
-      return monthlyReportsAll.map(report => report.date);
+      return [...new Set(monthlyReportsAll.map(report => report.date))];
   }, [monthlyReportsAll]);
   
   const filteredMonthlyReports = useMemo(() => {
@@ -741,3 +741,4 @@ export default function ReportsPage() {
     </div>
   );
 }
+
