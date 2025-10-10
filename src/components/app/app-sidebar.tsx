@@ -74,19 +74,21 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="bg-background border-r" side="left" collapsible="icon" variant="sidebar">
-      <SidebarHeader className="p-4">
-        <div className={cn("p-4 rounded-xl shadow-[0_8px_16px_rgba(234,179,8,0.4)] border-2 border-black", "bg-shiny-yellow dark:bg-shiny-yellow-dark")}>
-          <div className="flex items-center justify-center gap-2">
+      <SidebarHeader className="p-4 flex flex-col gap-2">
+        <div className={cn("p-2 rounded-xl shadow-[0_8px_16px_rgba(234,179,8,0.4)] border-2 border-black", "bg-shiny-yellow dark:bg-shiny-yellow-dark")}>
+          <div className="flex items-center justify-center">
             {appLogo ? (
                 <Image src={appLogo} alt="App Logo" width={40} height={40} className="w-10 h-10 object-contain" />
             ) : (
                 <Building2 className="w-8 h-8 text-black" />
             )}
-            <div className="flex flex-col items-center">
-                <span className="text-sm font-semibold font-headline text-black leading-tight">{firstLine}</span>
-                {secondLine && <span className="text-sm font-semibold font-headline text-black leading-tight">{secondLine}</span>}
-            </div>
           </div>
+        </div>
+        <div className={cn("p-2 rounded-xl shadow-[0_8px_16px_rgba(234,179,8,0.4)] border-2 border-black", "bg-shiny-yellow dark:bg-shiny-yellow-dark")}>
+            <div className="flex flex-col items-center justify-center">
+                <span className="text-sm font-semibold font-headline text-black leading-tight text-center">{firstLine}</span>
+                {secondLine && <span className="text-sm font-semibold font-headline text-black leading-tight text-center">{secondLine}</span>}
+            </div>
         </div>
       </SidebarHeader>
       <SidebarContent className="p-4">
