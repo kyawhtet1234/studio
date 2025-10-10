@@ -75,14 +75,12 @@ export function AppSidebar() {
   return (
     <Sidebar className="bg-background border-r" side="left" collapsible="icon" variant="sidebar">
       <SidebarHeader className="p-4 flex flex-col gap-2">
-        <div className={cn("p-2 rounded-xl shadow-[0_8px_16px_rgba(234,179,8,0.4)] border-2 border-black", "bg-shiny-yellow dark:bg-shiny-yellow-dark")}>
-          <div className="flex items-center justify-center">
+        <div className="flex items-center justify-center p-2">
             {appLogo ? (
                 <Image src={appLogo} alt="App Logo" width={40} height={40} className="w-10 h-10 object-contain" />
             ) : (
-                <Building2 className="w-8 h-8 text-black" />
+                <Building2 className="w-8 h-8 text-foreground" />
             )}
-          </div>
         </div>
         <div className={cn("p-2 rounded-xl shadow-[0_8px_16px_rgba(234,179,8,0.4)] border-2 border-black", "bg-shiny-yellow dark:bg-shiny-yellow-dark")}>
             <div className="flex flex-col items-center justify-center">
