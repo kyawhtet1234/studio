@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useData } from "@/lib/data-context";
@@ -36,15 +35,15 @@ import { Input } from "@/components/ui/input";
 
 
 const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales: number, profit: number, totalQuantity: number }, periodLabel: string }) => (
-    <Card className="shadow-drop-shadow-black">
+    <Card className="bg-shiny-blue rounded-xl shadow-lg">
       <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>{periodLabel}</TableHead>
-                <TableHead className="text-right">Total Items</TableHead>
-                <TableHead className="text-right">Sales</TableHead>
-                <TableHead className="text-right">Profit (Sales - COGS)</TableHead>
+              <TableRow className="bg-shiny-yellow hover:bg-shiny-yellow/90">
+                <TableHead className="text-black font-bold">{periodLabel}</TableHead>
+                <TableHead className="text-right text-black font-bold">Total Items</TableHead>
+                <TableHead className="text-right text-black font-bold">Sales</TableHead>
+                <TableHead className="text-right text-black font-bold">Profit (Sales - COGS)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -78,13 +77,13 @@ const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales
 );
 
 const SalesByCustomerTable = ({ data }: { data: any[] }) => (
-    <Card className="shadow-drop-shadow-black">
+    <Card className="bg-shiny-blue rounded-xl shadow-lg">
       <CardContent className="p-0">
           <Table>
               <TableHeader>
-                  <TableRow>
-                      <TableHead>Customer</TableHead>
-                      <TableHead className="text-right">Total Sales</TableHead>
+                  <TableRow className="bg-shiny-yellow hover:bg-shiny-yellow/90">
+                      <TableHead className="text-black font-bold">Customer</TableHead>
+                      <TableHead className="text-right text-black font-bold">Total Sales</TableHead>
                   </TableRow>
               </TableHeader>
               <TableBody>
@@ -121,15 +120,15 @@ const PurchaseHistoryTable = ({ data, stores, suppliers, onDelete }: { data: Pur
     
     return (
     <>
-        <Card className="shadow-drop-shadow-black">
+        <Card className="bg-shiny-blue rounded-xl shadow-lg">
           <CardContent className="p-0">
             <Table>
             <TableHeader>
-                <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Store</TableHead>
-                <TableHead>Supplier</TableHead>
-                <TableHead className="text-right">Total</TableHead>
+                <TableRow className="bg-shiny-yellow hover:bg-shiny-yellow/90">
+                <TableHead className="text-black font-bold">Date</TableHead>
+                <TableHead className="text-black font-bold">Store</TableHead>
+                <TableHead className="text-black font-bold">Supplier</TableHead>
+                <TableHead className="text-right text-black font-bold">Total</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
             </TableHeader>
@@ -212,19 +211,19 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
     
     return (
     <>
-        <Card className="shadow-drop-shadow-black">
+        <Card className="bg-shiny-blue rounded-xl shadow-lg">
           <CardContent className="p-0">
             <Table>
             <TableHeader>
-                <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Store</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Payment</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Paid</TableHead>
-                <TableHead className="text-right">Balance</TableHead>
+                <TableRow className="bg-shiny-yellow hover:bg-shiny-yellow/90">
+                <TableHead className="text-black font-bold">Date</TableHead>
+                <TableHead className="text-black font-bold">Store</TableHead>
+                <TableHead className="text-black font-bold">Customer</TableHead>
+                <TableHead className="text-black font-bold">Payment</TableHead>
+                <TableHead className="text-black font-bold">Status</TableHead>
+                <TableHead className="text-right text-black font-bold">Total</TableHead>
+                <TableHead className="text-right text-black font-bold">Paid</TableHead>
+                <TableHead className="text-right text-black font-bold">Balance</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
             </TableHeader>
@@ -684,14 +683,14 @@ export default function ReportsPage() {
             <PurchaseHistoryTable data={purchaseHistory} stores={stores} suppliers={suppliers} onDelete={deletePurchase} />
         </TabsContent>
         <TabsContent value="invoice">
-            <Card className="shadow-drop-shadow-black">
+            <Card className="bg-shiny-blue rounded-xl shadow-lg">
               <CardContent className="p-4 md:p-6">
                 <DataTable columns={invoiceCols} data={invoiceHistory} filterColumnId="id" filterPlaceholder="Filter by number..." />
               </CardContent>
             </Card>
         </TabsContent>
         <TabsContent value="quotation">
-            <Card className="shadow-drop-shadow-black">
+            <Card className="bg-shiny-blue rounded-xl shadow-lg">
               <CardContent className="p-4 md:p-6">
                 <DataTable columns={quotationCols} data={quotationHistory} filterColumnId="id" filterPlaceholder="Filter by number..." />
               </CardContent>
@@ -742,3 +741,5 @@ export default function ReportsPage() {
   );
 }
 
+
+    
