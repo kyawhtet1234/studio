@@ -472,23 +472,45 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const addPurchase = async (purchaseData: Omit<PurchaseTransaction, 'id'>) => {
         if (!user) return;
-    
+        
+        let newPurchase: PurchaseTransaction | null = null;
         try {
             await runTransaction(db, async (transaction) => {
                 const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
+                newPurchase = { ...purchaseData, id: newPurchaseRef.id, date: toDate(purchaseData.date) };
                 transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.fromDate(toDate(purchaseData.date)) });
 
                 for (const item of purchaseData.items) {
                     const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${purchaseData.storeId}`);
                     const invSnap = await transaction.get(invRef);
-                    if (invSnap.exists()) {
-                        transaction.update(invRef, { stock: invSnap.data().stock + item.quantity });
-                    } else {
-                        transaction.set(invRef, { productId: item.productId, storeId: purchaseData.storeId, stock: item.quantity });
-                    }
+                    const currentStock = invSnap.exists() ? invSnap.data().stock : 0;
+                    const newStock = currentStock + item.quantity;
+                    
+                    transaction.set(invRef, {
+                        productId: item.productId,
+                        storeId: purchaseData.storeId,
+                        stock: newStock
+                    }, { merge: true });
                 }
             });
-            await fetchData(user.uid);
+
+            if (newPurchase) {
+                 setPurchases(prev => [...prev, newPurchase!]);
+                const newInventoryItems = newPurchase.items.map(item => {
+                    const existingItem = inventory.find(i => i.productId === item.productId && i.storeId === newPurchase!.storeId);
+                    return {
+                        productId: item.productId,
+                        storeId: newPurchase!.storeId,
+                        stock: (existingItem?.stock || 0) + item.quantity
+                    };
+                });
+                
+                const otherInventory = inventory.filter(i => 
+                    !newInventoryItems.some(ni => ni.productId === i.productId && ni.storeId === i.storeId)
+                );
+
+                setInventory([...otherInventory, ...newInventoryItems]);
+            }
         } catch (e) {
             console.error("Purchase transaction failed: ", e);
             throw e;
@@ -498,23 +520,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const deletePurchase = async (purchaseId: string) => {
         if (!user) return;
         try {
+            const purchaseToDelete = purchases.find(p => p.id === purchaseId);
+            if (!purchaseToDelete) throw new Error("Purchase not found");
+
             await runTransaction(db, async (transaction) => {
                 const purchaseRef = doc(db, 'users', user.uid, 'purchases', purchaseId);
-                const purchaseSnap = await transaction.get(purchaseRef);
-                if (!purchaseSnap.exists()) throw new Error("Purchase not found");
-                const purchaseData = purchaseSnap.data() as PurchaseTransaction;
-
                 transaction.delete(purchaseRef);
                 
-                for(const item of purchaseData.items) {
-                    const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${purchaseData.storeId}`);
+                for(const item of purchaseToDelete.items) {
+                    const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${purchaseToDelete.storeId}`);
                     const invSnap = await transaction.get(invRef);
                     if (invSnap.exists()) {
                         transaction.update(invRef, { stock: Math.max(0, invSnap.data().stock - item.quantity) });
                     }
                 }
             });
-            await fetchData(user.uid);
+            
+            setPurchases(prev => prev.filter(p => p.id !== purchaseId));
+             const updatedInventory = inventory.map(invItem => {
+                const purchaseItem = purchaseToDelete.items.find(pItem => pItem.productId === invItem.productId);
+                if (purchaseItem && invItem.storeId === purchaseToDelete.storeId) {
+                    return { ...invItem, stock: Math.max(0, invItem.stock - purchaseItem.quantity) };
+                }
+                return invItem;
+            });
+            setInventory(updatedInventory);
+
         } catch (e) {
             console.error("Delete purchase transaction failed: ", e);
             throw e;
@@ -774,5 +805,3 @@ export function useData() {
     }
     return context;
 }
-
-    
