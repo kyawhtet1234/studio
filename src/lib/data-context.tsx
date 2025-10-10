@@ -473,16 +473,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const addPurchase = async (purchaseData: Omit<PurchaseTransaction, 'id'>) => {
         if (!user) return;
         
-        let newPurchase: PurchaseTransaction | null = null;
         try {
             await runTransaction(db, async (transaction) => {
+                // 1. Read all necessary inventory documents first.
+                const inventoryRefs = purchaseData.items.map(item => 
+                    doc(db, 'users', user.uid, 'inventory', `${item.productId}_${purchaseData.storeId}`)
+                );
+                const inventorySnaps = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
+    
+                // 2. Now perform all writes.
                 const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
-                newPurchase = { ...purchaseData, id: newPurchaseRef.id, date: toDate(purchaseData.date) };
                 transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.fromDate(toDate(purchaseData.date)) });
-
-                for (const item of purchaseData.items) {
-                    const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${purchaseData.storeId}`);
-                    const invSnap = await transaction.get(invRef);
+    
+                for (let i = 0; i < purchaseData.items.length; i++) {
+                    const item = purchaseData.items[i];
+                    const invSnap = inventorySnaps[i];
+                    const invRef = inventoryRefs[i];
+    
                     const currentStock = invSnap.exists() ? invSnap.data().stock : 0;
                     const newStock = currentStock + item.quantity;
                     
@@ -493,24 +500,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     }, { merge: true });
                 }
             });
-
-            if (newPurchase) {
-                 setPurchases(prev => [...prev, newPurchase!]);
-                const newInventoryItems = newPurchase.items.map(item => {
-                    const existingItem = inventory.find(i => i.productId === item.productId && i.storeId === newPurchase!.storeId);
-                    return {
-                        productId: item.productId,
-                        storeId: newPurchase!.storeId,
-                        stock: (existingItem?.stock || 0) + item.quantity
-                    };
-                });
-                
-                const otherInventory = inventory.filter(i => 
-                    !newInventoryItems.some(ni => ni.productId === i.productId && ni.storeId === i.storeId)
-                );
-
-                setInventory([...otherInventory, ...newInventoryItems]);
-            }
+    
+            // 3. After the transaction is successful, update the local state.
+            await fetchData(user.uid);
         } catch (e) {
             console.error("Purchase transaction failed: ", e);
             throw e;
