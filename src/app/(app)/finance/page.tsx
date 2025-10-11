@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useData } from '@/lib/data-context';
 import { PageHeader } from "@/components/app/page-header";
 import { StatCard } from "@/components/app/dashboard/stat-card";
@@ -102,6 +102,10 @@ export default function FinancePage() {
   });
   
   const allSaleItems = sales.flatMap(s => s.items.map(i => ({...i, date: s.date})));
+  
+  const sortedExpenses = useMemo(() => {
+    return [...expenses].sort((a, b) => toDate(b.date).getTime() - toDate(a.date).getTime());
+  }, [expenses]);
 
 
   const renderAddButton = () => {
@@ -201,7 +205,7 @@ export default function FinancePage() {
             <NetProfitReport sales={sales} products={products} expenses={expenses} />
         </TabsContent>
         <TabsContent value="expenses">
-            <DataTable columns={expenseCols} data={expenses} filterColumnId="description" filterPlaceholder="Filter expenses by description..."/>
+            <DataTable columns={expenseCols} data={sortedExpenses} filterColumnId="description" filterPlaceholder="Filter expenses by description..."/>
         </TabsContent>
         <TabsContent value="forecast">
              <FinancialForecast 
