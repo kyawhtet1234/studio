@@ -78,7 +78,7 @@ export function AddCategoryForm({ onSave, onSuccess, category }: FormProps<Omit<
             </FormItem>
           )}
         />
-        <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Category'}</Button>
+        <Button type="submit" className="bg-shiny-blue">{isEditMode ? 'Save Changes' : 'Add Category'}</Button>
       </form>
     </Form>
   );
@@ -113,7 +113,7 @@ export function AddSupplierForm({ onSave, onSuccess, supplier }: FormProps<Omit<
                 </FormItem>
             )}
             />
-            <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Supplier'}</Button>
+            <Button type="submit" className="bg-shiny-blue">{isEditMode ? 'Save Changes' : 'Add Supplier'}</Button>
         </form>
         </Form>
     );
@@ -144,7 +144,7 @@ export function AddStoreForm({ onSave, onSuccess, store }: FormProps<Omit<Store,
         <FormField control={form.control} name="location" render={({ field }) => (
             <FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
         )}/>
-        <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Store'}</Button>
+        <Button type="submit" className="bg-shiny-blue">{isEditMode ? 'Save Changes' : 'Add Store'}</Button>
       </form>
     </Form>
     );
@@ -191,7 +191,7 @@ export function AddCustomerForm({ onSave, onSuccess, customer }: FormProps<Omit<
                         </FormItem>
                     )}
                 />
-                <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Customer'}</Button>
+                <Button type="submit" className="bg-shiny-blue">{isEditMode ? 'Save Changes' : 'Add Customer'}</Button>
             </form>
         </Form>
     );
@@ -226,7 +226,7 @@ export function AddPaymentTypeForm({ onSave, onSuccess, paymentType }: FormProps
             </FormItem>
           )}
         />
-        <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Payment Type'}</Button>
+        <Button type="submit" className="bg-shiny-blue">{isEditMode ? 'Save Changes' : 'Add Payment Type'}</Button>
       </form>
     </Form>
   );
@@ -325,8 +325,10 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
                 <FormItem><FormLabel>Sell Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
             )}/>
         </div>
-        <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Product'}</Button>
+        <Button type="submit" className="bg-shiny-blue">{isEditMode ? 'Save Changes' : 'Add Product'}</Button>
       </form>
     </Form>
   );
 }
+
+    

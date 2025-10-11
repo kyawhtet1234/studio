@@ -90,7 +90,7 @@ function AddAccountForm({ onSave, onSuccess }: { onSave: (data: Omit<CashAccount
         <FormField control={form.control} name="balance" render={({ field }) => (
           <FormItem><FormLabel>Starting Balance</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
         )} />
-        <Button type="submit">Add Account</Button>
+        <Button type="submit" className="bg-shiny-blue">Add Account</Button>
       </form>
     </Form>
   );
@@ -131,7 +131,7 @@ function AdjustBalanceForm({ account, onSave, onSuccess }: { account: CashAccoun
           <FormItem><FormLabel>Description</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
         )} />
         <DialogFooter>
-          <Button type="submit">Save Transaction</Button>
+          <Button type="submit" className="bg-shiny-blue">Save Transaction</Button>
         </DialogFooter>
       </form>
     </Form>
@@ -318,3 +318,5 @@ export default function CashPage() {
     </div>
   );
 }
+
+    

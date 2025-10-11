@@ -135,7 +135,7 @@ export function AddExpenseForm({ onSave, onSuccess, categories }: FormProps<Omit
         <FormField control={form.control} name="amount" render={({ field }) => (
             <FormItem><FormLabel>Amount</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
         )}/>
-        <Button type="submit">Add Expense</Button>
+        <Button type="submit" className="bg-shiny-blue">Add Expense</Button>
       </form>
     </Form>
   );
@@ -170,7 +170,7 @@ export function AddExpenseCategoryForm({ onSave, onSuccess, category }: FormProp
             </FormItem>
           )}
         />
-        <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Category'}</Button>
+        <Button type="submit" className="bg-shiny-blue">{isEditMode ? 'Save Changes' : 'Add Category'}</Button>
       </form>
     </Form>
   );
@@ -237,7 +237,7 @@ export function AddCashAllocationForm({ onSave, onSuccess, allocation }: FormPro
             )}
             />
         )}
-        <Button type="submit">{isEditMode ? 'Save Changes' : 'Create Allocation'}</Button>
+        <Button type="submit" className="bg-shiny-blue">{isEditMode ? 'Save Changes' : 'Create Allocation'}</Button>
       </form>
     </Form>
   );
@@ -290,8 +290,10 @@ export function AddLiabilityForm({ onSave, onSuccess, liability }: FormProps<Omi
             </FormItem>
           )}
         />
-        <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Liability'}</Button>
+        <Button type="submit" className="bg-shiny-blue">{isEditMode ? 'Save Changes' : 'Add Liability'}</Button>
       </form>
     </Form>
   );
 }
+
+    

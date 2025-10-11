@@ -92,7 +92,7 @@ export function AddEmployeeForm({ onSave, onSuccess, employee }: FormProps<Omit<
             </FormItem>
           )}
         />
-        <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Employee'}</Button>
+        <Button type="submit" className="bg-shiny-blue">{isEditMode ? 'Save Changes' : 'Add Employee'}</Button>
       </form>
     </Form>
   );
@@ -173,7 +173,7 @@ export function RecordAdvanceForm({ employee, onSave, onSuccess }: FormProps<Omi
                         </FormItem>
                     )}
                 />
-                <Button type="submit">Record Advance</Button>
+                <Button type="submit" className="bg-shiny-blue">Record Advance</Button>
             </form>
         </Form>
     );
@@ -231,9 +231,10 @@ export function RecordLeaveForm({ employee, onSave, onSuccess }: FormProps<Omit<
                         </FormItem>
                     )}
                 />
-                <Button type="submit">Record Leave</Button>
+                <Button type="submit" className="bg-shiny-blue">Record Leave</Button>
             </form>
         </Form>
     );
 }
 
+    
