@@ -175,13 +175,25 @@ export default function ProductsPage() {
           </Card>
         </TabsContent>
         <TabsContent value="categories">
-          <DataTable columns={categoryCols} data={categories} filterColumnId="name" filterPlaceholder="Filter categories by name..."/>
+          <Card className="bg-shiny-blue rounded-xl shadow-lg">
+            <CardContent className="p-4 md:p-6">
+              <DataTable columns={categoryCols} data={categories} filterColumnId="name" filterPlaceholder="Filter categories by name..."/>
+            </CardContent>
+          </Card>
         </TabsContent>
         <TabsContent value="suppliers">
-          <DataTable columns={supplierCols} data={suppliers} filterColumnId="name" filterPlaceholder="Filter suppliers by name..."/>
+          <Card className="bg-shiny-blue rounded-xl shadow-lg">
+            <CardContent className="p-4 md:p-6">
+              <DataTable columns={supplierCols} data={suppliers} filterColumnId="name" filterPlaceholder="Filter suppliers by name..."/>
+            </CardContent>
+          </Card>
         </TabsContent>
         <TabsContent value="customers">
-            <DataTable columns={customerCols} data={customers} filterColumnId="name" filterPlaceholder="Filter customers by name..."/>
+          <Card className="bg-shiny-blue rounded-xl shadow-lg">
+            <CardContent className="p-4 md:p-6">
+              <DataTable columns={customerCols} data={customers} filterColumnId="name" filterPlaceholder="Filter customers by name..."/>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
       {renderEditSheet()}
