@@ -55,7 +55,7 @@ const InvoiceContent: React.FC<InvoiceOrQuotationProps & { companyInfo: CompanyI
             {/* Left side - Logo */}
              <div className="h-full flex items-center relative w-1/3">
                 {companyInfo?.companyLogo && (
-                    <Image src={companyInfo.companyLogo} alt="Company Logo" layout="fill" objectFit="contain" />
+                    <img src={companyInfo.companyLogo} alt="Company Logo" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
                 )}
             </div>
             
