@@ -24,6 +24,7 @@ import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { InvoiceOrQuotation } from "@/components/app/sales/invoice-quotation";
+import { CashReceipt } from "@/components/app/sales/cash-receipt";
 import { DocumentViewer } from "@/components/app/reports/document-viewer";
 import { DataTable } from "@/components/app/products/data-table";
 import { documentColumns } from "@/components/app/reports/document-columns";
@@ -321,7 +322,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
 
 export default function ReportsPage() {
   const { sales, products, purchases, stores, suppliers, customers, voidSale, deletePurchase, deleteSale, updateSale, addCustomer, markInvoiceAsPaid, recordPayment } = useData();
-  const [documentToPrint, setDocumentToPrint] = useState<{ type: 'receipt' | 'invoice' | 'quotation', sale: SaleTransaction } | null>(null);
+  const [documentToPrint, setDocumentToPrint] = useState<{ type: 'receipt' | 'invoice' | 'quotation' | 'cash-receipt', sale: SaleTransaction } | null>(null);
   const [editingDocument, setEditingDocument] = useState<SaleTransaction | null>(null);
   const [paymentDocument, setPaymentDocument] = useState<SaleTransaction | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
@@ -571,6 +572,10 @@ export default function ReportsPage() {
     }
   };
 
+  const handlePrint = (sale: SaleTransaction, type: 'receipt' | 'invoice' | 'quotation' | 'cash-receipt') => {
+    setDocumentToPrint({ type, sale });
+  };
+
   const renderPrintDialog = () => {
     if (!documentToPrint) return null;
 
@@ -586,6 +591,7 @@ export default function ReportsPage() {
           </DialogHeader>
           {type === 'receipt' && <Receipt sale={sale} store={store} />}
           {(type === 'invoice' || type === 'quotation') && <InvoiceOrQuotation type={type} sale={sale} store={store} customer={customer} />}
+          {type === 'cash-receipt' && <CashReceipt sale={sale} store={store} customer={customer} />}
         </DialogContent>
       </Dialog>
     )
@@ -595,7 +601,7 @@ export default function ReportsPage() {
     customers,
     onEdit: (doc) => setEditingDocument(doc),
     onDelete: deleteSale,
-    onPrint: (doc) => setDocumentToPrint({ type: 'invoice', sale: doc }),
+    onPrint: handlePrint,
     onMarkAsPaid: markInvoiceAsPaid,
     onRecordPayment: (doc) => {
       setPaymentDocument(doc);
@@ -608,7 +614,7 @@ export default function ReportsPage() {
       customers,
       onEdit: (doc) => setEditingDocument(doc),
       onDelete: deleteSale,
-      onPrint: (doc) => setDocumentToPrint({ type: 'quotation', sale: doc }),
+      onPrint: (sale, type) => handlePrint(sale, type as 'quotation'),
       onMarkAsPaid: markInvoiceAsPaid,
       onRecordPayment: () => {},
       type: 'quotation'
@@ -740,6 +746,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
-
-    

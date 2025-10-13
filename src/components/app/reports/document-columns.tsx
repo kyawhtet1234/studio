@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Printer, Edit, Trash2, CheckCircle, CreditCard } from "lucide-react";
+import { MoreHorizontal, Printer, Edit, Trash2, CheckCircle, CreditCard, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -32,7 +32,7 @@ interface ActionsCellProps {
   row: any,
   onEdit: (item: SaleTransaction) => void,
   onDelete: (id: string) => void,
-  onPrint: (item: SaleTransaction) => void,
+  onPrint: (item: SaleTransaction, type: 'invoice' | 'quotation' | 'cash-receipt') => void,
   onMarkAsPaid: (id: string) => void,
   onRecordPayment: (item: SaleTransaction) => void,
   type: 'invoice' | 'quotation'
@@ -84,11 +84,15 @@ const ActionsCell = ({ row, onEdit, onDelete, onPrint, onMarkAsPaid, onRecordPay
                 <CheckCircle className="mr-2 h-4 w-4" />
                 Mark as Paid
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onPrint(item, 'cash-receipt')} disabled={item.paidAmount <= 0}>
+                <FileText className="mr-2 h-4 w-4" />
+                Print Cash Receipt
+              </DropdownMenuItem>
             </>
           )}
-          <DropdownMenuItem onClick={() => onPrint(item)}>
+          <DropdownMenuItem onClick={() => onPrint(item, type)}>
             <Printer className="mr-2 h-4 w-4" />
-            View / Print
+            View / Print {type === 'invoice' ? 'Invoice' : 'Quotation'}
           </DropdownMenuItem>
            <DropdownMenuItem onClick={() => onEdit(item)} disabled={isPaid}>
             <Edit className="mr-2 h-4 w-4" />
@@ -141,7 +145,7 @@ const getStatusText = (status: SaleTransaction['status'], balance: number, type:
 }
 
 
-export const documentColumns = ({ customers, onEdit, onDelete, onPrint, onMarkAsPaid, onRecordPayment, type }: { customers: Customer[], onEdit: (item: SaleTransaction) => void, onDelete: (id: string) => void, onPrint: (item: SaleTransaction) => void, onMarkAsPaid: (id: string) => void, onRecordPayment: (item: SaleTransaction) => void, type: 'invoice' | 'quotation' }): ColumnDef<SaleTransaction>[] => [
+export const documentColumns = ({ customers, onEdit, onDelete, onPrint, onMarkAsPaid, onRecordPayment, type }: { customers: Customer[], onEdit: (item: SaleTransaction) => void, onDelete: (id: string) => void, onPrint: (item: SaleTransaction, type: 'invoice' | 'quotation' | 'cash-receipt') => void, onMarkAsPaid: (id: string) => void, onRecordPayment: (item: SaleTransaction) => void, type: 'invoice' | 'quotation' }): ColumnDef<SaleTransaction>[] => [
   { 
     accessorKey: "date", 
     header: "Date",
