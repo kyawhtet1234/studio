@@ -31,6 +31,12 @@ const CashReceiptContent: React.FC<CashReceiptProps & { companyInfo: CompanyInfo
     const titleStyle = {
         color: '#000000',
     };
+
+    const tableHeaderStyle = {
+        background: '#F5F5F5',
+        color: 'black',
+        fontWeight: 'bold',
+    };
     
     const amountInWords = toWords(sale.paidAmount);
 
@@ -58,11 +64,12 @@ const CashReceiptContent: React.FC<CashReceiptProps & { companyInfo: CompanyInfo
             </div>
              <div className="text-right">
                 <p><strong>Date:</strong> {format(new Date(sale.date as Date), 'PP')}</p>
+                <p><strong>Invoice #:</strong> {sale.id.slice(-6).toUpperCase()}</p>
             </div>
         </div>
 
         {/* Receipt Body */}
-        <div className="space-y-4 text-base">
+        <div className="space-y-4 text-base mb-8">
             <p>
                 Received from <strong className="font-bold underline decoration-dotted px-2">{customer?.name || 'Walk-in Customer'}</strong>
                 the sum of <strong className="font-bold underline decoration-dotted px-2">MMK {sale.paidAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
@@ -70,14 +77,60 @@ const CashReceiptContent: React.FC<CashReceiptProps & { companyInfo: CompanyInfo
             <p>
                 ( <span className="capitalize font-semibold">{amountInWords}</span> Kyats only )
             </p>
-            <p>
-                being payment for <strong className="font-bold underline decoration-dotted px-2">Invoice #{sale.id.slice(-6).toUpperCase()}</strong>.
-            </p>
         </div>
+
+        {/* Items Table */}
+        <table className="w-full text-left table-auto mb-8">
+            <thead>
+                <tr style={tableHeaderStyle}>
+                    <th className="p-2">Item</th>
+                    <th className="p-2 text-right">Qty</th>
+                    <th className="p-2 text-right">Price</th>
+                    <th className="p-2 text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {sale.items.map((item) => (
+                <tr key={item.productId} className="border-b">
+                    <td className="p-2 font-semibold">{item.name}</td>
+                    <td className="p-2 text-right">{item.quantity}</td>
+                    <td className="p-2 text-right">MMK {item.sellPrice.toLocaleString()}</td>
+                    <td className="p-2 text-right">MMK {item.total.toLocaleString()}</td>
+                </tr>
+                ))}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colSpan={2}></td>
+                    <td className="p-2 text-right font-bold">Subtotal:</td>
+                    <td className="p-2 text-right">MMK {sale.subtotal.toLocaleString()}</td>
+                </tr>
+                <tr>
+                    <td colSpan={2}></td>
+                    <td className="p-2 text-right font-bold">Discount:</td>
+                    <td className="p-2 text-right">- MMK {sale.discount.toLocaleString()}</td>
+                </tr>
+                <tr className="font-bold text-base bg-gray-100">
+                    <td colSpan={2}></td>
+                    <td className="p-2 text-right">Total:</td>
+                    <td className="p-2 text-right">MMK {sale.total.toLocaleString()}</td>
+                </tr>
+                <tr className="font-bold text-base">
+                    <td colSpan={2}></td>
+                    <td className="p-2 text-right">Paid:</td>
+                    <td className="p-2 text-right">MMK {sale.paidAmount.toLocaleString()}</td>
+                </tr>
+                 <tr className="font-bold text-base">
+                    <td colSpan={2}></td>
+                    <td className="p-2 text-right">Balance Due:</td>
+                    <td className="p-2 text-right">MMK {sale.balance.toLocaleString()}</td>
+                </tr>
+            </tfoot>
+        </table>
 
 
         {/* Signature */}
-        <div className="flex justify-end mt-24">
+        <div className="flex justify-end mt-16">
          <div className="text-center">
              <div className="mb-2 border-t-2 border-gray-400 border-solid w-48 ml-auto"></div>
              <p>Authorised Signatory</p>
