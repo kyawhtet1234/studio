@@ -26,9 +26,11 @@ export function InventoryAlerts({ inventory, products, stores, className, style 
         const store = stores.find(s => s.id === item.storeId);
         if (!product || !store) return null;
 
+        const productName = item.variant_name ? `${product.name} (${item.variant_name})` : product.name;
+
         return {
           ...item,
-          productName: product.name,
+          productName: productName,
           storeName: store.name,
         };
       })
@@ -58,7 +60,7 @@ export function InventoryAlerts({ inventory, products, stores, className, style 
               </TableHeader>
               <TableBody>
                 {lowStockItems.map(item => (
-                  <TableRow key={`${item.productId}-${item.storeId}`} className="hover:bg-destructive/10">
+                  <TableRow key={item.id} className="hover:bg-destructive/10">
                     <TableCell className="font-medium">{item.productName}</TableCell>
                     <TableCell>{item.storeName}</TableCell>
                     <TableCell className="text-right font-bold text-destructive">{item.stock}</TableCell>
