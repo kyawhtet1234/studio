@@ -39,8 +39,10 @@ import * as XLSX from 'xlsx';
 import { format } from "date-fns";
 
 interface AdjustmentItem {
+  id: string;
   productId: string;
   storeId: string;
+  variant_name: string;
   productName?: string;
   storeName?: string;
   currentStock: number;
@@ -65,7 +67,7 @@ export default function InventoryPage() {
             const category = categories.find(c => c.id === product?.categoryId);
             return {
                 ...item,
-                productName: product?.name,
+                productName: item.variant_name ? `${product?.name} (${item.variant_name})` : product?.name,
                 sku: product?.sku,
                 categoryId: product?.categoryId,
                 categoryName: category?.name,
@@ -86,10 +88,12 @@ export default function InventoryPage() {
         });
   }, [inventory, selectedStore, selectedCategory, products, stores, categories, sortBy]);
 
-  const handleOpenAdjustDialog = (item: { productId: string; storeId: string; productName?: string; storeName?: string, stock: number }) => {
+  const handleOpenAdjustDialog = (item: { id: string; productId: string; storeId: string; variant_name: string; productName?: string; storeName?: string, stock: number }) => {
     setAdjustmentItem({
+        id: item.id,
         productId: item.productId,
         storeId: item.storeId,
+        variant_name: item.variant_name,
         productName: item.productName,
         storeName: item.storeName,
         currentStock: item.stock
@@ -101,8 +105,10 @@ export default function InventoryPage() {
     if (!adjustmentItem) return;
 
     await updateInventory([{
+        id: adjustmentItem.id,
         productId: adjustmentItem.productId,
         storeId: adjustmentItem.storeId,
+        variant_name: adjustmentItem.variant_name,
         stock: newStock
     }]);
 
@@ -190,7 +196,7 @@ export default function InventoryPage() {
               </TableHeader>
               <TableBody>
                 {inventoryData.map((item) => (
-                    <TableRow key={`${item.productId}_${item.storeId}`}>
+                    <TableRow key={item.id}>
                         <TableCell>{item.sku}</TableCell>
                         <TableCell className="font-medium">{item.productName}</TableCell>
                         <TableCell>{item.categoryName}</TableCell>
