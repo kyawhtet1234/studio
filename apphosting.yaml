@@ -1,6 +1,13 @@
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 
+# Specifies the commands to run to build your app.
+build:
+  # This command is run before all other build commands.
+  # It is useful for installing dependencies.
+  prebuild: npm ci
+  # This is the command to build your app.
+  command: npm run build
 runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
