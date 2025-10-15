@@ -167,7 +167,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
       const newItem: CartItem = {
         productId: foundProduct.id,
         sku: foundProduct.sku,
-        name: `${itemName} ${variantName ? `(${variantName})` : ''}`,
+        name: foundProduct.name,
         variant_name: variantName,
         sellPrice: currentPrice,
         quantity: currentQuantity,
@@ -448,6 +448,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                         <TableRow>
                         <TableHead className="w-[120px] text-black">SKU</TableHead>
                         <TableHead className="text-black">Item Name</TableHead>
+                        <TableHead className="text-black">Variant</TableHead>
                         <TableHead className="text-right text-black">Price</TableHead>
                         <TableHead className="w-24 text-right text-black">Qty</TableHead>
                         <TableHead className="text-right text-black">Total</TableHead>
@@ -460,6 +461,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                             <TableRow key={item.id}>
                                 <TableCell>{item.sku}</TableCell>
                                 <TableCell>{item.name}</TableCell>
+                                <TableCell>{item.variant_name || '-'}</TableCell>
                                 <TableCell className="text-right">MMK {item.sellPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                 <TableCell className="text-right">
                                   <Input
@@ -479,7 +481,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center h-24">Cart is empty</TableCell>
+                                <TableCell colSpan={7} className="text-center h-24">Cart is empty</TableCell>
                             </TableRow>
                         )}
                     </TableBody>
@@ -561,5 +563,3 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     </>
   );
 }
-
-    

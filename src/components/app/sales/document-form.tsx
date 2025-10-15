@@ -173,8 +173,8 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
         return;
       }
 
+      const variantName = foundProduct.variant_track_enabled ? selectedVariant : "";
       if (type === 'invoice') {
-        const variantName = foundProduct.variant_track_enabled ? selectedVariant : "";
         const inventoryId = `${foundProduct.id}_${variantName}_${watchStoreId}`;
         const inventoryItem = inventory.find(i => i.id === inventoryId);
         const availableStock = inventoryItem?.stock || 0;
@@ -184,11 +184,10 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
         }
       }
 
-      const variantName = foundProduct.variant_track_enabled ? selectedVariant : "";
       const newItem: CartItem = {
         productId: foundProduct.id,
         sku: foundProduct.sku,
-        name: `${itemName} ${variantName ? `(${variantName})` : ''}`,
+        name: foundProduct.name,
         variant_name: variantName,
         sellPrice: currentPrice,
         quantity: currentQuantity,
@@ -468,6 +467,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
                         <TableRow>
                         <TableHead className="w-[120px] text-black">SKU</TableHead>
                         <TableHead className="text-black">Item Name</TableHead>
+                        <TableHead className="text-black">Variant</TableHead>
                         <TableHead className="text-right text-black">Price</TableHead>
                         <TableHead className="w-24 text-right text-black">Qty</TableHead>
                         <TableHead className="text-right text-black">Total</TableHead>
@@ -480,6 +480,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
                             <TableRow key={item.id}>
                                 <TableCell>{item.sku}</TableCell>
                                 <TableCell>{item.name}</TableCell>
+                                <TableCell>{item.variant_name || '-'}</TableCell>
                                 <TableCell className="text-right">MMK {item.sellPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                 <TableCell className="text-right">
                                     <Input
@@ -499,7 +500,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center h-24">No items added</TableCell>
+                                <TableCell colSpan={7} className="text-center h-24">No items added</TableCell>
                             </TableRow>
                         )}
                     </TableBody>
@@ -591,5 +592,3 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
     </>
   );
 }
-
-    

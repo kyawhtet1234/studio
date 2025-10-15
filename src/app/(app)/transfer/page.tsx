@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from "react";
@@ -28,9 +29,10 @@ import type { InventoryItem, Product } from "@/lib/types";
 import { useData } from "@/lib/data-context";
 
 interface TransferItem {
-    sku: string;
     productId: string;
     name: string;
+    sku: string;
+    variant_name: string;
     quantity: number;
 }
 
@@ -44,6 +46,7 @@ export default function TransferPage() {
     const [foundProduct, setFoundProduct] = useState<Product | null>(null);
     const [itemQuantity, setItemQuantity] = useState<number | string>(1);
     const [transferItems, setTransferItems] = useState<TransferItem[]>([]);
+    const [selectedVariant, setSelectedVariant] = useState<string>('');
 
     useEffect(() => {
         if (itemSku) {
@@ -51,13 +54,18 @@ export default function TransferPage() {
             if (product) {
                 setItemName(product.name);
                 setFoundProduct(product);
+                if (!product.variant_track_enabled) {
+                    setSelectedVariant("");
+                }
             } else {
                 setItemName('');
                 setFoundProduct(null);
+                setSelectedVariant('');
             }
         } else {
             setItemName('');
             setFoundProduct(null);
+            setSelectedVariant('');
         }
     }, [itemSku, products]);
 
@@ -70,9 +78,12 @@ export default function TransferPage() {
             toast({ variant: 'destructive', title: 'Error', description: "Source and destination stores cannot be the same."});
             return;
         }
-
         if (!foundProduct) {
             toast({ variant: 'destructive', title: 'Error', description: "Product with this SKU not found."});
+            return;
+        }
+        if (foundProduct.variant_track_enabled && !selectedVariant) {
+            toast({ variant: 'destructive', title: 'Error', description: "Please select a variant for this item."});
             return;
         }
 
@@ -82,26 +93,39 @@ export default function TransferPage() {
             return;
         }
 
-        const sourceInventory = inventory.find(i => i.productId === foundProduct.id && i.storeId === fromStoreId);
+        const variantName = foundProduct.variant_track_enabled ? selectedVariant : "";
+        const inventoryId = `${foundProduct.id}_${variantName}_${fromStoreId}`;
+        const sourceInventory = inventory.find(i => i.id === inventoryId);
+        
         if (!sourceInventory || sourceInventory.stock < currentQuantity) {
             toast({ variant: 'destructive', title: 'Error', description: `Not enough stock in ${stores.find(s=>s.id === fromStoreId)?.name}. Available: ${sourceInventory?.stock || 0}`});
             return;
         }
-
-        if (transferItems.find(item => item.sku === itemSku)) {
+        
+        const uniqueItemIdentifier = `${foundProduct.sku}_${variantName}`;
+        if (transferItems.find(item => `${item.sku}_${item.variant_name}` === uniqueItemIdentifier)) {
             toast({ variant: 'destructive', title: 'Error', description: "Item is already in the transfer list."});
             return;
         }
 
-        setTransferItems(prev => [...prev, { sku: itemSku, productId: foundProduct.id, name: foundProduct.name, quantity: currentQuantity }]);
+        setTransferItems(prev => [...prev, { 
+            sku: foundProduct.sku, 
+            productId: foundProduct.id, 
+            name: foundProduct.name,
+            variant_name: variantName,
+            quantity: currentQuantity 
+        }]);
+        
         setItemSku('');
         setItemName('');
         setFoundProduct(null);
         setItemQuantity(1);
+        setSelectedVariant('');
     };
 
-    const handleRemoveItem = (sku: string) => {
-        setTransferItems(prev => prev.filter(item => item.sku !== sku));
+    const handleRemoveItem = (sku: string, variant_name: string) => {
+        const uniqueItemIdentifier = `${sku}_${variant_name}`;
+        setTransferItems(prev => prev.filter(item => `${item.sku}_${item.variant_name}` !== uniqueItemIdentifier));
     };
     
     const handleCompleteTransfer = async () => {
@@ -110,32 +134,33 @@ export default function TransferPage() {
             return;
         }
 
-        let updatedInventoryItems: InventoryItem[] = [];
+        let updatedInventoryItems: Omit<InventoryItem, 'stock'> & { id: string, stock: number }[] = [];
 
-        transferItems.forEach(item => {
-            const fromInventory = inventory.find(i => i.productId === item.productId && i.storeId === fromStoreId);
-            const toInventory = inventory.find(i => i.productId === item.productId && i.storeId === toStoreId);
+        for (const item of transferItems) {
+            const fromInventoryId = `${item.productId}_${item.variant_name}_${fromStoreId}`;
+            const toInventoryId = `${item.productId}_${item.variant_name}_${toStoreId}`;
+
+            const fromInventory = inventory.find(i => i.id === fromInventoryId);
+            const toInventory = inventory.find(i => i.id === toInventoryId);
 
             if (fromInventory) {
                 updatedInventoryItems.push({
-                    ...fromInventory,
+                    id: fromInventoryId,
+                    productId: item.productId,
+                    variant_name: item.variant_name,
+                    storeId: fromStoreId,
                     stock: fromInventory.stock - item.quantity
                 });
             }
 
-            if (toInventory) {
-                updatedInventoryItems.push({
-                    ...toInventory,
-                    stock: toInventory.stock + item.quantity
-                });
-            } else {
-                 updatedInventoryItems.push({ 
-                    productId: item.productId, 
-                    storeId: toStoreId, 
-                    stock: item.quantity 
-                });
-            }
-        });
+            updatedInventoryItems.push({
+                id: toInventoryId,
+                productId: item.productId,
+                variant_name: item.variant_name,
+                storeId: toStoreId,
+                stock: (toInventory?.stock || 0) + item.quantity
+            });
+        }
 
         await updateInventory(updatedInventoryItems);
         
@@ -189,10 +214,25 @@ export default function TransferPage() {
                         <Label htmlFor="sku">Item SKU</Label>
                         <Input id="sku" placeholder="Enter SKU" value={itemSku} onChange={(e) => setItemSku(e.target.value)} />
                     </div>
-                    <div className="flex-grow w-full sm:w-auto min-w-[150px] space-y-2">
+                     <div className="flex-grow w-full sm:w-auto min-w-[150px] space-y-2">
                         <Label htmlFor="item-name">Item Name</Label>
                         <Input id="item-name" placeholder="Item name will appear here" value={itemName} readOnly />
                     </div>
+                    {foundProduct && foundProduct.variant_track_enabled && (
+                        <div className="w-full sm:w-[150px] space-y-2">
+                            <Label>Variant</Label>
+                             <Select onValueChange={setSelectedVariant} value={selectedVariant}>
+                                <SelectTrigger>
+                                <SelectValue placeholder="Select Variant" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                {foundProduct.available_variants.map(variant => (
+                                    <SelectItem key={variant} value={variant}>{variant}</SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
                     <div className="w-full sm:w-24 space-y-2">
                         <Label htmlFor="qty">Quantity</Label>
                         <Input id="qty" type="number" placeholder="Qty" value={itemQuantity} onChange={(e) => setItemQuantity(Number(e.target.value))}/>
@@ -212,18 +252,20 @@ export default function TransferPage() {
                         <TableRow>
                             <TableHead>SKU</TableHead>
                             <TableHead>Product Name</TableHead>
+                            <TableHead>Variant</TableHead>
                             <TableHead className="text-right">Quantity</TableHead>
                              <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                        {transferItems.map(item => (
-                           <TableRow key={item.sku}>
+                           <TableRow key={`${item.sku}_${item.variant_name}`}>
                                <TableCell>{item.sku}</TableCell>
                                <TableCell className="font-medium">{item.name}</TableCell>
+                               <TableCell>{item.variant_name || '-'}</TableCell>
                                <TableCell className="text-right">{item.quantity}</TableCell>
                                <TableCell>
-                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.sku)}>
+                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.sku, item.variant_name)}>
                                         <Trash2 className="h-4 w-4 text-destructive" />
                                     </Button>
                                 </TableCell>

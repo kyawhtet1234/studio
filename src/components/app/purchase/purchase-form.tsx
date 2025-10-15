@@ -148,7 +148,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
       const newItem = {
         productId: foundProduct.id,
         sku: foundProduct.sku,
-        name: `${itemName} ${variantName ? `(${variantName})` : ''}`,
+        name: foundProduct.name,
         variant_name: variantName,
         buyPrice: currentPrice,
         quantity: currentQuantity,
@@ -345,6 +345,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                     <TableRow>
                     <TableHead className="w-[120px] text-black">SKU</TableHead>
                     <TableHead className="text-black">Item Name</TableHead>
+                    <TableHead className="text-black">Variant</TableHead>
                     <TableHead className="text-right text-black">Price</TableHead>
                     <TableHead className="w-24 text-right text-black">Qty</TableHead>
                     <TableHead className="text-right text-black">Total</TableHead>
@@ -357,6 +358,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                         <TableRow key={item.id}>
                             <TableCell>{item.sku}</TableCell>
                             <TableCell>{item.name}</TableCell>
+                            <TableCell>{item.variant_name || '-'}</TableCell>
                             <TableCell className="text-right">MMK {item.buyPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                              <TableCell className="text-right">
                                 <Input
@@ -376,7 +378,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                         ))
                     ) : (
                         <TableRow>
-                            <TableCell colSpan={6} className="text-center h-24">Cart is empty</TableCell>
+                            <TableCell colSpan={7} className="text-center h-24">Cart is empty</TableCell>
                         </TableRow>
                     )}
                 </TableBody>
@@ -401,5 +403,3 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
     </Form>
   );
 }
-
-    
