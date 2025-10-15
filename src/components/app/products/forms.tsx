@@ -307,7 +307,7 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full max-h-[80vh]">
                 <ScrollArea className="flex-grow pr-6 -mr-6">
                     <div className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -394,5 +394,3 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
         </Form>
     );
 }
-
-    
