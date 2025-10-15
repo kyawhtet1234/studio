@@ -67,7 +67,7 @@ export default function InventoryPage() {
             const category = categories.find(c => c.id === product?.categoryId);
             return {
                 ...item,
-                productName: item.variant_name ? `${product?.name} (${item.variant_name})` : product?.name,
+                productName: product?.name,
                 sku: product?.sku,
                 categoryId: product?.categoryId,
                 categoryName: category?.name,
@@ -94,7 +94,7 @@ export default function InventoryPage() {
         productId: item.productId,
         storeId: item.storeId,
         variant_name: item.variant_name,
-        productName: item.productName,
+        productName: item.variant_name ? `${item.productName} (${item.variant_name})` : item.productName,
         storeName: item.storeName,
         currentStock: item.stock
     });
@@ -125,6 +125,7 @@ export default function InventoryPage() {
     const dataToExport = inventoryData.map(item => ({
       SKU: item.sku,
       'Product Name': item.productName,
+      'Variant': item.variant_name || '-',
       Category: item.categoryName,
       Store: item.storeName,
       Stock: item.stock,
@@ -188,6 +189,7 @@ export default function InventoryPage() {
                 <TableRow className="bg-shiny-yellow hover:bg-shiny-yellow/90">
                   <TableHead className="text-black font-bold">SKU</TableHead>
                   <TableHead className="text-black font-bold">Product Name</TableHead>
+                  <TableHead className="text-black font-bold">Variant</TableHead>
                   <TableHead className="text-black font-bold">Category</TableHead>
                   <TableHead className="text-black font-bold">Store</TableHead>
                   <TableHead className="text-right text-black font-bold">Stock</TableHead>
@@ -199,6 +201,7 @@ export default function InventoryPage() {
                     <TableRow key={item.id}>
                         <TableCell>{item.sku}</TableCell>
                         <TableCell className="font-medium">{item.productName}</TableCell>
+                        <TableCell>{item.variant_name || '-'}</TableCell>
                         <TableCell>{item.categoryName}</TableCell>
                         <TableCell>{item.storeName}</TableCell>
                         <TableCell className="text-right">{item.stock}</TableCell>
@@ -211,7 +214,7 @@ export default function InventoryPage() {
                 ))}
                 {inventoryData.length === 0 && (
                     <TableRow>
-                        <TableCell colSpan={6} className="text-center h-24">
+                        <TableCell colSpan={7} className="text-center h-24">
                             No inventory found for the selected filters.
                         </TableCell>
                     </TableRow>
