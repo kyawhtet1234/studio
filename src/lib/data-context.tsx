@@ -195,7 +195,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         batch.set(newProductRef, newProductData);
         const productId = newProductRef.id;
 
-        const variants = productData.variant_track_enabled && productData.available_variants ? productData.available_variants : [""];
+        const variants = productData.variant_track_enabled && productData.available_variants && productData.available_variants.length > 0 ? productData.available_variants : [""];
 
         for (const store of stores) {
             for (const variant of variants) {
@@ -413,24 +413,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
                 const inventorySnaps = await Promise.all(inventoryLookups.map(lookup => transaction.get(lookup.ref)));
 
+                for (let i = 0; i < inventorySnaps.length; i++) {
+                    const invSnap = inventorySnaps[i];
+                    const { item } = inventoryLookups[i];
+                    
+                    if (!invSnap.exists()) {
+                        throw new Error(`Product ${item.name} is out of stock.`);
+                    }
+                    const currentStock = invSnap.data().stock || 0;
+                    if (currentStock < item.quantity) {
+                        throw new Error(`Not enough stock for ${item.name}. Available: ${currentStock}, Requested: ${item.quantity}`);
+                    }
+                }
+
                 // --- WRITE PHASE ---
-                // 1. Create Sale Doc
                 const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
                 transaction.set(newSaleRef, { ...saleData, date: Timestamp.fromDate(toDate(saleData.date)) });
 
-                // 2. Update inventory if needed
                 if (isInventoryDeducted) {
                     for (let i = 0; i < inventorySnaps.length; i++) {
                         const invSnap = inventorySnaps[i];
                         const { ref, item } = inventoryLookups[i];
-                        
-                        if (!invSnap.exists()) {
-                            throw new Error(`Product ${item.name} is out of stock.`);
-                        }
-                        const currentStock = invSnap.data().stock || 0;
-                        if (currentStock < item.quantity) {
-                            throw new Error(`Not enough stock for ${item.name}. Available: ${currentStock}, Requested: ${item.quantity}`);
-                        }
+                        const currentStock = invSnap.data()!.stock;
                         const newStock = currentStock - item.quantity;
                         transaction.update(ref, { stock: newStock });
                     }
@@ -555,6 +559,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         try {
             await runTransaction(db, async (transaction) => {
+                // READ PHASE
                 const inventoryLookups = [];
                 for (const item of purchaseData.items) {
                     const inventoryId = `${item.productId}_${item.variant_name || ''}_${purchaseData.storeId}`;
@@ -563,6 +568,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
                 const inventorySnaps = await Promise.all(inventoryLookups.map(lookup => transaction.get(lookup.ref)));
 
+                // WRITE PHASE
                 const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
                 transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.fromDate(toDate(purchaseData.date)) });
 
@@ -874,3 +880,5 @@ export function useData() {
     }
     return context;
 }
+
+    
