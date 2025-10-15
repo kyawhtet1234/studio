@@ -2,8 +2,8 @@
 'use client';
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup, setDoc } from 'firebase/firestore';
+import { getClientServices } from '@/lib/firebase';
+import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup, setDoc, Firestore } from 'firebase/firestore';
 
 import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability, BusinessSettings, DocumentSettings, Employee, SalaryAdvance, LeaveRecord, GoalsSettings, BrandingSettings } from '@/lib/types';
 import { toDate } from './utils';
@@ -88,6 +88,7 @@ const DataContext = createContext<DataContextProps | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
+    const [db, setDb] = useState<Firestore | null>(null);
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -109,7 +110,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [settings, setSettings] = useState<BusinessSettings>({});
     const [loading, setLoading] = useState(true);
 
-    const fetchData = useCallback(async (uid: string) => {
+    useEffect(() => {
+        const { db: clientDb } = getClientServices();
+        setDb(clientDb);
+    }, []);
+
+    const fetchData = useCallback(async (db: Firestore, uid: string) => {
         setLoading(true);
         try {
             const collectionsToFetch = [
@@ -154,10 +160,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }, []);
 
     useEffect(() => {
-        if (user) {
-            fetchData(user.uid);
-        } else {
-            // If there's no user, clear all data and stop loading
+        if (user && db) {
+            fetchData(db, user.uid);
+        } else if (!user) {
             setProducts([]);
             setCategories([]);
             setSuppliers([]);
@@ -179,20 +184,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setSettings({});
             setLoading(false);
         }
-    }, [user, fetchData]);
+    }, [user, db, fetchData]);
 
     const addProduct = async (productData: Omit<Product, 'id' | 'createdAt'>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const batch = writeBatch(db);
         
-        // 1. Create the product document
         const newProductRef = doc(collection(db, 'users', user.uid, 'products'));
         const newProductData = { ...productData, createdAt: Timestamp.now() };
         batch.set(newProductRef, newProductData);
         const productId = newProductRef.id;
 
-        // 2. Create initial inventory records for all stores and variants
-        const variants = productData.variant_track_enabled ? productData.available_variants : [""];
+        const variants = productData.variant_track_enabled && productData.available_variants ? productData.available_variants : [""];
 
         for (const store of stores) {
             for (const variant of variants) {
@@ -208,31 +211,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
             }
         }
         await batch.commit();
-        await fetchData(user.uid);
+        await fetchData(db, user.uid);
     };
 
     const updateProduct = async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const batch = writeBatch(db);
         
-        // 1. Get the original product to compare variants
         const originalProduct = products.find(p => p.id === productId);
         if (!originalProduct) {
             throw new Error("Product not found for update");
         }
 
-        // 2. Update the product document
         const productRef = doc(db, 'users', user.uid, 'products', productId);
         batch.update(productRef, productData);
 
-        // 3. Determine changes in variants
-        const oldVariants = originalProduct.variant_track_enabled ? originalProduct.available_variants : [""];
-        const newVariants = productData.variant_track_enabled ? productData.available_variants || [] : [""];
+        const oldVariants = originalProduct.variant_track_enabled && originalProduct.available_variants ? originalProduct.available_variants : [""];
+        const newVariants = productData.variant_track_enabled && productData.available_variants ? productData.available_variants : [""];
         
         const addedVariants = newVariants.filter(v => !oldVariants.includes(v));
-        const removedVariants = oldVariants.filter(v => !newVariants.includes(v));
 
-        // 4. Create inventory records for new variants
         for (const store of stores) {
             for (const variant of addedVariants) {
                 const inventoryId = `${productId}_${variant}_${store.id}`;
@@ -245,21 +243,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     stock: 0
                 });
             }
-            // 5. Delete inventory records for removed variants (only if stock is 0)
-            for (const variant of removedVariants) {
-                const inventoryId = `${productId}_${variant}_${store.id}`;
-                // We don't delete here to avoid accidental data loss. 
-                // The item just won't be purchaseable/sellable from the UI.
-                // An admin/cleanup function would be better for this.
-            }
         }
         
         await batch.commit();
-        await fetchData(user.uid);
+        await fetchData(db, user.uid);
     }
 
     const deleteProduct = async (productId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         const batch = writeBatch(db);
         const productRef = doc(db, 'users', user.uid, 'products', productId);
         batch.delete(productRef);
@@ -278,55 +269,53 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
     
     const addCategory = async (categoryData: Omit<Category, 'id'>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const docRef = await addDoc(collection(db, 'users', user.uid, 'categories'), categoryData);
         setCategories(prev => [...prev, { ...categoryData, id: docRef.id }]);
     };
 
     const updateCategory = async (categoryId: string, categoryData: Partial<Omit<Category, 'id'>>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const categoryRef = doc(db, 'users', user.uid, 'categories', categoryId);
         await updateDoc(categoryRef, categoryData);
         setCategories(prev => prev.map(c => c.id === categoryId ? { ...c, ...categoryData } : c));
     };
     
     const deleteCategory = async (categoryId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         await deleteDoc(doc(db, 'users', user.uid, 'categories', categoryId));
         setCategories(prev => prev.filter(c => c.id !== categoryId));
     };
 
     const addSupplier = async (supplierData: Omit<Supplier, 'id'>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const docRef = await addDoc(collection(db, 'users', user.uid, 'suppliers'), supplierData);
         setSuppliers(prev => [...prev, { ...supplierData, id: docRef.id }]);
     };
 
     const updateSupplier = async (supplierId: string, supplierData: Partial<Omit<Supplier, 'id'>>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const supplierRef = doc(db, 'users', user.uid, 'suppliers', supplierId);
         await updateDoc(supplierRef, supplierData);
         setSuppliers(prev => prev.map(s => s.id === supplierId ? { ...s, ...supplierData } : s));
     };
     
     const deleteSupplier = async (supplierId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         await deleteDoc(doc(db, 'users', user.uid, 'suppliers', supplierId));
         setSuppliers(prev => prev.filter(s => s.id !== supplierId));
     };
 
     const addStore = async (storeData: Omit<Store, 'id'>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const batch = writeBatch(db);
         
-        // 1. Create the store
         const newStoreRef = doc(collection(db, 'users', user.uid, 'stores'));
         batch.set(newStoreRef, storeData);
         const storeId = newStoreRef.id;
 
-        // 2. For every existing product and its variants, create a 0-stock inventory record
         for (const product of products) {
-            const variants = product.variant_track_enabled ? product.available_variants : [""];
+            const variants = product.variant_track_enabled && product.available_variants ? product.available_variants : [""];
             for (const variant of variants) {
                 const inventoryId = `${product.id}_${variant}_${storeId}`;
                 const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
@@ -340,18 +329,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
             }
         }
         await batch.commit();
-        await fetchData(user.uid);
+        await fetchData(db, user.uid);
     };
 
     const updateStore = async (storeId: string, storeData: Partial<Omit<Store, 'id'>>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const storeRef = doc(db, 'users', user.uid, 'stores', storeId);
         await updateDoc(storeRef, storeData);
         setStores(prev => prev.map(s => s.id === storeId ? { ...s, ...storeData } : s));
     };
     
     const deleteStore = async (storeId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         const batch = writeBatch(db);
         const storeRef = doc(db, 'users', user.uid, 'stores', storeId);
         batch.delete(storeRef);
@@ -370,95 +359,92 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     const addCustomer = async (customerData: Omit<Customer, 'id'>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const docRef = await addDoc(collection(db, 'users', user.uid, 'customers'), customerData);
         setCustomers(prev => [...prev, { ...customerData, id: docRef.id }]);
     };
 
     const updateCustomer = async (customerId: string, customerData: Partial<Omit<Customer, 'id'>>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const customerRef = doc(db, 'users', user.uid, 'customers', customerId);
         await updateDoc(customerRef, customerData);
         setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, ...customerData } : c));
     };
     
     const deleteCustomer = async (customerId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         await deleteDoc(doc(db, 'users', user.uid, 'customers', customerId));
         setCustomers(prev => prev.filter(c => c.id !== customerId));
     };
 
     const addPaymentType = async (paymentTypeData: Omit<PaymentType, 'id'>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const docRef = await addDoc(collection(db, 'users', user.uid, 'paymentTypes'), paymentTypeData);
         setPaymentTypes(prev => [...prev, { ...paymentTypeData, id: docRef.id }]);
     };
 
     const updatePaymentType = async (paymentTypeId: string, paymentTypeData: Partial<Omit<PaymentType, 'id'>>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const paymentTypeRef = doc(db, 'users', user.uid, 'paymentTypes', paymentTypeId);
         await updateDoc(paymentTypeRef, paymentTypeData);
         setPaymentTypes(prev => prev.map(pt => pt.id === paymentTypeId ? { ...pt, ...paymentTypeData } : pt));
     };
     
     const deletePaymentType = async (paymentTypeId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         await deleteDoc(doc(db, 'users', user.uid, 'paymentTypes', paymentTypeId));
         setPaymentTypes(prev => prev.filter(pt => pt.id !== paymentTypeId));
     };
 
     const addSale = async (saleData: Omit<SaleTransaction, 'id'>) => {
-        if (!user) return;
-
+        if (!user || !db) return;
         const isInventoryDeducted = saleData.status === 'paid' || saleData.status === 'partially-paid' || saleData.status === 'completed';
 
-        if (isInventoryDeducted) {
-            try {
-                await runTransaction(db, async (transaction) => {
-                    const inventoryUpdates = [];
-
-                    // --- READ PHASE ---
+        try {
+            await runTransaction(db, async (transaction) => {
+                // --- READ PHASE ---
+                const inventoryLookups = [];
+                if (isInventoryDeducted) {
                     for (const item of saleData.items) {
                         const inventoryId = `${item.productId}_${item.variant_name || ''}_${saleData.storeId}`;
                         const inventoryRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
-                        const inventorySnap = await transaction.get(inventoryRef);
+                        inventoryLookups.push({ ref: inventoryRef, item });
+                    }
+                }
+                const inventorySnaps = await Promise.all(inventoryLookups.map(lookup => transaction.get(lookup.ref)));
 
-                        if (!inventorySnap.exists()) {
+                // --- WRITE PHASE ---
+                // 1. Create Sale Doc
+                const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
+                transaction.set(newSaleRef, { ...saleData, date: Timestamp.fromDate(toDate(saleData.date)) });
+
+                // 2. Update inventory if needed
+                if (isInventoryDeducted) {
+                    for (let i = 0; i < inventorySnaps.length; i++) {
+                        const invSnap = inventorySnaps[i];
+                        const { ref, item } = inventoryLookups[i];
+                        
+                        if (!invSnap.exists()) {
                             throw new Error(`Product ${item.name} is out of stock.`);
                         }
-
-                        const currentStock = inventorySnap.data().stock || 0;
+                        const currentStock = invSnap.data().stock || 0;
                         if (currentStock < item.quantity) {
                             throw new Error(`Not enough stock for ${item.name}. Available: ${currentStock}, Requested: ${item.quantity}`);
                         }
-
                         const newStock = currentStock - item.quantity;
-                        inventoryUpdates.push({ ref: inventoryRef, stock: newStock });
+                        transaction.update(ref, { stock: newStock });
                     }
-
-                    // --- WRITE PHASE ---
-                    const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
-                    transaction.set(newSaleRef, { ...saleData, date: Timestamp.fromDate(toDate(saleData.date)) });
-
-                    for (const update of inventoryUpdates) {
-                        transaction.update(update.ref, { stock: update.stock });
-                    }
-                });
-
-                await fetchData(user.uid);
-
-            } catch (e) {
-                console.error("Sale transaction failed: ", e);
-                throw e;
-            }
-        } else {
-            const docRef = await addDoc(collection(db, 'users', user.uid, 'sales'), { ...saleData, date: Timestamp.fromDate(toDate(saleData.date)) });
-            setSales(prev => [...prev, { ...saleData, id: docRef.id, date: toDate(saleData.date) }]);
+                }
+            });
+            await fetchData(db, user.uid);
+        } catch (e) {
+            console.error("Sale transaction failed: ", e);
+            throw e;
         }
     };
     
     const updateSale = async (saleId: string, saleData: Partial<Omit<SaleTransaction, 'id'>>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
         const dataToUpdate: any = { ...saleData };
         if (saleData.date) {
@@ -469,13 +455,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
     
     const deleteSale = async (saleId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         await deleteDoc(doc(db, 'users', user.uid, 'sales', saleId));
         setSales(prev => prev.filter(s => s.id !== saleId));
     };
 
     const markInvoiceAsPaid = async (saleId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         try {
             await runTransaction(db, async (transaction) => {
                 const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
@@ -499,7 +485,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
                 transaction.update(saleRef, { status: 'paid' });
             });
-            await fetchData(user.uid);
+            await fetchData(db, user.uid);
         } catch (e) {
             console.error("Mark as paid transaction failed: ", e);
             throw e;
@@ -507,7 +493,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     const recordPayment = async (saleId: string, amount: number) => {
-        if(!user) return;
+        if(!user || !db) return;
         const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
         try {
             await runTransaction(db, async (transaction) => {
@@ -524,7 +510,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     status: newStatus
                 });
             });
-            await fetchData(user.uid);
+            await fetchData(db, user.uid);
         } catch (e) {
             console.error("Record payment failed: ", e);
             throw e;
@@ -532,8 +518,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     const voidSale = async (saleId: string) => {
-        if (!user) return;
-        
+        if (!user || !db) return;
         try {
             await runTransaction(db, async (transaction) => {
                 const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
@@ -558,7 +543,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 
                 transaction.update(saleRef, { status: 'voided', balance: saleData.total, paidAmount: 0 });
             });
-            await fetchData(user.uid);
+            await fetchData(db, user.uid);
         } catch(e) {
             console.error("Void sale transaction failed: ", e);
             throw e;
@@ -566,48 +551,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     const addPurchase = async (purchaseData: Omit<PurchaseTransaction, 'id'>) => {
-        if (!user) return;
+        if (!user || !db) return;
 
         try {
             await runTransaction(db, async (transaction) => {
-                const inventoryUpdates = [];
                 const inventoryLookups = [];
-
-                // --- READ PHASE ---
                 for (const item of purchaseData.items) {
                     const inventoryId = `${item.productId}_${item.variant_name || ''}_${purchaseData.storeId}`;
                     const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                     inventoryLookups.push({ ref: invRef, item });
                 }
-                const inventorySnaps = await Promise.all(
-                    inventoryLookups.map(lookup => transaction.get(lookup.ref))
-                );
+                const inventorySnaps = await Promise.all(inventoryLookups.map(lookup => transaction.get(lookup.ref)));
 
-                // --- PREPARE WRITES ---
-                for (let i = 0; i < inventoryLookups.length; i++) {
-                    const { ref, item } = inventoryLookups[i];
-                    const invSnap = inventorySnaps[i];
-                    const currentStock = invSnap.exists() ? invSnap.data().stock : 0;
-                    const newStock = currentStock + item.quantity;
-                    inventoryUpdates.push({ ref, stock: newStock, item, storeId: purchaseData.storeId });
-                }
-
-                // --- WRITE PHASE ---
                 const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
                 transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.fromDate(toDate(purchaseData.date)) });
 
-                for (const update of inventoryUpdates) {
-                    transaction.set(update.ref, {
-                        id: update.ref.id,
-                        productId: update.item.productId,
-                        variant_name: update.item.variant_name,
-                        storeId: update.storeId,
-                        stock: update.stock
+                for (let i = 0; i < inventorySnaps.length; i++) {
+                    const invSnap = inventorySnaps[i];
+                    const { ref, item } = inventoryLookups[i];
+                    const currentStock = invSnap.exists() ? invSnap.data().stock : 0;
+                    const newStock = currentStock + item.quantity;
+                    transaction.set(ref, {
+                        id: ref.id,
+                        productId: item.productId,
+                        variant_name: item.variant_name,
+                        storeId: purchaseData.storeId,
+                        stock: newStock
                     }, { merge: true });
                 }
             });
-
-            await fetchData(user.uid);
+            await fetchData(db, user.uid);
         } catch (e) {
             console.error("Purchase transaction failed: ", e);
             throw e;
@@ -615,7 +588,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
     
     const deletePurchase = async (purchaseId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         try {
             const purchaseToDelete = purchases.find(p => p.id === purchaseId);
             if (!purchaseToDelete) throw new Error("Purchase not found");
@@ -633,9 +606,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     }
                 }
             });
-            
-            await fetchData(user.uid);
-
+            await fetchData(db, user.uid);
         } catch (e) {
             console.error("Delete purchase transaction failed: ", e);
             throw e;
@@ -643,45 +614,45 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     const addExpense = async (expenseData: Omit<Expense, 'id'>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const expensePayload = { ...expenseData, date: Timestamp.fromDate(toDate(expenseData.date)) };
         const docRef = await addDoc(collection(db, 'users', user.uid, 'expenses'), expensePayload);
         setExpenses(prev => [...prev, { ...expenseData, id: docRef.id, date: toDate(expenseData.date) }]);
     };
 
     const deleteExpense = async (expenseId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         await deleteDoc(doc(db, 'users', user.uid, 'expenses', expenseId));
         setExpenses(prev => prev.filter(e => e.id !== expenseId));
     };
 
     const addExpenseCategory = async (categoryData: Omit<ExpenseCategory, 'id'>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const docRef = await addDoc(collection(db, 'users', user.uid, 'expenseCategories'), categoryData);
         setExpenseCategories(prev => [...prev, { ...categoryData, id: docRef.id }]);
     };
 
     const updateExpenseCategory = async (categoryId: string, categoryData: Partial<Omit<ExpenseCategory, 'id'>>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const categoryRef = doc(db, 'users', user.uid, 'expenseCategories', categoryId);
         await updateDoc(categoryRef, categoryData);
         setExpenseCategories(prev => prev.map(c => c.id === categoryId ? { ...c, ...categoryData } : c));
     };
 
     const deleteExpenseCategory = async (categoryId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         await deleteDoc(doc(db, 'users', user.uid, 'expenseCategories', categoryId));
         setExpenseCategories(prev => prev.filter(c => c.id !== categoryId));
     };
 
     const addCashAccount = async (account: Omit<CashAccount, 'id'>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const docRef = await addDoc(collection(db, 'users', user.uid, 'cashAccounts'), account);
         setCashAccounts(prev => [...prev, { ...account, id: docRef.id }]);
     };
 
     const deleteCashAccount = async (accountId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         const batch = writeBatch(db);
         batch.delete(doc(db, 'users', user.uid, 'cashAccounts', accountId));
         const q = query(collection(db, 'users', user.uid, 'cashTransactions'), where("accountId", "==", accountId));
@@ -694,7 +665,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
 
     const addCashTransaction = async (tx: Omit<CashTransaction, 'id' | 'date'>) => {
-        if (!user) return;
+        if (!user || !db) return;
          try {
             await runTransaction(db, async (transaction) => {
                 const accountRef = doc(db, 'users', user.uid, 'cashAccounts', tx.accountId);
@@ -709,7 +680,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 const newTxRef = doc(collection(db, 'users', user.uid, 'cashTransactions'));
                 transaction.set(newTxRef, { ...tx, date: Timestamp.now() });
             });
-            await fetchData(user.uid);
+            await fetchData(db, user.uid);
         } catch (e) {
             console.error("Cash transaction failed: ", e);
             throw e;
@@ -717,58 +688,58 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
     
     const addCashAllocation = async (allocation: Omit<CashAllocation, 'id'>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const docRef = await addDoc(collection(db, 'users', user.uid, 'cashAllocations'), allocation);
         setCashAllocations(prev => [...prev, { ...allocation, id: docRef.id }]);
     };
 
     const updateCashAllocation = async (allocationId: string, allocation: Partial<Omit<CashAllocation, 'id'>>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const allocationRef = doc(db, 'users', user.uid, 'cashAllocations', allocationId);
         await updateDoc(allocationRef, allocation);
         setCashAllocations(prev => prev.map(a => a.id === allocationId ? { ...a, ...allocation } : a));
     };
 
     const deleteCashAllocation = async (allocationId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         await deleteDoc(doc(db, 'users', user.uid, 'cashAllocations', allocationId));
         setCashAllocations(prev => prev.filter(a => a.id !== allocationId));
     };
 
     const addLiability = async (liabilityData: Omit<Liability, 'id'>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const docRef = await addDoc(collection(db, 'users', user.uid, 'liabilities'), liabilityData);
         setLiabilities(prev => [...prev, { ...liabilityData, id: docRef.id }]);
     };
 
     const updateLiability = async (liabilityId: string, liabilityData: Partial<Omit<Liability, 'id'>>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const liabilityRef = doc(db, 'users', user.uid, 'liabilities', liabilityId);
         await updateDoc(liabilityRef, liabilityData);
         setLiabilities(prev => prev.map(l => l.id === liabilityId ? { ...l, ...liabilityData } : l));
     };
     
     const deleteLiability = async (liabilityId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         await deleteDoc(doc(db, 'users', user.uid, 'liabilities', liabilityId));
         setLiabilities(prev => prev.filter(l => l.id !== liabilityId));
     };
 
     const addEmployee = async (employeeData: Omit<Employee, 'id'>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const docRef = await addDoc(collection(db, 'users', user.uid, 'employees'), employeeData);
         setEmployees(prev => [...prev, { ...employeeData, id: docRef.id }]);
     };
     
     const updateEmployee = async (employeeId: string, employeeData: Partial<Omit<Employee, 'id'>>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const employeeRef = doc(db, 'users', user.uid, 'employees', employeeId);
         await updateDoc(employeeRef, employeeData);
         setEmployees(prev => prev.map(e => e.id === employeeId ? { ...e, ...employeeData } : e));
     };
     
     const deleteEmployee = async (employeeId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         const batch = writeBatch(db);
         batch.delete(doc(db, 'users', user.uid, 'employees', employeeId));
         
@@ -787,7 +758,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
     
     const addSalaryAdvance = async (advanceData: Omit<SalaryAdvance, 'id'>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const docRef = await addDoc(collection(db, 'users', user.uid, 'salaryAdvances'), {
             ...advanceData,
             date: Timestamp.fromDate(toDate(advanceData.date))
@@ -796,13 +767,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
     
     const deleteSalaryAdvance = async (advanceId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         await deleteDoc(doc(db, 'users', user.uid, 'salaryAdvances', advanceId));
         setSalaryAdvances(prev => prev.filter(sa => sa.id !== advanceId));
     };
     
     const addLeaveRecord = async (leaveData: Omit<LeaveRecord, 'id'>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const docRef = await addDoc(collection(db, 'users', user.uid, 'leaveRecords'), {
             ...leaveData,
             date: Timestamp.fromDate(toDate(leaveData.date))
@@ -811,13 +782,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
     
     const deleteLeaveRecord = async (leaveId: string) => {
-        if (!user) return;
+        if (!user || !db) return;
         await deleteDoc(doc(db, 'users', user.uid, 'leaveRecords', leaveId));
         setLeaveRecords(prev => prev.filter(lr => lr.id !== leaveId));
     };
 
     const updateInventory = async (updatedItems: (Omit<InventoryItem, 'id'> & {id: string})[]) => {
-        if (!user) return;
+        if (!user || !db) return;
         const batch = writeBatch(db);
 
         updatedItems.forEach(item => {
@@ -833,11 +804,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         });
 
         await batch.commit();
-        await fetchData(user.uid);
+        await fetchData(db, user.uid);
     };
 
     const updateSettings = async (newSettings: Partial<BusinessSettings>) => {
-        if (!user) return;
+        if (!user || !db) return;
         const settingsRef = doc(db, 'users', user.uid, 'settings', 'business');
         await setDoc(settingsRef, newSettings, { merge: true });
         setSettings(prev => ({...prev, ...newSettings}));
