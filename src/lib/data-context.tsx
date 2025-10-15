@@ -120,7 +120,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 { name: 'stores', setter: setStores },
                 { name: 'customers', setter: setCustomers },
                 { name: 'paymentTypes', setter: setPaymentTypes },
-                { name: 'inventory', setter: setInventory, process: (doc: any) => ({ ...doc.data(), id: doc.id, productId: doc.id.split('_')[0], storeId: doc.id.split('_')[1] }) },
+                { name: 'inventory', setter: setInventory },
                 { name: 'sales', setter: setSales, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: toDate(doc.data().date) }) },
                 { name: 'purchases', setter: setPurchases, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: toDate(doc.data().date) }) },
                 { name: 'expenses', setter: setExpenses, process: (doc: any) => ({ ...doc.data(), id: doc.id, date: toDate(doc.data().date) }) },
@@ -192,7 +192,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (!user) return;
         const productRef = doc(db, 'users', user.uid, 'products', productId);
         await updateDoc(productRef, productData);
-        setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...productData } : p));
+        setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...productData } as Product : p));
     }
 
     const deleteProduct = async (productId: string) => {
@@ -203,7 +203,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         const inventoryToDelete = inventory.filter(i => i.productId === productId);
         inventoryToDelete.forEach(item => {
-            const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${item.storeId}`);
+            const inventoryId = `${item.productId}_${item.variant_name}_${item.storeId}`;
+            const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
             batch.delete(invRef);
         });
         
@@ -272,7 +273,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         
         const inventoryToDelete = inventory.filter(i => i.storeId === storeId);
         inventoryToDelete.forEach(item => {
-            const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${item.storeId}`);
+            const inventoryId = `${item.productId}_${item.variant_name}_${item.storeId}`;
+            const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
             batch.delete(invRef);
         });
         
@@ -323,23 +325,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const addSale = async (saleData: Omit<SaleTransaction, 'id'>) => {
         if (!user) return;
         
-        let newSale: SaleTransaction | null = null;
-        
         const isInventoryDeducted = saleData.status === 'paid' || saleData.status === 'partially-paid' || saleData.status === 'completed';
 
         if (isInventoryDeducted) {
              try {
                 await runTransaction(db, async (transaction) => {
-                    const inventoryRefs = saleData.items.map(item => doc(db, 'users', user.uid, 'inventory', `${item.productId}_${saleData.storeId}`));
-                    const inventorySnaps = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
-
+                    
                     const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
-                    newSale = { ...saleData, id: newSaleRef.id, date: toDate(saleData.date) };
                     transaction.set(newSaleRef, { ...saleData, date: Timestamp.fromDate(toDate(saleData.date)) });
 
                     for (let i = 0; i < saleData.items.length; i++) {
                         const item = saleData.items[i];
-                        const inventorySnap = inventorySnaps[i];
+                        const inventoryId = `${item.productId}_${item.variant_name || ""}_${saleData.storeId}`;
+                        const inventoryRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
+                        const inventorySnap = await transaction.get(inventoryRef);
 
                         if (!inventorySnap.exists()) throw new Error(`Product ${item.name} is out of stock.`);
                         
@@ -349,14 +348,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
                         }
 
                         const newStock = currentStock - item.quantity;
-                        transaction.update(inventorySnap.ref, { stock: newStock });
+                        transaction.update(inventoryRef, { stock: newStock });
                     }
                 });
                 
-                if (newSale) {
-                    setSales(prev => [...prev, newSale!]);
-                    await fetchData(user.uid); // Fetch only inventory and sales to keep it fast
-                }
+                await fetchData(user.uid);
 
             } catch (e) {
                 console.error("Sale transaction failed: ", e);
@@ -394,7 +390,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 if(saleData.status === 'completed' || saleData.status === 'paid') return;
 
                 for (const item of saleData.items) {
-                    const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${saleData.storeId}`);
+                    const inventoryId = `${item.productId}_${item.variant_name || ''}_${saleData.storeId}`;
+                    const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                     const invSnap = await transaction.get(invRef);
                     if (!invSnap.exists()) throw new Error(`Inventory for ${item.name} not found.`);
                     
@@ -451,12 +448,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 const inventoryAdjustingStatus: SaleTransaction['status'][] = ['completed', 'paid', 'partially-paid'];
                 if (inventoryAdjustingStatus.includes(saleData.status)) {
                     for (const item of saleData.items) {
-                        const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${saleData.storeId}`);
+                        const inventoryId = `${item.productId}_${item.variant_name || ''}_${saleData.storeId}`;
+                        const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                         const invSnap = await transaction.get(invRef);
                         if (invSnap.exists()) {
                             transaction.update(invRef, { stock: invSnap.data().stock + item.quantity });
                         } else {
-                            transaction.set(invRef, { productId: item.productId, storeId: saleData.storeId, stock: item.quantity });
+                            transaction.set(invRef, { id: inventoryId, productId: item.productId, variant_name: item.variant_name || '', storeId: saleData.storeId, stock: item.quantity });
                         }
                     }
                 }
@@ -475,33 +473,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
         
         try {
             await runTransaction(db, async (transaction) => {
-                // 1. Read all necessary inventory documents first.
-                const inventoryRefs = purchaseData.items.map(item => 
-                    doc(db, 'users', user.uid, 'inventory', `${item.productId}_${purchaseData.storeId}`)
-                );
-                const inventorySnaps = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
-    
-                // 2. Now perform all writes.
                 const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
                 transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.fromDate(toDate(purchaseData.date)) });
     
-                for (let i = 0; i < purchaseData.items.length; i++) {
-                    const item = purchaseData.items[i];
-                    const invSnap = inventorySnaps[i];
-                    const invRef = inventoryRefs[i];
+                for (const item of purchaseData.items) {
+                    const inventoryId = `${item.productId}_${item.variant_name || ''}_${purchaseData.storeId}`;
+                    const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
+                    const invSnap = await transaction.get(invRef);
     
                     const currentStock = invSnap.exists() ? invSnap.data().stock : 0;
                     const newStock = currentStock + item.quantity;
                     
                     transaction.set(invRef, {
+                        id: inventoryId,
                         productId: item.productId,
+                        variant_name: item.variant_name || '',
                         storeId: purchaseData.storeId,
                         stock: newStock
                     }, { merge: true });
                 }
             });
     
-            // 3. After the transaction is successful, update the local state.
             await fetchData(user.uid);
         } catch (e) {
             console.error("Purchase transaction failed: ", e);
@@ -520,7 +512,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 transaction.delete(purchaseRef);
                 
                 for(const item of purchaseToDelete.items) {
-                    const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${purchaseToDelete.storeId}`);
+                    const inventoryId = `${item.productId}_${item.variant_name || ''}_${purchaseToDelete.storeId}`;
+                    const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                     const invSnap = await transaction.get(invRef);
                     if (invSnap.exists()) {
                         transaction.update(invRef, { stock: Math.max(0, invSnap.data().stock - item.quantity) });
@@ -528,15 +521,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
             });
             
-            setPurchases(prev => prev.filter(p => p.id !== purchaseId));
-             const updatedInventory = inventory.map(invItem => {
-                const purchaseItem = purchaseToDelete.items.find(pItem => pItem.productId === invItem.productId);
-                if (purchaseItem && invItem.storeId === purchaseToDelete.storeId) {
-                    return { ...invItem, stock: Math.max(0, invItem.stock - purchaseItem.quantity) };
-                }
-                return invItem;
-            });
-            setInventory(updatedInventory);
+            await fetchData(user.uid);
 
         } catch (e) {
             console.error("Delete purchase transaction failed: ", e);
@@ -717,13 +702,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setLeaveRecords(prev => prev.filter(lr => lr.id !== leaveId));
     };
 
-    const updateInventory = async (updatedItems: InventoryItem[]) => {
+    const updateInventory = async (updatedItems: (Omit<InventoryItem, 'id'> & {id: string})[]) => {
         if (!user) return;
         const batch = writeBatch(db);
 
         updatedItems.forEach(item => {
-            const invRef = doc(db, 'users', user.uid, 'inventory', `${item.productId}_${item.storeId}`);
-            batch.set(invRef, { productId: item.productId, storeId: item.storeId, stock: item.stock }, { merge: true });
+            const invRef = doc(db, 'users', user.uid, 'inventory', item.id);
+            batch.set(invRef, {
+                id: item.id,
+                productId: item.productId,
+                variant_name: item.variant_name,
+                storeId: item.storeId,
+                stock: item.stock
+            }, { merge: true });
         });
 
         await batch.commit();
