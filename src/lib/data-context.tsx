@@ -183,16 +183,79 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const addProduct = async (productData: Omit<Product, 'id' | 'createdAt'>) => {
         if (!user) return;
+        const batch = writeBatch(db);
+        
+        // 1. Create the product document
+        const newProductRef = doc(collection(db, 'users', user.uid, 'products'));
         const newProductData = { ...productData, createdAt: Timestamp.now() };
-        const docRef = await addDoc(collection(db, 'users', user.uid, 'products'), newProductData);
-        setProducts(prev => [...prev, { ...productData, id: docRef.id, createdAt: new Date() }]);
+        batch.set(newProductRef, newProductData);
+        const productId = newProductRef.id;
+
+        // 2. Create initial inventory records for all stores and variants
+        const variants = productData.variant_track_enabled ? productData.available_variants : [""];
+
+        for (const store of stores) {
+            for (const variant of variants) {
+                const inventoryId = `${productId}_${variant}_${store.id}`;
+                const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
+                batch.set(invRef, {
+                    id: inventoryId,
+                    productId: productId,
+                    variant_name: variant,
+                    storeId: store.id,
+                    stock: 0
+                });
+            }
+        }
+        await batch.commit();
+        await fetchData(user.uid);
     };
 
     const updateProduct = async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {
         if (!user) return;
+        const batch = writeBatch(db);
+        
+        // 1. Get the original product to compare variants
+        const originalProduct = products.find(p => p.id === productId);
+        if (!originalProduct) {
+            throw new Error("Product not found for update");
+        }
+
+        // 2. Update the product document
         const productRef = doc(db, 'users', user.uid, 'products', productId);
-        await updateDoc(productRef, productData);
-        setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...productData } as Product : p));
+        batch.update(productRef, productData);
+
+        // 3. Determine changes in variants
+        const oldVariants = originalProduct.variant_track_enabled ? originalProduct.available_variants : [""];
+        const newVariants = productData.variant_track_enabled ? productData.available_variants || [] : [""];
+        
+        const addedVariants = newVariants.filter(v => !oldVariants.includes(v));
+        const removedVariants = oldVariants.filter(v => !newVariants.includes(v));
+
+        // 4. Create inventory records for new variants
+        for (const store of stores) {
+            for (const variant of addedVariants) {
+                const inventoryId = `${productId}_${variant}_${store.id}`;
+                const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
+                batch.set(invRef, {
+                    id: inventoryId,
+                    productId: productId,
+                    variant_name: variant,
+                    storeId: store.id,
+                    stock: 0
+                });
+            }
+            // 5. Delete inventory records for removed variants (only if stock is 0)
+            for (const variant of removedVariants) {
+                const inventoryId = `${productId}_${variant}_${store.id}`;
+                // We don't delete here to avoid accidental data loss. 
+                // The item just won't be purchaseable/sellable from the UI.
+                // An admin/cleanup function would be better for this.
+            }
+        }
+        
+        await batch.commit();
+        await fetchData(user.uid);
     }
 
     const deleteProduct = async (productId: string) => {
@@ -254,8 +317,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const addStore = async (storeData: Omit<Store, 'id'>) => {
         if (!user) return;
-        const docRef = await addDoc(collection(db, 'users', user.uid, 'stores'), storeData);
-        setStores(prev => [...prev, { ...storeData, id: docRef.id }]);
+        const batch = writeBatch(db);
+        
+        // 1. Create the store
+        const newStoreRef = doc(collection(db, 'users', user.uid, 'stores'));
+        batch.set(newStoreRef, storeData);
+        const storeId = newStoreRef.id;
+
+        // 2. For every existing product and its variants, create a 0-stock inventory record
+        for (const product of products) {
+            const variants = product.variant_track_enabled ? product.available_variants : [""];
+            for (const variant of variants) {
+                const inventoryId = `${product.id}_${variant}_${storeId}`;
+                const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
+                batch.set(invRef, {
+                    id: inventoryId,
+                    productId: product.id,
+                    variant_name: variant,
+                    storeId: storeId,
+                    stock: 0
+                });
+            }
+        }
+        await batch.commit();
+        await fetchData(user.uid);
     };
 
     const updateStore = async (storeId: string, storeData: Partial<Omit<Store, 'id'>>) => {
@@ -336,7 +421,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
                     for (let i = 0; i < saleData.items.length; i++) {
                         const item = saleData.items[i];
-                        const inventoryId = `${item.productId}_${item.variant_name || ""}_${saleData.storeId}`;
+                        const inventoryId = `${item.productId}_${item.variant_name}_${saleData.storeId}`;
                         const inventoryRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                         const inventorySnap = await transaction.get(inventoryRef);
 
@@ -390,7 +475,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 if(saleData.status === 'completed' || saleData.status === 'paid') return;
 
                 for (const item of saleData.items) {
-                    const inventoryId = `${item.productId}_${item.variant_name || ''}_${saleData.storeId}`;
+                    const inventoryId = `${item.productId}_${item.variant_name}_${saleData.storeId}`;
                     const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                     const invSnap = await transaction.get(invRef);
                     if (!invSnap.exists()) throw new Error(`Inventory for ${item.name} not found.`);
@@ -448,7 +533,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 const inventoryAdjustingStatus: SaleTransaction['status'][] = ['completed', 'paid', 'partially-paid'];
                 if (inventoryAdjustingStatus.includes(saleData.status)) {
                     for (const item of saleData.items) {
-                        const inventoryId = `${item.productId}_${item.variant_name || ''}_${saleData.storeId}`;
+                        const inventoryId = `${item.productId}_${item.variant_name}_${saleData.storeId}`;
                         const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                         const invSnap = await transaction.get(invRef);
                         if (invSnap.exists()) {
@@ -477,7 +562,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.fromDate(toDate(purchaseData.date)) });
     
                 for (const item of purchaseData.items) {
-                    const inventoryId = `${item.productId}_${item.variant_name || ''}_${purchaseData.storeId}`;
+                    const inventoryId = `${item.productId}_${item.variant_name}_${purchaseData.storeId}`;
                     const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                     const invSnap = await transaction.get(invRef);
     
@@ -487,7 +572,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     transaction.set(invRef, {
                         id: inventoryId,
                         productId: item.productId,
-                        variant_name: item.variant_name || '',
+                        variant_name: item.variant_name,
                         storeId: purchaseData.storeId,
                         stock: newStock
                     }, { merge: true });
@@ -512,7 +597,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 transaction.delete(purchaseRef);
                 
                 for(const item of purchaseToDelete.items) {
-                    const inventoryId = `${item.productId}_${item.variant_name || ''}_${purchaseToDelete.storeId}`;
+                    const inventoryId = `${item.productId}_${item.variant_name}_${purchaseToDelete.storeId}`;
                     const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                     const invSnap = await transaction.get(invRef);
                     if (invSnap.exists()) {
@@ -707,9 +792,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const batch = writeBatch(db);
 
         updatedItems.forEach(item => {
-            const invRef = doc(db, 'users', user.uid, 'inventory', item.id);
+            const inventoryId = `${item.productId}_${item.variant_name}_${item.storeId}`;
+            const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
             batch.set(invRef, {
-                id: item.id,
+                id: inventoryId,
                 productId: item.productId,
                 variant_name: item.variant_name,
                 storeId: item.storeId,
@@ -788,3 +874,5 @@ export function useData() {
     }
     return context;
 }
+
+    
