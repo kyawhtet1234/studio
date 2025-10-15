@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -51,6 +52,7 @@ const formSchema = z.object({
       productId: z.string(),
       name: z.string(),
       sku: z.string(),
+      variant_name: z.string(),
       buyPrice: z.number(),
       quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
       total: z.number(),
@@ -75,6 +77,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
   const [buyPrice, setBuyPrice] = useState<number | string>("");
   const [quantity, setQuantity] = useState<number | string>(1);
   const [foundProduct, setFoundProduct] = useState<Product | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState('');
 
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(formSchema),
@@ -86,7 +89,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
     },
   });
 
-  const { fields, append, remove, replace, update } = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "cart",
   });
@@ -101,15 +104,20 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
             setItemName(product.name);
             setBuyPrice(product.buyPrice);
             setFoundProduct(product);
+            if (!product.variant_track_enabled) {
+                setSelectedVariant('');
+            }
         } else {
             setItemName("");
             setBuyPrice("");
             setFoundProduct(null);
+            setSelectedVariant('');
         }
     } else {
         setItemName("");
         setBuyPrice("");
         setFoundProduct(null);
+        setSelectedVariant('');
     }
   }, [sku, products]);
 
@@ -130,10 +138,18 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
         return;
     }
 
+    if (foundProduct.variant_track_enabled && !selectedVariant) {
+        toast({ variant: 'destructive', title: 'Variant Required', description: `Please select a variant for ${foundProduct.name}.` });
+        return;
+    }
+
+      const variantName = foundProduct.variant_track_enabled ? selectedVariant : "";
+
       const newItem = {
         productId: foundProduct.id,
         sku: foundProduct.sku,
-        name: itemName,
+        name: `${itemName} ${variantName ? `(${variantName})` : ''}`,
+        variant_name: variantName,
         buyPrice: currentPrice,
         quantity: currentQuantity,
         total: currentPrice * currentQuantity,
@@ -145,6 +161,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
       setBuyPrice("");
       setQuantity(1);
       setFoundProduct(null);
+      setSelectedVariant('');
 
       document.getElementById('sku-input')?.focus();
   }
@@ -170,6 +187,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
       date: data.date,
       items: data.cart.map(item => ({
         productId: item.productId,
+        variant_name: item.variant_name,
         quantity: item.quantity,
         buyPrice: item.buyPrice,
       })),
@@ -180,7 +198,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
   
     toast({ title: "Purchase Saved!", description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
     form.reset();
-    replace([]); // Correctly clears the field array after submission
+    remove();
   }
   
   const isFormLocked = fields.length > 0;
@@ -287,8 +305,21 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
               </div>
               <div className="flex-grow w-full sm:w-auto min-w-[150px] space-y-2">
                 <Label htmlFor="itemName-input">Item Name</Label>
-                <Input id="itemName-input" placeholder="Item name" value={itemName} onChange={(e) => setItemName(e.target.value)} />
+                <Input id="itemName-input" placeholder="Item name" value={itemName} readOnly />
               </div>
+               {foundProduct?.variant_track_enabled && (
+                    <div className="w-full sm:w-32 space-y-2">
+                        <Label>Variant</Label>
+                        <Select onValueChange={setSelectedVariant} value={selectedVariant}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select"/>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {foundProduct.available_variants.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                )}
               <div className="w-full sm:w-32 space-y-2">
                 <Label htmlFor="buyPrice-input">Purchase Price</Label>
                 <Input id="buyPrice-input" type="number" step="0.01" value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} />

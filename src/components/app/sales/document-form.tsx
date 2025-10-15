@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from "react";
@@ -55,6 +56,7 @@ const formSchema = z.object({
       productId: z.string(),
       name: z.string(),
       sku: z.string(),
+      variant_name: z.string(),
       sellPrice: z.number(),
       quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
       total: z.number(),
@@ -87,6 +89,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
   const [sellPrice, setSellPrice] = useState<number | string>("");
   const [quantity, setQuantity] = useState<number | string>(1);
   const [foundProduct, setFoundProduct] = useState<Product | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState('');
 
   const isEditMode = !!sale;
 
@@ -96,7 +99,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
       storeId: sale?.storeId || "",
       customerId: sale?.customerId || "",
       date: sale ? (sale.date as Date) : new Date(),
-      cart: sale?.items || [],
+      cart: sale?.items.map(i => ({...i, variant_name: i.variant_name || ""})) || [],
       discount: sale?.discount || 0,
       paidAmount: sale?.paidAmount || 0,
     },
@@ -122,7 +125,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
             storeId: sale.storeId,
             customerId: sale.customerId,
             date: sale.date as Date,
-            cart: sale.items.map(i => ({...i, total: i.sellPrice * i.quantity})),
+            cart: sale.items.map(i => ({...i, total: i.sellPrice * i.quantity, variant_name: i.variant_name || ""})),
             discount: sale.discount,
             paidAmount: sale.paidAmount,
         })
@@ -137,43 +140,56 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
             setItemName(product.name);
             setSellPrice(product.sellPrice);
             setFoundProduct(product);
+             if (!product.variant_track_enabled) {
+                setSelectedVariant('');
+            }
         } else {
             setItemName("");
             setSellPrice("");
             setFoundProduct(null);
+            setSelectedVariant('');
         }
     } else {
         setItemName("");
         setSellPrice("");
         setFoundProduct(null);
+        setSelectedVariant('');
     }
   }, [sku, products]);
 
 
   function addToCart() {
-    const currentPrice = Number(sellPrice);
-    const currentQuantity = Number(quantity);
-
     if (!watchStoreId) {
         toast({ variant: 'destructive', title: 'Error', description: "Please select a store first." });
         return;
     }
     
-    if (foundProduct && itemName && currentPrice > 0 && currentQuantity > 0) {
-      // For invoices, check stock. For quotations, don't.
+    if (foundProduct) {
+      const currentPrice = Number(sellPrice);
+      const currentQuantity = Number(quantity);
+
+      if (foundProduct.variant_track_enabled && !selectedVariant) {
+        toast({ variant: 'destructive', title: 'Variant Required', description: `Please select a variant for ${foundProduct.name}.` });
+        return;
+      }
+
       if (type === 'invoice') {
-        const inventoryItem = inventory.find(i => i.productId === foundProduct.id && i.storeId === watchStoreId);
+        const variantName = foundProduct.variant_track_enabled ? selectedVariant : "";
+        const inventoryId = `${foundProduct.id}_${variantName}_${watchStoreId}`;
+        const inventoryItem = inventory.find(i => i.id === inventoryId);
         const availableStock = inventoryItem?.stock || 0;
         if(availableStock < currentQuantity) {
-          toast({ variant: 'destructive', title: 'Not enough stock', description: `Only ${availableStock} of ${itemName} available.` });
+          toast({ variant: 'destructive', title: 'Not enough stock', description: `Only ${availableStock} of ${itemName} ${variantName} available.` });
           return;
         }
       }
 
+      const variantName = foundProduct.variant_track_enabled ? selectedVariant : "";
       const newItem: CartItem = {
         productId: foundProduct.id,
         sku: foundProduct.sku,
-        name: itemName,
+        name: `${itemName} ${variantName ? `(${variantName})` : ''}`,
+        variant_name: variantName,
         sellPrice: currentPrice,
         quantity: currentQuantity,
         total: currentPrice * currentQuantity,
@@ -185,6 +201,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
       setSellPrice("");
       setQuantity(1);
       setFoundProduct(null);
+      setSelectedVariant('');
       
       document.getElementById(`sku-input-${type}`)?.focus();
     } else {
@@ -196,7 +213,8 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
     const item = fields[index];
 
     if (type === 'invoice') {
-        const inventoryItem = inventory.find(i => i.productId === item.productId && i.storeId === watchStoreId);
+        const inventoryId = `${item.productId}_${item.variant_name}_${watchStoreId}`;
+        const inventoryItem = inventory.find(i => i.id === inventoryId);
         const availableStock = inventoryItem?.stock || 0;
 
         if (newQuantity > availableStock) {
@@ -223,6 +241,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
             productId: item.productId,
             name: item.name,
             sku: item.sku,
+            variant_name: item.variant_name,
             sellPrice: item.sellPrice,
             quantity: item.quantity,
             total: item.total
@@ -398,6 +417,21 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
                     readOnly
                   />
               </div>
+              {foundProduct?.variant_track_enabled && (
+                <div className="w-full sm:w-[150px] space-y-2">
+                    <Label>Variant</Label>
+                    <Select onValueChange={setSelectedVariant} value={selectedVariant}>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Select Variant" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        {foundProduct.available_variants.map(variant => (
+                            <SelectItem key={variant} value={variant}>{variant}</SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                )}
               <div className="w-full sm:w-32 space-y-2">
                   <Label htmlFor={`sellPrice-input-${type}`}>Sell Price</Label>
                   <Input

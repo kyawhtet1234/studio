@@ -1,6 +1,6 @@
 
 "use client";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,10 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import type { Product, Category, Supplier, Store, Customer, PaymentType } from "@/lib/types";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Switch } from "@/components/ui/switch";
+import { Trash2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const baseSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -35,6 +38,8 @@ const productSchema = z.object({
   supplierId: z.string().min(1, "Please select a supplier."),
   sellPrice: z.coerce.number().positive(),
   buyPrice: z.coerce.number().positive(),
+  variant_track_enabled: z.boolean().default(false),
+  available_variants: z.array(z.string()).optional(),
 }).refine(data => data.sellPrice >= data.buyPrice, {
     message: "Sell price cannot be less than buy price.",
     path: ["sellPrice"],
@@ -241,94 +246,153 @@ interface AddProductFormProps extends FormProps<Omit<Product, 'id' | 'createdAt'
 }
 
 export function AddProductForm({ onSave, categories, suppliers, allProducts, onSuccess, product }: AddProductFormProps) {
-  const form = useForm<z.infer<typeof productSchema>>({
-    resolver: zodResolver(productSchema),
-    defaultValues: product ? {
-        ...product,
-        sellPrice: product.sellPrice ?? 0,
-        buyPrice: product.buyPrice ?? 0,
-    } : { name: "", sku: "", categoryId: "", supplierId: "", sellPrice: 0, buyPrice: 0 },
-  });
-  const { toast } = useToast();
-  const isEditMode = !!product;
+    const form = useForm<z.infer<typeof productSchema>>({
+        resolver: zodResolver(productSchema),
+        defaultValues: product ? {
+            ...product,
+            sellPrice: product.sellPrice ?? 0,
+            buyPrice: product.buyPrice ?? 0,
+            variant_track_enabled: product.variant_track_enabled ?? false,
+            available_variants: product.available_variants ?? [],
+        } : { 
+            name: "", sku: "", categoryId: "", supplierId: "", 
+            sellPrice: 0, buyPrice: 0, 
+            variant_track_enabled: false, available_variants: [] 
+        },
+    });
+    const { toast } = useToast();
+    const isEditMode = !!product;
+    const [newVariant, setNewVariant] = useState('');
 
-  useEffect(() => {
-      if (product) {
-          form.reset(product);
-      }
-  }, [product, form]);
+    const { fields, append, remove } = useFieldArray({
+        control: form.control,
+        name: "available_variants",
+    });
 
-  async function onSubmit(data: z.infer<typeof productSchema>) {
-      if (!isEditMode) {
-        const duplicateExists = allProducts.some(p => p.sku === data.sku && p.name === data.name);
-        if (duplicateExists) {
-            form.setError("sku", {
-                type: "manual",
-                message: "This SKU and Name combination already exists.",
+    const watchVariantTrackEnabled = form.watch('variant_track_enabled');
+
+    useEffect(() => {
+        if (product) {
+            form.reset({
+                ...product,
+                variant_track_enabled: product.variant_track_enabled ?? false,
+                available_variants: product.available_variants ?? [],
             });
-            form.setError("name", {
-                type: "manual",
-                message: "This SKU and Name combination already exists.",
-            });
-            return;
         }
+    }, [product, form]);
 
-        const skuExists = allProducts.some(p => p.sku === data.sku);
-        if (skuExists) {
-            form.setError("sku", {
-                type: "manual",
-                message: "This SKU already exists. Please use a unique SKU.",
-            });
-            return;
+    const handleAddVariant = () => {
+        if (newVariant.trim() !== '') {
+            append(newVariant.trim());
+            setNewVariant('');
         }
+    };
+
+    async function onSubmit(data: z.infer<typeof productSchema>) {
+        if (!isEditMode) {
+            const skuExists = allProducts.some(p => p.sku === data.sku);
+            if (skuExists) {
+                form.setError("sku", {
+                    type: "manual",
+                    message: "This SKU already exists. Please use a unique SKU.",
+                });
+                return;
+            }
+        }
+        await onSave(data);
+        toast({ title: `Product ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
+        form.reset();
+        onSuccess();
     }
-      await onSave(data);
-      toast({ title: `Product ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
-      form.reset();
-      onSuccess();
-  }
 
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField control={form.control} name="sku" render={({ field }) => (
-                <FormItem><FormLabel>SKU</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-            )}/>
-            <FormField control={form.control} name="name" render={({ field }) => (
-                <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-            )}/>
-            <FormField control={form.control} name="categoryId" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Category</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
-                  <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}/>
-            <FormField control={form.control} name="supplierId" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Supplier</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select a supplier" /></SelectTrigger></FormControl>
-                  <SelectContent>{suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}/>
-            <FormField control={form.control} name="buyPrice" render={({ field }) => (
-                <FormItem><FormLabel>Buy Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-            )}/>
-            <FormField control={form.control} name="sellPrice" render={({ field }) => (
-                <FormItem><FormLabel>Sell Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-            )}/>
-        </div>
-        <Button type="submit" className="bg-shiny-blue">{isEditMode ? 'Save Changes' : 'Add Product'}</Button>
-      </form>
-    </Form>
-  );
+    return (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+                <ScrollArea className="flex-grow pr-6 -mr-6">
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="sku" render={({ field }) => (
+                                <FormItem><FormLabel>SKU</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="name" render={({ field }) => (
+                                <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="categoryId" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Category</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
+                                <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="supplierId" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Supplier</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select a supplier" /></SelectTrigger></FormControl>
+                                <SelectContent>{suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="buyPrice" render={({ field }) => (
+                                <FormItem><FormLabel>Buy Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="sellPrice" render={({ field }) => (
+                                <FormItem><FormLabel>Sell Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                        </div>
+                        <FormField
+                            control={form.control}
+                            name="variant_track_enabled"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                    <FormLabel className="text-base">Enable Variants</FormLabel>
+                                    <FormMessage />
+                                </div>
+                                <FormControl>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                         {watchVariantTrackEnabled && (
+                            <div className="space-y-4 rounded-lg border p-4">
+                                <h3 className="text-sm font-medium">Available Variants</h3>
+                                <div className="flex gap-2">
+                                    <Input
+                                        value={newVariant}
+                                        onChange={(e) => setNewVariant(e.target.value)}
+                                        placeholder="e.g., Red, Small, etc."
+                                    />
+                                    <Button type="button" onClick={handleAddVariant}>Add Variant</Button>
+                                </div>
+                                <div className="space-y-2">
+                                    {fields.map((field, index) => (
+                                        <div key={field.id} className="flex items-center justify-between">
+                                            <span>{form.getValues(`available_variants.${index}`)}</span>
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </ScrollArea>
+                <div className="pt-6 flex-shrink-0">
+                    <Button type="submit" className="bg-shiny-blue w-full">{isEditMode ? 'Save Changes' : 'Add Product'}</Button>
+                </div>
+            </form>
+        </Form>
+    );
 }
 
     

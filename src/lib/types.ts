@@ -38,10 +38,14 @@ export type Product = {
   sellPrice: number;
   buyPrice: number;
   createdAt: Date | Timestamp;
+  variant_track_enabled: boolean;
+  available_variants: string[];
 };
 
 export type InventoryItem = {
+  id: string; // Composite key: `${productId}_${variantName}_${storeId}`
   productId: string;
+  variant_name: string; // Empty string for base item
   storeId: string;
   stock: number;
 };
@@ -50,6 +54,7 @@ export type CartItem = {
   productId: string;
   name: string;
   sku: string;
+  variant_name: string; // Empty string for base item
   sellPrice: number;
   quantity: number;
   total: number;
@@ -77,6 +82,7 @@ export type PurchaseTransaction = {
   supplierId: string;
   items: {
     productId: string;
+    variant_name: string; // Empty string for base item
     quantity: number;
     buyPrice: number;
   }[];
@@ -90,6 +96,7 @@ export type TransferLog = {
   toStoreId: string;
   items: {
     productId: string;
+    variant_name: string;
     quantity: number;
   }[];
 };
