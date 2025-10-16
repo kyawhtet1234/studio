@@ -1,4 +1,5 @@
 
+
 'use client';
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
@@ -199,12 +200,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         for (const store of stores) {
             for (const variant of variants) {
-                const inventoryId = `${productId}_${variant}_${store.id}`;
+                const variantName = variant || "";
+                const inventoryId = `${productId}_${variantName}_${store.id}`;
                 const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                 batch.set(invRef, {
                     id: inventoryId,
                     productId: productId,
-                    variant_name: variant,
+                    variant_name: variantName,
                     storeId: store.id,
                     stock: 0
                 });
@@ -233,12 +235,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         for (const store of stores) {
             for (const variant of addedVariants) {
-                const inventoryId = `${productId}_${variant}_${store.id}`;
+                const variantName = variant || "";
+                const inventoryId = `${productId}_${variantName}_${store.id}`;
                 const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                 batch.set(invRef, {
                     id: inventoryId,
                     productId: productId,
-                    variant_name: variant,
+                    variant_name: variantName,
                     storeId: store.id,
                     stock: 0
                 });
@@ -257,7 +260,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         const inventoryToDelete = inventory.filter(i => i.productId === productId);
         inventoryToDelete.forEach(item => {
-            const inventoryId = `${item.productId}_${item.variant_name}_${item.storeId}`;
+            const inventoryId = `${item.productId}_${item.variant_name || ""}_${item.storeId}`;
             const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
             batch.delete(invRef);
         });
@@ -317,12 +320,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
         for (const product of products) {
             const variants = product.variant_track_enabled && product.available_variants ? product.available_variants : [""];
             for (const variant of variants) {
-                const inventoryId = `${product.id}_${variant}_${storeId}`;
+                const variantName = variant || "";
+                const inventoryId = `${product.id}_${variantName}_${storeId}`;
                 const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                 batch.set(invRef, {
                     id: inventoryId,
                     productId: product.id,
-                    variant_name: variant,
+                    variant_name: variantName,
                     storeId: storeId,
                     stock: 0
                 });
@@ -347,7 +351,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         
         const inventoryToDelete = inventory.filter(i => i.storeId === storeId);
         inventoryToDelete.forEach(item => {
-            const inventoryId = `${item.productId}_${item.variant_name}_${item.storeId}`;
+            const inventoryId = `${item.productId}_${item.variant_name || ""}_${item.storeId}`;
             const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
             batch.delete(invRef);
         });
@@ -407,7 +411,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 // --- READS FIRST ---
                 if (isInventoryDeducted) {
                     for (const item of saleData.items) {
-                        const inventoryId = `${item.productId}_${item.variant_name || ''}_${saleData.storeId}`;
+                        const variantName = item.variant_name || "";
+                        const inventoryId = `${item.productId}_${variantName}_${saleData.storeId}`;
                         const inventoryRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                         inventoryLookups.push({ ref: inventoryRef, item });
                     }
@@ -479,7 +484,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 if(saleData.status === 'completed' || saleData.status === 'paid') return;
 
                 for (const item of saleData.items) {
-                    const inventoryId = `${item.productId}_${item.variant_name || ''}_${saleData.storeId}`;
+                    const variantName = item.variant_name || "";
+                    const inventoryId = `${item.productId}_${variantName}_${saleData.storeId}`;
                     const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                     const invSnap = await transaction.get(invRef);
                     if (!invSnap.exists()) throw new Error(`Inventory for ${item.name} not found.`);
@@ -536,13 +542,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 const inventoryAdjustingStatus: SaleTransaction['status'][] = ['completed', 'paid', 'partially-paid'];
                 if (inventoryAdjustingStatus.includes(saleData.status)) {
                     for (const item of saleData.items) {
-                        const inventoryId = `${item.productId}_${item.variant_name || ''}_${saleData.storeId}`;
+                        const variantName = item.variant_name || "";
+                        const inventoryId = `${item.productId}_${variantName}_${saleData.storeId}`;
                         const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                         const invSnap = await transaction.get(invRef);
                         if (invSnap.exists()) {
                             transaction.update(invRef, { stock: invSnap.data().stock + item.quantity });
                         } else {
-                            transaction.set(invRef, { id: inventoryId, productId: item.productId, variant_name: item.variant_name || '', storeId: saleData.storeId, stock: item.quantity });
+                            transaction.set(invRef, { id: inventoryId, productId: item.productId, variant_name: variantName, storeId: saleData.storeId, stock: item.quantity });
                         }
                     }
                 }
@@ -564,7 +571,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 const inventoryLookups = [];
                 // --- READS FIRST ---
                 for (const item of purchaseData.items) {
-                    const inventoryId = `${item.productId}_${item.variant_name || ''}_${purchaseData.storeId}`;
+                    const variantName = item.variant_name || "";
+                    const inventoryId = `${item.productId}_${variantName}_${purchaseData.storeId}`;
                     const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                     inventoryLookups.push({ ref: invRef, item });
                 }
@@ -582,7 +590,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     transaction.set(ref, {
                         id: ref.id,
                         productId: item.productId,
-                        variant_name: item.variant_name,
+                        variant_name: item.variant_name || "",
                         storeId: purchaseData.storeId,
                         stock: newStock
                     }, { merge: true });
@@ -606,7 +614,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 transaction.delete(purchaseRef);
                 
                 for(const item of purchaseToDelete.items) {
-                    const inventoryId = `${item.productId}_${item.variant_name || ''}_${purchaseToDelete.storeId}`;
+                    const variantName = item.variant_name || "";
+                    const inventoryId = `${item.productId}_${variantName}_${purchaseToDelete.storeId}`;
                     const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                     const invSnap = await transaction.get(invRef);
                     if (invSnap.exists()) {
@@ -802,7 +811,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         updatedItems.forEach(item => {
             const inventoryId = item.id;
             const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
-            batch.set(invRef, item, { merge: true });
+            batch.set(invRef, {
+                ...item,
+                variant_name: item.variant_name || ""
+            }, { merge: true });
         });
 
         await batch.commit();
@@ -876,3 +888,5 @@ export function useData() {
     }
     return context;
 }
+
+    

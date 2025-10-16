@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from "react";
@@ -93,7 +94,7 @@ export default function InventoryPage() {
         id: item.id,
         productId: item.productId,
         storeId: item.storeId,
-        variant_name: item.variant_name,
+        variant_name: item.variant_name || "",
         productName: item.variant_name ? `${item.productName} (${item.variant_name})` : item.productName,
         storeName: item.storeName,
         currentStock: item.stock
@@ -108,7 +109,7 @@ export default function InventoryPage() {
         id: adjustmentItem.id,
         productId: adjustmentItem.productId,
         storeId: adjustmentItem.storeId,
-        variant_name: adjustmentItem.variant_name,
+        variant_name: adjustmentItem.variant_name || "",
         stock: newStock
     }]);
 
@@ -253,3 +254,5 @@ export default function InventoryPage() {
     </div>
   );
 }
+
+    

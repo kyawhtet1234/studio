@@ -137,8 +137,9 @@ export default function TransferPage() {
         let updatedInventoryItems: InventoryItem[] = [];
 
         for (const item of transferItems) {
-            const fromInventoryId = `${item.productId}_${item.variant_name}_${fromStoreId}`;
-            const toInventoryId = `${item.productId}_${item.variant_name}_${toStoreId}`;
+            const variantName = item.variant_name || "";
+            const fromInventoryId = `${item.productId}_${variantName}_${fromStoreId}`;
+            const toInventoryId = `${item.productId}_${variantName}_${toStoreId}`;
 
             const fromInventory = inventory.find(i => i.id === fromInventoryId);
             const toInventory = inventory.find(i => i.id === toInventoryId);
@@ -147,7 +148,7 @@ export default function TransferPage() {
                 updatedInventoryItems.push({
                     id: fromInventoryId,
                     productId: item.productId,
-                    variant_name: item.variant_name,
+                    variant_name: variantName,
                     storeId: fromStoreId,
                     stock: fromInventory.stock - item.quantity
                 });
@@ -156,7 +157,7 @@ export default function TransferPage() {
             updatedInventoryItems.push({
                 id: toInventoryId,
                 productId: item.productId,
-                variant_name: item.variant_name,
+                variant_name: variantName,
                 storeId: toStoreId,
                 stock: (toInventory?.stock || 0) + item.quantity
             });
@@ -284,3 +285,5 @@ export default function TransferPage() {
     </div>
   );
 }
+
+    
