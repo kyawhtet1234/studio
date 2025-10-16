@@ -134,7 +134,7 @@ export default function TransferPage() {
             return;
         }
 
-        let updatedInventoryItems: Omit<InventoryItem, 'stock'> & { id: string, stock: number }[] = [];
+        let updatedInventoryItems: InventoryItem[] = [];
 
         for (const item of transferItems) {
             const fromInventoryId = `${item.productId}_${item.variant_name}_${fromStoreId}`;

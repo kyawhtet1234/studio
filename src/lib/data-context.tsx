@@ -75,7 +75,7 @@ interface DataContextProps {
     deleteSalaryAdvance: (advanceId: string) => Promise<void>;
     addLeaveRecord: (leave: Omit<LeaveRecord, 'id'>) => Promise<void>;
     deleteLeaveRecord: (leaveId: string) => Promise<void>;
-    updateInventory: (newInventory: InventoryItem[]) => Promise<void>;
+    updateInventory: (updatedItems: InventoryItem[]) => Promise<void>;
     updateInvoiceSettings: (settings: DocumentSettings) => Promise<void>;
     updateQuotationSettings: (settings: DocumentSettings) => Promise<void>;
     updateReceiptSettings: (settings: { companyLogo?: string }) => Promise<void>;
@@ -403,6 +403,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         try {
             await runTransaction(db, async (transaction) => {
                 const inventoryLookups = [];
+                
+                // --- READS FIRST ---
                 if (isInventoryDeducted) {
                     for (const item of saleData.items) {
                         const inventoryId = `${item.productId}_${item.variant_name || ''}_${saleData.storeId}`;
@@ -412,6 +414,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
                 const inventorySnaps = await Promise.all(inventoryLookups.map(lookup => transaction.get(lookup.ref)));
 
+                // --- VALIDATION ---
                 for (let i = 0; i < inventorySnaps.length; i++) {
                     const invSnap = inventorySnaps[i];
                     const { item } = inventoryLookups[i];
@@ -425,6 +428,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     }
                 }
 
+                // --- WRITES SECOND ---
                 const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
                 transaction.set(newSaleRef, { ...saleData, date: Timestamp.fromDate(toDate(saleData.date)) });
 
@@ -558,6 +562,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         try {
             await runTransaction(db, async (transaction) => {
                 const inventoryLookups = [];
+                // --- READS FIRST ---
                 for (const item of purchaseData.items) {
                     const inventoryId = `${item.productId}_${item.variant_name || ''}_${purchaseData.storeId}`;
                     const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
@@ -565,6 +570,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
                 const inventorySnaps = await Promise.all(inventoryLookups.map(lookup => transaction.get(lookup.ref)));
 
+                // --- WRITES SECOND ---
                 const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
                 transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.fromDate(toDate(purchaseData.date)) });
 
@@ -789,20 +795,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setLeaveRecords(prev => prev.filter(lr => lr.id !== leaveId));
     };
 
-    const updateInventory = async (updatedItems: (Omit<InventoryItem, 'id'> & {id: string})[]) => {
+    const updateInventory = async (updatedItems: InventoryItem[]) => {
         if (!user || !db) return;
         const batch = writeBatch(db);
 
         updatedItems.forEach(item => {
-            const inventoryId = `${item.productId}_${item.variant_name || ''}_${item.storeId}`;
+            const inventoryId = item.id;
             const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
-            batch.set(invRef, {
-                id: inventoryId,
-                productId: item.productId,
-                variant_name: item.variant_name,
-                storeId: item.storeId,
-                stock: item.stock
-            }, { merge: true });
+            batch.set(invRef, item, { merge: true });
         });
 
         await batch.commit();
