@@ -37,7 +37,7 @@ import { Input } from "@/components/ui/input";
 
 const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales: number, profit: number, totalQuantity: number }, periodLabel: string }) => (
     <Card className="bg-shiny-blue rounded-xl shadow-lg">
-      <CardContent className="p-0">
+      <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="bg-shiny-yellow hover:bg-shiny-yellow/90">
@@ -79,7 +79,7 @@ const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales
 
 const SalesByCustomerTable = ({ data }: { data: any[] }) => (
     <Card className="bg-shiny-blue rounded-xl shadow-lg">
-      <CardContent className="p-0">
+      <CardContent className="p-0 overflow-x-auto">
           <Table>
               <TableHeader>
                   <TableRow className="bg-shiny-yellow hover:bg-shiny-yellow/90">
@@ -122,7 +122,7 @@ const PurchaseHistoryTable = ({ data, stores, suppliers, onDelete }: { data: Pur
     return (
     <>
         <Card className="bg-shiny-blue rounded-xl shadow-lg">
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-x-auto">
             <Table>
             <TableHeader>
                 <TableRow className="bg-shiny-yellow hover:bg-shiny-yellow/90">
@@ -213,7 +213,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
     return (
     <>
         <Card className="bg-shiny-blue rounded-xl shadow-lg">
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-x-auto">
             <Table>
             <TableHeader>
                 <TableRow className="bg-shiny-yellow hover:bg-shiny-yellow/90">
@@ -651,7 +651,7 @@ export default function ReportsPage() {
         </div>
       </PageHeader>
       <Tabs defaultValue="daily" onValueChange={setActiveTab}>
-        <TabsList className="overflow-x-auto self-start h-auto">
+        <TabsList className="overflow-x-auto self-start h-auto flex-nowrap w-full no-scrollbar">
             <TabsTrigger value="daily">Daily</TabsTrigger>
             <TabsTrigger value="monthly">Monthly</TabsTrigger>
             <TabsTrigger value="salesByCustomer">Sales By Customer</TabsTrigger>
@@ -660,10 +660,10 @@ export default function ReportsPage() {
             <TabsTrigger value="invoice">Invoices</TabsTrigger>
             <TabsTrigger value="quotation">Quotations</TabsTrigger>
         </TabsList>
-        <TabsContent value="daily" className="overflow-x-auto">
+        <TabsContent value="daily" className="mt-4">
             <ReportTable data={dailyReports} total={dailyTotal} periodLabel="Date" />
         </TabsContent>
-        <TabsContent value="monthly" className="overflow-x-auto space-y-4">
+        <TabsContent value="monthly" className="space-y-4 mt-4">
              <div className="flex justify-end">
                 <Select onValueChange={setSelectedMonth} value={selectedMonth}>
                     <SelectTrigger className="w-full sm:w-[240px]">
@@ -679,25 +679,25 @@ export default function ReportsPage() {
             </div>
             <ReportTable data={filteredMonthlyReports} total={filteredMonthlyTotal} period-label="Month" />
         </TabsContent>
-        <TabsContent value="salesByCustomer" className="overflow-x-auto">
+        <TabsContent value="salesByCustomer" className="mt-4">
             <SalesByCustomerTable data={salesByCustomer} />
         </TabsContent>
-          <TabsContent value="sales" className="overflow-x-auto">
+          <TabsContent value="sales" className="mt-4">
             <SalesHistoryTable data={salesHistory} stores={stores} customers={customers} onVoid={voidSale} onPrintReceipt={(sale) => setDocumentToPrint({ type: 'receipt', sale })} onDelete={deleteSale} />
         </TabsContent>
-        <TabsContent value="purchase" className="overflow-x-auto">
+        <TabsContent value="purchase" className="mt-4">
             <PurchaseHistoryTable data={purchaseHistory} stores={stores} suppliers={suppliers} onDelete={deletePurchase} />
         </TabsContent>
-        <TabsContent value="invoice">
+        <TabsContent value="invoice" className="mt-4">
             <Card className="bg-shiny-blue rounded-xl shadow-lg">
-              <CardContent className="p-4 md:p-6">
+              <CardContent className="p-4 md:p-6 overflow-x-auto">
                 <DataTable columns={invoiceCols} data={invoiceHistory} filterColumnId="id" filterPlaceholder="Filter by number..." />
               </CardContent>
             </Card>
         </TabsContent>
-        <TabsContent value="quotation">
+        <TabsContent value="quotation" className="mt-4">
             <Card className="bg-shiny-blue rounded-xl shadow-lg">
-              <CardContent className="p-4 md:p-6">
+              <CardContent className="p-4 md:p-6 overflow-x-auto">
                 <DataTable columns={quotationCols} data={quotationHistory} filterColumnId="id" filterPlaceholder="Filter by number..." />
               </CardContent>
             </Card>

@@ -246,7 +246,7 @@ export default function TransferPage() {
           </div>
 
         {transferItems.length > 0 && (
-            <div className="rounded-md border mt-6">
+            <div className="rounded-md border mt-6 overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>

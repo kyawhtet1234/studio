@@ -308,7 +308,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                 <Input id="itemName-input" placeholder="Item name" value={itemName} readOnly />
               </div>
                {foundProduct?.variant_track_enabled && (
-                    <div className="w-full sm:w-32 space-y-2">
+                    <div className="w-full sm:w-[150px] space-y-2">
                         <Label>Variant</Label>
                         <Select onValueChange={setSelectedVariant} value={selectedVariant}>
                             <SelectTrigger>

@@ -124,7 +124,7 @@ export default function SettingsPage() {
       <PageHeader title="Settings" />
         <Tabs defaultValue="branding" onValueChange={setActiveTab} value={activeTab}>
             <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-                <TabsList className="overflow-x-auto self-start h-auto">
+                <TabsList className="overflow-x-auto self-start h-auto flex-nowrap w-full no-scrollbar">
                     <TabsTrigger value="branding">Branding</TabsTrigger>
                     <TabsTrigger value="theme">Theme</TabsTrigger>
                     <TabsTrigger value="goals">Goals</TabsTrigger>
@@ -141,31 +141,31 @@ export default function SettingsPage() {
                   </div>
                 )}
             </div>
-            <TabsContent value="branding">
+            <TabsContent value="branding" className="mt-4">
                 <BrandingSettings />
             </TabsContent>
-            <TabsContent value="theme">
+            <TabsContent value="theme" className="mt-4">
                 <ThemeSettings />
             </TabsContent>
-            <TabsContent value="goals">
+            <TabsContent value="goals" className="mt-4">
                 <BusinessGoalsSettings />
             </TabsContent>
-            <TabsContent value="receipt">
+            <TabsContent value="receipt" className="mt-4">
                 <ReceiptSettings />
             </TabsContent>
-            <TabsContent value="invoice">
+            <TabsContent value="invoice" className="mt-4">
                 <InvoiceSettings />
             </TabsContent>
-            <TabsContent value="quotation">
+            <TabsContent value="quotation" className="mt-4">
                 <QuotationSettings />
             </TabsContent>
-            <TabsContent value="stores">
+            <TabsContent value="stores" className="mt-4">
                 <DataTable columns={storeCols} data={stores} filterColumnId="name" filterPlaceholder="Filter stores by name..."/>
             </TabsContent>
-            <TabsContent value="paymentTypes">
+            <TabsContent value="paymentTypes" className="mt-4">
                 <DataTable columns={paymentTypeCols} data={paymentTypes} filterColumnId="name" filterPlaceholder="Filter payment types by name..."/>
             </TabsContent>
-            <TabsContent value="expenseCategories">
+            <TabsContent value="expenseCategories" className="mt-4">
                 <DataTable columns={expenseCategoryCols} data={expenseCategories} filterColumnId="name" filterPlaceholder="Filter categories by name..."/>
             </TabsContent>
         </Tabs>
