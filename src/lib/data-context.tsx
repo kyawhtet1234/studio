@@ -402,7 +402,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         try {
             await runTransaction(db, async (transaction) => {
-                // --- READ PHASE ---
                 const inventoryLookups = [];
                 if (isInventoryDeducted) {
                     for (const item of saleData.items) {
@@ -426,7 +425,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     }
                 }
 
-                // --- WRITE PHASE ---
                 const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
                 transaction.set(newSaleRef, { ...saleData, date: Timestamp.fromDate(toDate(saleData.date)) });
 
@@ -559,7 +557,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         try {
             await runTransaction(db, async (transaction) => {
-                // READ PHASE
                 const inventoryLookups = [];
                 for (const item of purchaseData.items) {
                     const inventoryId = `${item.productId}_${item.variant_name || ''}_${purchaseData.storeId}`;
@@ -568,7 +565,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
                 const inventorySnaps = await Promise.all(inventoryLookups.map(lookup => transaction.get(lookup.ref)));
 
-                // WRITE PHASE
                 const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
                 transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.fromDate(toDate(purchaseData.date)) });
 
@@ -880,5 +876,3 @@ export function useData() {
     }
     return context;
 }
-
-    

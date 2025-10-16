@@ -28,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [auth, setAuth] = useState<Auth | null>(null);
 
   useEffect(() => {
+    // getClientServices is memoized, so it's safe to call here.
     const { auth: clientAuth } = getClientServices();
     setAuth(clientAuth);
   }, []);
@@ -39,6 +40,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(false);
         });
         return () => unsubscribe();
+    } else {
+      // If auth is not yet initialized, keep loading.
+      setLoading(true);
     }
   }, [auth]);
 

@@ -13,17 +13,20 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase for client-side
-function getClientFirebaseApp(): FirebaseApp {
-    if (getApps().length) {
-        return getApp();
-    }
-    return initializeApp(firebaseConfig);
-}
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
 
-export function getClientServices(): { app: FirebaseApp; db: Firestore; auth: Auth } {
-    const app = getClientFirebaseApp();
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+// Memoized function to get client services
+export function getClientServices() {
+    if (!app) {
+        if (getApps().length > 0) {
+            app = getApp();
+        } else {
+            app = initializeApp(firebaseConfig);
+        }
+        auth = getAuth(app);
+        db = getFirestore(app);
+    }
     return { app, db, auth };
 }
