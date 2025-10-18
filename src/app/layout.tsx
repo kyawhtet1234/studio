@@ -5,6 +5,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/lib/auth-context';
 import { ThemeProvider } from '@/components/app/settings/theme-provider';
+import { FirebaseClientProvider } from '@/lib/client-provider';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -28,10 +29,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-              {children}
-              <Toaster />
-          </AuthProvider>
+          <FirebaseClientProvider>
+            <AuthProvider>
+                {children}
+                <Toaster />
+            </AuthProvider>
+          </FirebaseClientProvider>
         </ThemeProvider>
       </body>
     </html>

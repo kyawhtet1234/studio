@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { AppHeader } from '@/components/app/app-header';
+import { FirebaseClientProvider } from '@/lib/client-provider';
 
 function AppContent({ children }: { children: React.ReactNode }) {
   const { loading: dataLoading } = useData();
@@ -53,8 +54,10 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     return (
-        <DataProvider>
-            <AppContent>{children}</AppContent>
-        </DataProvider>
+        <FirebaseClientProvider>
+          <DataProvider>
+              <AppContent>{children}</AppContent>
+          </DataProvider>
+        </FirebaseClientProvider>
     )
 }

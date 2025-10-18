@@ -10,7 +10,7 @@ import {
   User,
   Auth,
 } from 'firebase/auth';
-import { getClientServices } from '@/lib/firebase';
+import { useFirebase } from '@/lib/client-provider';
 
 interface AuthContextType {
   user: User | null;
@@ -25,39 +25,25 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [auth, setAuth] = useState<Auth | null>(null);
+  const { auth } = useFirebase();
 
   useEffect(() => {
-    // getClientServices is memoized, so it's safe to call here.
-    const { auth: clientAuth } = getClientServices();
-    setAuth(clientAuth);
-  }, []);
-
-  useEffect(() => {
-    if (auth) {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setUser(user);
-            setLoading(false);
-        });
-        return () => unsubscribe();
-    } else {
-      // If auth is not yet initialized, keep loading.
-      setLoading(true);
-    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        setUser(user);
+        setLoading(false);
+    });
+    return () => unsubscribe();
   }, [auth]);
 
   const signUp = (email: string, password: string) => {
-    if (!auth) return Promise.reject(new Error("Auth not initialized"));
     return createUserWithEmailAndPassword(auth, email, password);
   };
 
   const signIn = (email: string, password: string) => {
-    if (!auth) return Promise.reject(new Error("Auth not initialized"));
     return signInWithEmailAndPassword(auth, email, password);
   };
 
   const logOut = () => {
-    if (!auth) return Promise.reject(new Error("Auth not initialized"));
     return signOut(auth);
   };
 
