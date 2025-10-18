@@ -60,6 +60,10 @@ export function AppSidebar() {
     if (href === '/') {
         return pathname === '/';
     }
+    // Make inventory link active for adjustment page as well
+    if (href === '/inventory') {
+        return pathname.startsWith('/inventory');
+    }
     return pathname.startsWith(href);
   }
 

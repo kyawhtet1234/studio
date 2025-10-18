@@ -35,9 +35,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useData } from "@/lib/data-context";
 import type { InventoryItem } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileDown } from "lucide-react";
+import { FileDown, RefreshCw } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { format } from "date-fns";
+import Link from "next/link";
 
 interface AdjustmentItem {
   id: string;
@@ -105,13 +106,15 @@ export default function InventoryPage() {
   const handleStockAdjustment = async () => {
     if (!adjustmentItem) return;
 
-    await updateInventory([{
-        id: adjustmentItem.id,
-        productId: adjustmentItem.productId,
-        storeId: adjustmentItem.storeId,
-        variant_name: adjustmentItem.variant_name || "",
-        stock: newStock
-    }]);
+    const itemToUpdate: InventoryItem = {
+      id: adjustmentItem.id,
+      productId: adjustmentItem.productId,
+      storeId: adjustmentItem.storeId,
+      variant_name: adjustmentItem.variant_name || "",
+      stock: newStock,
+    };
+
+    await updateInventory([itemToUpdate]);
 
     toast({ title: 'Success', description: `Stock for ${adjustmentItem.productName} updated to ${newStock}.`});
     setAdjustmentItem(null);
@@ -176,6 +179,12 @@ export default function InventoryPage() {
                     ))}
                 </SelectContent>
             </Select>
+             <Link href="/inventory/adjustment">
+              <Button>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Bulk Adjustment
+              </Button>
+            </Link>
             <Button variant="outline" onClick={handleExportToExcel}>
               <FileDown className="mr-2 h-4 w-4" />
               Export to Excel
