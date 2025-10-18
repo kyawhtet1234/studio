@@ -218,37 +218,70 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const updateProduct = async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {
         if (!user || !db) return;
-        const batch = writeBatch(db);
         
         const originalProduct = products.find(p => p.id === productId);
         if (!originalProduct) {
             throw new Error("Product not found for update");
         }
 
-        const productRef = doc(db, 'users', user.uid, 'products', productId);
-        batch.update(productRef, productData);
+        const variantsChanged = JSON.stringify(originalProduct.available_variants) !== JSON.stringify(productData.available_variants) || originalProduct.variant_track_enabled !== productData.variant_track_enabled;
 
-        const oldVariants = originalProduct.variant_track_enabled && originalProduct.available_variants ? originalProduct.available_variants : [""];
-        const newVariants = productData.variant_track_enabled && productData.available_variants ? productData.available_variants : [""];
-        
-        const addedVariants = newVariants.filter(v => !oldVariants.includes(v));
+        if (variantsChanged) {
+            try {
+                await runTransaction(db, async (transaction) => {
+                    // 1. Get all current inventory for this product
+                    const existingInvQuery = query(collection(db, 'users', user.uid, 'inventory'), where("productId", "==", productId));
+                    const existingInvSnaps = await getDocs(existingInvQuery);
+                    const oldInventory: InventoryItem[] = [];
+                    existingInvSnaps.forEach(snap => oldInventory.push(snap.data() as InventoryItem));
 
-        for (const store of stores) {
-            for (const variant of addedVariants) {
-                const variantName = variant || "";
-                const inventoryId = `${productId}_${variantName}_${store.id}`;
-                const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
-                batch.set(invRef, {
-                    id: inventoryId,
-                    productId: productId,
-                    variant_name: variantName,
-                    storeId: store.id,
-                    stock: 0
+                    // Carry over stock from old base item if it exists
+                    const oldBaseItem = oldInventory.find(i => i.variant_name === "");
+                    const oldStock = oldBaseItem?.stock || 0;
+
+                    // 2. Delete all old inventory records for this product
+                    oldInventory.forEach(item => {
+                        const invRef = doc(db, 'users', user.uid, 'inventory', item.id);
+                        transaction.delete(invRef);
+                    });
+
+                    // 3. Update the product document
+                    const productRef = doc(db, 'users', user.uid, 'products', productId);
+                    transaction.update(productRef, productData);
+                    
+                    // 4. Create new inventory records based on new variant config
+                    const newVariants = productData.variant_track_enabled && productData.available_variants && productData.available_variants.length > 0
+                        ? productData.available_variants
+                        : [""];
+
+                    stores.forEach((store, storeIndex) => {
+                        newVariants.forEach((variant, variantIndex) => {
+                            const variantName = variant || "";
+                            const inventoryId = `${productId}_${variantName}_${store.id}`;
+                            const newInvRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
+                            // Preserve old stock for the first new variant in each store
+                            const stockToSet = (variantIndex === 0) ? (oldInventory.find(i => i.storeId === store.id && i.variant_name === "")?.stock || 0) : 0;
+                            transaction.set(newInvRef, {
+                                id: inventoryId,
+                                productId,
+                                variant_name: variantName,
+                                storeId: store.id,
+                                stock: stockToSet
+                            });
+                        });
+                    });
                 });
+
+            } catch (e) {
+                 console.error("Product update transaction failed:", e);
+                 throw e;
             }
+        } else {
+             // If variants did not change, just update product info
+            const productRef = doc(db, 'users', user.uid, 'products', productId);
+            await updateDoc(productRef, productData);
         }
         
-        await batch.commit();
         await fetchData(db, user.uid);
     }
 
@@ -800,7 +833,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     
     const deleteLeaveRecord = async (leaveId: string) => {
         if (!user || !db) return;
-        await deleteDoc(doc(db, 'users', user.uid, 'leaveRecords'), leaveId);
+        await deleteDoc(doc(db, 'users', user.uid, 'leaveRecords', leaveId));
         setLeaveRecords(prev => prev.filter(lr => lr.id !== leaveId));
     };
 
