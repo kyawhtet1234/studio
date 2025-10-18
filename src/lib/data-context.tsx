@@ -223,7 +223,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             throw new Error("Product not found for update");
         }
 
-        const variantsChanged = JSON.stringify(originalProduct.available_variants) !== JSON.stringify(productData.available_variants) || originalProduct.variant_track_enabled !== productData.variant_track_enabled;
+        const variantsChanged = JSON.stringify(originalProduct.available_variants || []) !== JSON.stringify(productData.available_variants || []) || originalProduct.variant_track_enabled !== productData.variant_track_enabled;
 
         if (variantsChanged) {
             try {
@@ -233,10 +233,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     const existingInvSnaps = await getDocs(existingInvQuery);
                     const oldInventory: InventoryItem[] = [];
                     existingInvSnaps.forEach(snap => oldInventory.push(snap.data() as InventoryItem));
-
-                    // Carry over stock from old base item if it exists
-                    const oldBaseItem = oldInventory.find(i => i.variant_name === "");
-                    const oldStock = oldBaseItem?.stock || 0;
 
                     // 2. Delete all old inventory records for this product
                     oldInventory.forEach(item => {
@@ -253,13 +249,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
                         ? productData.available_variants
                         : [""];
 
-                    stores.forEach((store, storeIndex) => {
+                    stores.forEach((store) => {
+                        const stockToPreserve = oldInventory.find(i => i.storeId === store.id && i.variant_name === "")?.stock || 0;
                         newVariants.forEach((variant, variantIndex) => {
                             const variantName = variant || "";
                             const inventoryId = `${productId}_${variantName}_${store.id}`;
                             const newInvRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
-                            // Preserve old stock for the first new variant in each store
-                            const stockToSet = (variantIndex === 0) ? (oldInventory.find(i => i.storeId === store.id && i.variant_name === "")?.stock || 0) : 0;
+                            // Preserve old base item stock for the first new variant in each store
+                            const stockToSet = (variantIndex === 0) ? stockToPreserve : 0;
                             transaction.set(newInvRef, {
                                 id: inventoryId,
                                 productId,
@@ -841,8 +838,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const batch = writeBatch(db);
 
         updatedItems.forEach(item => {
-            const invRef = doc(db, 'users', user.uid, 'inventory', item.id);
-            batch.set(invRef, item, { merge: true });
+            const variantName = item.variant_name || "";
+            const invId = `${item.productId}_${variantName}_${item.storeId}`;
+            const invRef = doc(db, 'users', user.uid, 'inventory', invId);
+            batch.set(invRef, {...item, id: invId, variant_name: variantName}, { merge: true });
         });
 
         await batch.commit();
@@ -916,5 +915,7 @@ export function useData() {
     }
     return context;
 }
+
+    
 
     

@@ -33,7 +33,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useData } from "@/lib/data-context";
-import type { InventoryItem } from "@/lib/types";
+import type { InventoryItem, Product } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileDown, RefreshCw } from "lucide-react";
 import * as XLSX from 'xlsx';
@@ -60,23 +60,37 @@ export default function InventoryPage() {
   const [newStock, setNewStock] = useState<number>(0);
 
   const inventoryData = useMemo(() => {
-    return inventory
-        .map(item => {
-            const product = products.find(p => p.id === item.productId);
-            if (!product) return null; // If product doesn't exist, don't include it.
+    const groupedInventory: { [key: string]: (InventoryItem & { productName?: string, sku?: string, categoryId?: string, categoryName?: string, storeName?: string }) } = {};
 
-            const store = stores.find(s => s.id === item.storeId);
-            const category = categories.find(c => c.id === product?.categoryId);
-            return {
+    inventory.forEach(item => {
+        const product = products.find(p => p.id === item.productId);
+        if (!product) return;
+
+        const store = stores.find(s => s.id === item.storeId);
+        const category = categories.find(c => c.id === product.categoryId);
+        const variantName = item.variant_name || "";
+        const id = `${item.productId}_${variantName}_${item.storeId}`;
+        
+        const productName = variantName ? `${product.name} (${variantName})` : product.name;
+
+        if (groupedInventory[id]) {
+            groupedInventory[id].stock += item.stock;
+        } else {
+            groupedInventory[id] = {
                 ...item,
-                productName: product?.name,
-                sku: product?.sku,
-                categoryId: product?.categoryId,
+                id, // Ensure consistent ID
+                variant_name: variantName, // Ensure variant_name is a string
+                productName: productName,
+                sku: product.sku,
+                categoryId: product.categoryId,
                 categoryName: category?.name,
                 storeName: store?.name,
             };
-        })
-        .filter((item): item is NonNullable<typeof item> => item !== null) // Filter out the null items
+        }
+    });
+
+    return Object.values(groupedInventory)
+        .filter((item): item is NonNullable<typeof item> => item !== null)
         .filter(item => selectedStore === 'all' || item.storeId === selectedStore)
         .filter(item => selectedCategory === 'all' || item.categoryId === selectedCategory)
         .sort((a, b) => {
@@ -90,13 +104,13 @@ export default function InventoryPage() {
         });
   }, [inventory, selectedStore, selectedCategory, products, stores, categories, sortBy]);
 
-  const handleOpenAdjustDialog = (item: { id: string; productId: string; storeId: string; variant_name: string; productName?: string; storeName?: string, stock: number }) => {
+  const handleOpenAdjustDialog = (item: (typeof inventoryData)[0]) => {
     setAdjustmentItem({
         id: item.id,
         productId: item.productId,
         storeId: item.storeId,
         variant_name: item.variant_name || "",
-        productName: item.variant_name ? `${item.productName} (${item.variant_name})` : item.productName,
+        productName: item.productName,
         storeName: item.storeName,
         currentStock: item.stock
     });
@@ -263,5 +277,7 @@ export default function InventoryPage() {
     </div>
   );
 }
+
+    
 
     
