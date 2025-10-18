@@ -1,5 +1,4 @@
 
-
 'use client';
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
@@ -800,7 +799,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     
     const deleteLeaveRecord = async (leaveId: string) => {
         if (!user || !db) return;
-        await deleteDoc(doc(db, 'users', user.uid, 'leaveRecords', leaveId));
+        await deleteDoc(doc(db, 'users', user.uid, 'leaveRecords'), leaveId);
         setLeaveRecords(prev => prev.filter(lr => lr.id !== leaveId));
     };
 
@@ -809,12 +808,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const batch = writeBatch(db);
 
         updatedItems.forEach(item => {
-            const inventoryId = item.id;
-            const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
-            batch.set(invRef, {
-                ...item,
-                variant_name: item.variant_name || ""
-            }, { merge: true });
+            const invRef = doc(db, 'users', user.uid, 'inventory', item.id);
+            batch.update(invRef, { stock: item.stock });
         });
 
         await batch.commit();
@@ -888,5 +883,3 @@ export function useData() {
     }
     return context;
 }
-
-    
