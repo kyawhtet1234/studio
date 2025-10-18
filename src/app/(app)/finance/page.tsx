@@ -140,7 +140,7 @@ export default function FinancePage() {
 
       <Tabs defaultValue="overview" onValueChange={setActiveTab} value={activeTab}>
         <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-            <TabsList className="overflow-x-auto self-start h-auto">
+            <TabsList className="overflow-x-auto self-start h-auto flex-nowrap w-full no-scrollbar">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="balanceSheet">Balance Sheet</TabsTrigger>
                 <TabsTrigger value="cashFlow">Cash Flow</TabsTrigger>

@@ -20,7 +20,7 @@ export default function SalesPage() {
     <div>
       <PageHeader title="Sales & Documents" />
       <Tabs defaultValue="sale">
-        <TabsList>
+        <TabsList className="overflow-x-auto self-start h-auto flex-nowrap w-full no-scrollbar">
             <TabsTrigger value="sale">New Sale</TabsTrigger>
             <TabsTrigger value="invoice">New Invoice</TabsTrigger>
             <TabsTrigger value="quotation">New Quotation</TabsTrigger>
