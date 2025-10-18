@@ -1,4 +1,5 @@
 
+
 'use client';
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
@@ -809,7 +810,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         updatedItems.forEach(item => {
             const invRef = doc(db, 'users', user.uid, 'inventory', item.id);
-            batch.update(invRef, { stock: item.stock });
+            batch.set(invRef, item, { merge: true });
         });
 
         await batch.commit();
@@ -883,3 +884,5 @@ export function useData() {
     }
     return context;
 }
+
+    
