@@ -187,7 +187,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
       date: data.date,
       items: data.cart.map(item => ({
         productId: item.productId,
-        variant_name: item.variant_name,
+        variant_name: item.variant_name || "",
         quantity: item.quantity,
         buyPrice: item.buyPrice,
       })),

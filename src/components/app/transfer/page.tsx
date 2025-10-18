@@ -134,11 +134,12 @@ export default function TransferPage() {
             return;
         }
 
-        let updatedInventoryItems: Omit<InventoryItem, 'stock'> & { stock: number }[] = [];
+        let updatedInventoryItems: InventoryItem[] = [];
 
         for (const item of transferItems) {
-            const fromInventoryId = `${item.productId}_${item.variant_name}_${fromStoreId}`;
-            const toInventoryId = `${item.productId}_${item.variant_name}_${toStoreId}`;
+            const variantName = item.variant_name || "";
+            const fromInventoryId = `${item.productId}_${variantName}_${fromStoreId}`;
+            const toInventoryId = `${item.productId}_${variantName}_${toStoreId}`;
 
             const fromInventory = inventory.find(i => i.id === fromInventoryId);
             const toInventory = inventory.find(i => i.id === toInventoryId);
@@ -147,7 +148,7 @@ export default function TransferPage() {
                 updatedInventoryItems.push({
                     id: fromInventoryId,
                     productId: item.productId,
-                    variant_name: item.variant_name,
+                    variant_name: variantName,
                     storeId: fromStoreId,
                     stock: fromInventory.stock - item.quantity
                 });
@@ -156,7 +157,7 @@ export default function TransferPage() {
             updatedInventoryItems.push({
                 id: toInventoryId,
                 productId: item.productId,
-                variant_name: item.variant_name,
+                variant_name: variantName,
                 storeId: toStoreId,
                 stock: (toInventory?.stock || 0) + item.quantity
             });
@@ -246,12 +247,13 @@ export default function TransferPage() {
           </div>
 
         {transferItems.length > 0 && (
-            <div className="rounded-md border mt-6">
+            <div className="rounded-md border mt-6 overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>
                             <TableHead>SKU</TableHead>
                             <TableHead>Product Name</TableHead>
+                            <TableHead>Variant</TableHead>
                             <TableHead className="text-right">Quantity</TableHead>
                              <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
@@ -260,7 +262,8 @@ export default function TransferPage() {
                        {transferItems.map(item => (
                            <TableRow key={`${item.sku}_${item.variant_name}`}>
                                <TableCell>{item.sku}</TableCell>
-                               <TableCell className="font-medium">{item.name} {item.variant_name && `(${item.variant_name})`}</TableCell>
+                               <TableCell className="font-medium">{item.name}</TableCell>
+                               <TableCell>{item.variant_name || '-'}</TableCell>
                                <TableCell className="text-right">{item.quantity}</TableCell>
                                <TableCell>
                                     <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.sku, item.variant_name)}>
@@ -283,3 +286,4 @@ export default function TransferPage() {
   );
 }
 
+    

@@ -35,9 +35,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useData } from "@/lib/data-context";
 import type { InventoryItem } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileDown } from "lucide-react";
+import { FileDown, RefreshCw } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { format } from "date-fns";
+import Link from "next/link";
 
 interface AdjustmentItem {
   id: string;
@@ -62,20 +63,23 @@ export default function InventoryPage() {
     return inventory
         .map(item => {
             const product = products.find(p => p.id === item.productId);
-            if (!product) return null;
+            if (!product) return null; // If product doesn't exist, don't include it.
 
             const store = stores.find(s => s.id === item.storeId);
             const category = categories.find(c => c.id === product?.categoryId);
+            
+            const productName = item.variant_name ? `${product.name} (${item.variant_name})` : product.name;
+            
             return {
                 ...item,
-                productName: item.variant_name ? `${product?.name} (${item.variant_name})` : product?.name,
+                productName: productName,
                 sku: product?.sku,
                 categoryId: product?.categoryId,
                 categoryName: category?.name,
                 storeName: store?.name,
             };
         })
-        .filter((item): item is NonNullable<typeof item> => item !== null)
+        .filter((item): item is NonNullable<typeof item> => item !== null) // Filter out the null items
         .filter(item => selectedStore === 'all' || item.storeId === selectedStore)
         .filter(item => selectedCategory === 'all' || item.categoryId === selectedCategory)
         .sort((a, b) => {
@@ -89,12 +93,12 @@ export default function InventoryPage() {
         });
   }, [inventory, selectedStore, selectedCategory, products, stores, categories, sortBy]);
 
-  const handleOpenAdjustDialog = (item: { id: string, productId: string; storeId: string; variant_name: string; productName?: string; storeName?: string, stock: number }) => {
+  const handleOpenAdjustDialog = (item: (typeof inventoryData)[0]) => {
     setAdjustmentItem({
         id: item.id,
         productId: item.productId,
         storeId: item.storeId,
-        variant_name: item.variant_name,
+        variant_name: item.variant_name || "",
         productName: item.productName,
         storeName: item.storeName,
         currentStock: item.stock
@@ -105,13 +109,15 @@ export default function InventoryPage() {
   const handleStockAdjustment = async () => {
     if (!adjustmentItem) return;
 
-    await updateInventory([{
-        id: adjustmentItem.id,
-        productId: adjustmentItem.productId,
-        storeId: adjustmentItem.storeId,
-        variant_name: adjustmentItem.variant_name,
-        stock: newStock
-    }]);
+    const itemToUpdate: InventoryItem = {
+      id: adjustmentItem.id,
+      productId: adjustmentItem.productId,
+      storeId: adjustmentItem.storeId,
+      variant_name: adjustmentItem.variant_name || "",
+      stock: newStock,
+    };
+
+    await updateInventory([itemToUpdate]);
 
     toast({ title: 'Success', description: `Stock for ${adjustmentItem.productName} updated to ${newStock}.`});
     setAdjustmentItem(null);
@@ -126,6 +132,7 @@ export default function InventoryPage() {
     const dataToExport = inventoryData.map(item => ({
       SKU: item.sku,
       'Product Name': item.productName,
+      'Variant': item.variant_name || '-',
       Category: item.categoryName,
       Store: item.storeName,
       Stock: item.stock,
@@ -175,6 +182,12 @@ export default function InventoryPage() {
                     ))}
                 </SelectContent>
             </Select>
+             <Link href="/inventory/adjustment">
+              <Button>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Bulk Adjustment
+              </Button>
+            </Link>
             <Button variant="outline" onClick={handleExportToExcel}>
               <FileDown className="mr-2 h-4 w-4" />
               Export to Excel
@@ -189,6 +202,7 @@ export default function InventoryPage() {
                 <TableRow className="bg-shiny-yellow hover:bg-shiny-yellow/90">
                   <TableHead className="text-black font-bold">SKU</TableHead>
                   <TableHead className="text-black font-bold">Product Name</TableHead>
+                  <TableHead className="text-black font-bold">Variant</TableHead>
                   <TableHead className="text-black font-bold">Category</TableHead>
                   <TableHead className="text-black font-bold">Store</TableHead>
                   <TableHead className="text-right text-black font-bold">Stock</TableHead>
@@ -200,6 +214,7 @@ export default function InventoryPage() {
                     <TableRow key={item.id}>
                         <TableCell>{item.sku}</TableCell>
                         <TableCell className="font-medium">{item.productName}</TableCell>
+                        <TableCell>{item.variant_name || '-'}</TableCell>
                         <TableCell>{item.categoryName}</TableCell>
                         <TableCell>{item.storeName}</TableCell>
                         <TableCell className="text-right">{item.stock}</TableCell>
@@ -212,7 +227,7 @@ export default function InventoryPage() {
                 ))}
                 {inventoryData.length === 0 && (
                     <TableRow>
-                        <TableCell colSpan={6} className="text-center h-24">
+                        <TableCell colSpan={7} className="text-center h-24">
                             No inventory found for the selected filters.
                         </TableCell>
                     </TableRow>
@@ -251,3 +266,5 @@ export default function InventoryPage() {
     </div>
   );
 }
+
+    

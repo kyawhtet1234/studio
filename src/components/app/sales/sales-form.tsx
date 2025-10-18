@@ -190,7 +190,8 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
 
   const handleQuantityChange = (index: number, newQuantity: number) => {
     const item = fields[index];
-    const inventoryId = `${item.productId}_${item.variant_name}_${watchStoreId}`;
+    const variantName = item.variant_name || "";
+    const inventoryId = `${item.productId}_${variantName}_${watchStoreId}`;
     const inventoryItem = inventory.find(i => i.id === inventoryId);
     const availableStock = inventoryItem?.stock || 0;
 
@@ -215,7 +216,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
             productId: item.productId,
             name: item.name,
             sku: item.sku,
-            variant_name: item.variant_name,
+            variant_name: item.variant_name || "",
             sellPrice: item.sellPrice,
             quantity: item.quantity,
             total: item.total
