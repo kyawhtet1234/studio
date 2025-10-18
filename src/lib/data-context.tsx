@@ -232,7 +232,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     const existingInvQuery = query(collection(db, 'users', user.uid, 'inventory'), where("productId", "==", productId));
                     const existingInvSnaps = await getDocs(existingInvQuery);
                     const oldInventory: InventoryItem[] = [];
-                    existingInvSnaps.forEach(snap => oldInventory.push(snap.data() as InventoryItem));
+                    existingInvSnaps.forEach(snap => oldInventory.push({ id: snap.id, ...snap.data() } as InventoryItem));
 
                     // 2. Delete all old inventory records for this product
                     oldInventory.forEach(item => {
@@ -915,7 +915,3 @@ export function useData() {
     }
     return context;
 }
-
-    
-
-    
