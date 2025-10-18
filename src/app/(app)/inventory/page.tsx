@@ -65,6 +65,11 @@ export default function InventoryPage() {
     inventory.forEach(item => {
         const product = products.find(p => p.id === item.productId);
         if (!product) return;
+        
+        // If a product has variants, we should not show the base item (with no variant_name)
+        if (product.variant_track_enabled && !item.variant_name) {
+            return;
+        }
 
         const store = stores.find(s => s.id === item.storeId);
         const category = categories.find(c => c.id === product.categoryId);
