@@ -19,14 +19,19 @@ let db: Firestore;
 
 // Memoized function to get client services
 export function getClientServices() {
-    if (!app) {
-        if (getApps().length > 0) {
-            app = getApp();
-        } else {
-            app = initializeApp(firebaseConfig);
+    if (typeof window !== 'undefined') {
+        if (!app) {
+            if (getApps().length > 0) {
+                app = getApp();
+            } else {
+                app = initializeApp(firebaseConfig);
+            }
+            auth = getAuth(app);
+            db = getFirestore(app);
         }
-        auth = getAuth(app);
-        db = getFirestore(app);
     }
+    // On the server, we return undefined
+    // This can be handled by the calling components
+    // @ts-ignore
     return { app, db, auth };
 }
