@@ -6,9 +6,9 @@ import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
-import { FileDown, MoreHorizontal, Printer, Trash2, Undo2 } from "lucide-react";
+import { FileDown, MoreHorizontal, Printer, Trash2, Undo2, View } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { PurchaseTransaction, SaleTransaction, Store, Customer } from "@/lib/types";
+import type { PurchaseTransaction, SaleTransaction, Store, Customer, Product } from "@/lib/types";
 import type { Timestamp } from 'firebase/firestore';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
@@ -107,7 +107,7 @@ const SalesByCustomerTable = ({ data }: { data: any[] }) => (
     </Card>
 );
 
-const PurchaseHistoryTable = ({ data, stores, suppliers, onDelete }: { data: PurchaseTransaction[], stores: any[], suppliers: any[], onDelete: (id: string) => void }) => {
+const PurchaseHistoryTable = ({ data, products, stores, suppliers, onDelete, onViewDetails }: { data: PurchaseTransaction[], products: Product[], stores: any[], suppliers: any[], onDelete: (id: string) => void, onViewDetails: (purchase: PurchaseTransaction) => void }) => {
     const [deleteCandidate, setDeleteCandidate] = useState<string | null>(null);
     const { toast } = useToast();
 
@@ -151,7 +151,14 @@ const PurchaseHistoryTable = ({ data, stores, suppliers, onDelete }: { data: Pur
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem className="text-destructive" onClick={() => setDeleteCandidate(purchase.id)}>Delete</DropdownMenuItem>
+                                         <DropdownMenuItem onClick={() => onViewDetails(purchase)}>
+                                            <View className="mr-2 h-4 w-4" />
+                                            View Details
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-destructive" onClick={() => setDeleteCandidate(purchase.id)}>
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Delete
+                                        </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>
@@ -325,6 +332,7 @@ export default function ReportsPage() {
   const [documentToPrint, setDocumentToPrint] = useState<{ type: 'receipt' | 'invoice' | 'quotation' | 'cash-receipt', sale: SaleTransaction } | null>(null);
   const [editingDocument, setEditingDocument] = useState<SaleTransaction | null>(null);
   const [paymentDocument, setPaymentDocument] = useState<SaleTransaction | null>(null);
+  const [viewingPurchase, setViewingPurchase] = useState<PurchaseTransaction | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [selectedStore, setSelectedStore] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('daily');
@@ -686,7 +694,7 @@ export default function ReportsPage() {
             <SalesHistoryTable data={salesHistory} stores={stores} customers={customers} onVoid={voidSale} onPrintReceipt={(sale) => setDocumentToPrint({ type: 'receipt', sale })} onDelete={deleteSale} />
         </TabsContent>
         <TabsContent value="purchase" className="mt-4">
-            <PurchaseHistoryTable data={purchaseHistory} stores={stores} suppliers={suppliers} onDelete={deletePurchase} />
+            <PurchaseHistoryTable data={purchaseHistory} products={products} stores={stores} suppliers={suppliers} onDelete={deletePurchase} onViewDetails={setViewingPurchase} />
         </TabsContent>
         <TabsContent value="invoice" className="mt-4">
             <Card className="bg-shiny-blue rounded-xl shadow-lg">
@@ -743,6 +751,55 @@ export default function ReportsPage() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
+        <Dialog open={!!viewingPurchase} onOpenChange={() => setViewingPurchase(null)}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Purchase Details</DialogTitle>
+                    <DialogDescription>
+                        Details for purchase made on {viewingPurchase && format(toDate(viewingPurchase.date), 'PP')}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Product</TableHead>
+                                <TableHead>Variant</TableHead>
+                                <TableHead className="text-right">Qty</TableHead>
+                                <TableHead className="text-right">Price</TableHead>
+                                <TableHead className="text-right">Total</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {viewingPurchase?.items.map((item, index) => {
+                                const product = products.find(p => p.id === item.productId);
+                                const itemTotal = item.buyPrice * item.quantity;
+                                return (
+                                    <TableRow key={index}>
+                                        <TableCell>{product?.name || 'Unknown Product'}</TableCell>
+                                        <TableCell>{item.variant_name || '-'}</TableCell>
+                                        <TableCell className="text-right">{item.quantity}</TableCell>
+                                        <TableCell className="text-right">MMK {item.buyPrice.toLocaleString()}</TableCell>
+                                        <TableCell className="text-right">MMK {itemTotal.toLocaleString()}</TableCell>
+                                    </TableRow>
+                                )
+                            })}
+                        </TableBody>
+                        <TableFooter>
+                            <TableRow>
+                                <TableCell colSpan={4} className="text-right font-bold">Grand Total</TableCell>
+                                <TableCell className="text-right font-bold">MMK {viewingPurchase?.total.toLocaleString()}</TableCell>
+                            </TableRow>
+                        </TableFooter>
+                    </Table>
+                </div>
+                 <DialogFooter>
+                    <Button variant="outline" onClick={() => setViewingPurchase(null)}>Close</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
+
+    
