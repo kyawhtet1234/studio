@@ -28,6 +28,16 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,10 +45,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useData } from "@/lib/data-context";
 import type { InventoryItem, Product } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileDown, RefreshCw } from "lucide-react";
+import { FileDown, MoreHorizontal, RefreshCw, Trash2 } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { format } from "date-fns";
 import Link from "next/link";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface AdjustmentItem {
   id: string;
@@ -51,50 +62,44 @@ interface AdjustmentItem {
 }
 
 export default function InventoryPage() {
-  const { inventory, products, stores, categories, updateInventory } = useData();
+  const { inventory, products, stores, categories, updateInventory, deleteInventoryItem } = useData();
   const { toast } = useToast();
   const [selectedStore, setSelectedStore] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("sku");
   const [adjustmentItem, setAdjustmentItem] = useState<AdjustmentItem | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<AdjustmentItem | null>(null);
   const [newStock, setNewStock] = useState<number>(0);
 
   const inventoryData = useMemo(() => {
-    const groupedInventory: { [key: string]: (InventoryItem & { productName?: string, sku?: string, categoryId?: string, categoryName?: string, storeName?: string }) } = {};
+    return inventory
+        .map(item => {
+            const product = products.find(p => p.id === item.productId);
+            if (!product) return null;
 
-    inventory.forEach(item => {
-        const product = products.find(p => p.id === item.productId);
-        if (!product) return;
-        
-        // If a product has variants, we should not show the base item (with no variant_name)
-        if (product.variant_track_enabled && !item.variant_name) {
-            return;
-        }
+            // If a product has variants enabled, only show rows that have a variant name.
+            if (product.variant_track_enabled && !item.variant_name) {
+                return null;
+            }
+             // If a product does NOT have variants, only show the base row (without variant name).
+            if (!product.variant_track_enabled && item.variant_name) {
+                return null;
+            }
 
-        const store = stores.find(s => s.id === item.storeId);
-        const category = categories.find(c => c.id === product.categoryId);
-        const variantName = item.variant_name || "";
-        const id = `${item.productId}_${variantName}_${item.storeId}`;
-        
-        const productName = variantName ? `${product.name} (${variantName})` : product.name;
+            const store = stores.find(s => s.id === item.storeId);
+            const category = categories.find(c => c.id === product.categoryId);
+            const productName = product.name;
+            const storeName = store?.name;
 
-        if (groupedInventory[id]) {
-            groupedInventory[id].stock += item.stock;
-        } else {
-            groupedInventory[id] = {
+            return {
                 ...item,
-                id, // Ensure consistent ID
-                variant_name: variantName, // Ensure variant_name is a string
                 productName: productName,
                 sku: product.sku,
                 categoryId: product.categoryId,
                 categoryName: category?.name,
-                storeName: store?.name,
+                storeName: storeName,
             };
-        }
-    });
-
-    return Object.values(groupedInventory)
+        })
         .filter((item): item is NonNullable<typeof item> => item !== null)
         .filter(item => selectedStore === 'all' || item.storeId === selectedStore)
         .filter(item => selectedCategory === 'all' || item.categoryId === selectedCategory)
@@ -115,11 +120,23 @@ export default function InventoryPage() {
         productId: item.productId,
         storeId: item.storeId,
         variant_name: item.variant_name || "",
-        productName: item.productName,
+        productName: item.variant_name ? `${item.productName} (${item.variant_name})` : item.productName,
         storeName: item.storeName,
         currentStock: item.stock
     });
     setNewStock(item.stock);
+  };
+  
+  const handleOpenDeleteDialog = (item: (typeof inventoryData)[0]) => {
+    setDeleteCandidate({
+        id: item.id,
+        productId: item.productId,
+        storeId: item.storeId,
+        variant_name: item.variant_name || "",
+        productName: item.variant_name ? `${item.productName} (${item.variant_name})` : item.productName,
+        storeName: item.storeName,
+        currentStock: item.stock
+    });
   };
 
   const handleStockAdjustment = async () => {
@@ -138,6 +155,14 @@ export default function InventoryPage() {
     toast({ title: 'Success', description: `Stock for ${adjustmentItem.productName} updated to ${newStock}.`});
     setAdjustmentItem(null);
   };
+
+  const handleItemDelete = async () => {
+    if (!deleteCandidate) return;
+
+    await deleteInventoryItem(deleteCandidate.id);
+    toast({ title: 'Success', description: `${deleteCandidate.productName} has been deleted from ${deleteCandidate.storeName}.`});
+    setDeleteCandidate(null);
+  }
 
   const handleExportToExcel = () => {
     if (inventoryData.length === 0) {
@@ -235,9 +260,23 @@ export default function InventoryPage() {
                         <TableCell>{item.storeName}</TableCell>
                         <TableCell className="text-right">{item.stock}</TableCell>
                         <TableCell className="text-right">
-                            <Button variant="outline" size="sm" onClick={() => handleOpenAdjustDialog(item)}>
-                                Adjust
-                            </Button>
+                           <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0">
+                                      <span className="sr-only">Open menu</span>
+                                      <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleOpenAdjustDialog(item)}>
+                                      Adjust Stock
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(item)}>
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Delete
+                                  </DropdownMenuItem>
+                              </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                     </TableRow>
                 ))}
@@ -279,10 +318,22 @@ export default function InventoryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+       <AlertDialog open={!!deleteCandidate} onOpenChange={() => setDeleteCandidate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the inventory record for <strong>{deleteCandidate?.productName}</strong> at <strong>{deleteCandidate?.storeName}</strong>. This does not delete the product itself.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleItemDelete} className="bg-destructive hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
-
-    
-
-    

@@ -76,6 +76,7 @@ interface DataContextProps {
     addLeaveRecord: (leave: Omit<LeaveRecord, 'id'>) => Promise<void>;
     deleteLeaveRecord: (leaveId: string) => Promise<void>;
     updateInventory: (updatedItems: InventoryItem[]) => Promise<void>;
+    deleteInventoryItem: (itemId: string) => Promise<void>;
     updateInvoiceSettings: (settings: DocumentSettings) => Promise<void>;
     updateQuotationSettings: (settings: DocumentSettings) => Promise<void>;
     updateReceiptSettings: (settings: { companyLogo?: string }) => Promise<void>;
@@ -212,69 +213,61 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const updateProduct = async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {
         if (!user || !db) return;
-        
-        const originalProduct = products.find(p => p.id === productId);
-        if (!originalProduct) {
-            throw new Error("Product not found for update");
-        }
-
-        const variantsChanged = JSON.stringify(originalProduct.available_variants || []) !== JSON.stringify(productData.available_variants || []) || originalProduct.variant_track_enabled !== productData.variant_track_enabled;
-
-        if (variantsChanged) {
-            try {
-                await runTransaction(db, async (transaction) => {
-                    // 1. Get all current inventory for this product
-                    const existingInvQuery = query(collection(db, 'users', user.uid, 'inventory'), where("productId", "==", productId));
-                    const existingInvSnaps = await getDocs(existingInvQuery);
-                    const oldInventory: InventoryItem[] = [];
-                    existingInvSnaps.forEach(snap => oldInventory.push({ id: snap.id, ...snap.data() } as InventoryItem));
-
-                    // 2. Delete all old inventory records for this product
-                    oldInventory.forEach(item => {
-                        const invRef = doc(db, 'users', user.uid, 'inventory', item.id);
-                        transaction.delete(invRef);
-                    });
-
-                    // 3. Update the product document
-                    const productRef = doc(db, 'users', user.uid, 'products', productId);
-                    transaction.update(productRef, productData);
-                    
-                    // 4. Create new inventory records based on new variant config
-                    const newVariants = productData.variant_track_enabled && productData.available_variants && productData.available_variants.length > 0
-                        ? productData.available_variants
-                        : [""];
-
-                    stores.forEach((store) => {
-                        const stockToPreserve = oldInventory.find(i => i.storeId === store.id && i.variant_name === "")?.stock || 0;
-                        newVariants.forEach((variant, variantIndex) => {
-                            const variantName = variant || "";
-                            const inventoryId = `${productId}_${variantName}_${store.id}`;
-                            const newInvRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
-                            // Preserve old base item stock for the first new variant in each store
-                            const stockToSet = (variantIndex === 0) ? stockToPreserve : 0;
-                            transaction.set(newInvRef, {
-                                id: inventoryId,
-                                productId,
-                                variant_name: variantName,
-                                storeId: store.id,
-                                stock: stockToSet
-                            });
-                        });
-                    });
-                });
-
-            } catch (e) {
-                 console.error("Product update transaction failed:", e);
-                 throw e;
-            }
-        } else {
-             // If variants did not change, just update product info
+    
+        await runTransaction(db, async (transaction) => {
             const productRef = doc(db, 'users', user.uid, 'products', productId);
-            await updateDoc(productRef, productData);
-        }
-        
+            const productSnap = await transaction.get(productRef);
+            if (!productSnap.exists()) {
+                throw "Product not found!";
+            }
+            const originalProduct = productSnap.data() as Product;
+    
+            // 1. Delete all existing inventory items for this product
+            const inventoryQuery = query(collection(db, 'users', user.uid, 'inventory'), where('productId', '==', productId));
+            const inventorySnaps = await getDocs(inventoryQuery);
+            
+            let baseStockToPreserve = 0;
+            inventorySnaps.forEach((invDoc) => {
+                const invData = invDoc.data() as InventoryItem;
+                 if (!invData.variant_name) {
+                    baseStockToPreserve += invData.stock;
+                }
+                transaction.delete(invDoc.ref);
+            });
+    
+            // 2. Update the product document itself
+            transaction.update(productRef, productData);
+    
+            // 3. Create new inventory items based on the new variant configuration
+            const newVariants = productData.variant_track_enabled && productData.available_variants && productData.available_variants.length > 0
+                ? productData.available_variants
+                : [""];
+    
+            for (const store of stores) {
+                for (const variant of newVariants) {
+                    const variantName = variant || "";
+                    const inventoryId = `${productId}_${variantName}_${store.id}`;
+                    const newInvRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
+                    
+                    let stockToSet = 0;
+                    // If we're moving to a single item, preserve the stock of the old base item.
+                    if (newVariants.length === 1 && newVariants[0] === "") {
+                       stockToSet = baseStockToPreserve;
+                    }
+
+                    transaction.set(newInvRef, {
+                        id: inventoryId,
+                        productId: productId,
+                        variant_name: variantName,
+                        storeId: store.id,
+                        stock: stockToSet,
+                    });
+                }
+            }
+        });
+    
         await fetchData(db, user.uid);
-    }
+    };
 
     const deleteProduct = async (productId: string) => {
         if (!user || !db) return;
@@ -833,14 +826,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const batch = writeBatch(db);
 
         updatedItems.forEach(item => {
-            const variantName = item.variant_name || "";
-            const invId = `${item.productId}_${variantName}_${item.storeId}`;
-            const invRef = doc(db, 'users', user.uid, 'inventory', invId);
-            batch.set(invRef, {...item, id: invId, variant_name: variantName}, { merge: true });
+            const invRef = doc(db, 'users', user.uid, 'inventory', item.id);
+            batch.set(invRef, item, { merge: true });
         });
 
         await batch.commit();
         await fetchData(db, user.uid);
+    };
+
+    const deleteInventoryItem = async (itemId: string) => {
+        if (!user || !db) return;
+        await deleteDoc(doc(db, 'users', user.uid, 'inventory', itemId));
+        setInventory(prev => prev.filter(i => i.id !== itemId));
     };
 
     const updateSettings = async (newSettings: Partial<BusinessSettings>) => {
@@ -878,7 +875,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             stores, addStore, updateStore, deleteStore,
             customers, addCustomer, updateCustomer, deleteCustomer,
             paymentTypes, addPaymentType, updatePaymentType, deletePaymentType,
-            inventory, updateInventory,
+            inventory, updateInventory, deleteInventoryItem,
             sales, addSale, updateSale, voidSale, deleteSale, markInvoiceAsPaid, recordPayment,
             purchases, addPurchase, deletePurchase,
             expenses, addExpense, deleteExpense,
