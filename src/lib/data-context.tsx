@@ -220,50 +220,46 @@ export function DataProvider({ children }: { children: ReactNode }) {
             if (!productSnap.exists()) {
                 throw "Product not found!";
             }
-            const originalProduct = productSnap.data() as Product;
+            const originalProductData = productSnap.data() as Product;
     
-            // 1. Delete all existing inventory items for this product
-            const inventoryQuery = query(collection(db, 'users', user.uid, 'inventory'), where('productId', '==', productId));
-            const inventorySnaps = await getDocs(inventoryQuery);
-            
-            let baseStockToPreserve = 0;
-            inventorySnaps.forEach((invDoc) => {
-                const invData = invDoc.data() as InventoryItem;
-                 if (!invData.variant_name) {
-                    baseStockToPreserve += invData.stock;
-                }
-                transaction.delete(invDoc.ref);
-            });
+            // Determine if variant configuration changed
+            const variantsChanged = JSON.stringify(originalProductData.available_variants || []) !== JSON.stringify(productData.available_variants || []) 
+                                  || originalProductData.variant_track_enabled !== productData.variant_track_enabled;
     
-            // 2. Update the product document itself
-            transaction.update(productRef, productData);
+            // If variants have changed, we need to rebuild the inventory items.
+            if (variantsChanged) {
+                // First, find all existing inventory items for this product to delete them.
+                const inventoryQuery = query(collection(db, 'users', user.uid, 'inventory'), where('productId', '==', productId));
+                const inventorySnaps = await getDocs(inventoryQuery); // This read is safe before writes in a transaction.
+                
+                // Now, delete them within the transaction.
+                inventorySnaps.forEach((invDoc) => {
+                    transaction.delete(invDoc.ref);
+                });
     
-            // 3. Create new inventory items based on the new variant configuration
-            const newVariants = productData.variant_track_enabled && productData.available_variants && productData.available_variants.length > 0
-                ? productData.available_variants
-                : [""];
+                // Then, create the new inventory items based on the new product data.
+                const newVariants = (productData.variant_track_enabled && productData.available_variants && productData.available_variants.length > 0)
+                    ? productData.available_variants
+                    : [""];
     
-            for (const store of stores) {
-                for (const variant of newVariants) {
-                    const variantName = variant || "";
-                    const inventoryId = `${productId}_${variantName}_${store.id}`;
-                    const newInvRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
-                    
-                    let stockToSet = 0;
-                    // If we're moving to a single item, preserve the stock of the old base item.
-                    if (newVariants.length === 1 && newVariants[0] === "") {
-                       stockToSet = baseStockToPreserve;
+                for (const store of stores) {
+                    for (const variant of newVariants) {
+                        const variantName = variant || "";
+                        const inventoryId = `${productId}_${variantName}_${store.id}`;
+                        const newInvRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
+                        transaction.set(newInvRef, {
+                            id: inventoryId,
+                            productId: productId,
+                            variant_name: variantName,
+                            storeId: store.id,
+                            stock: 0, // Reset stock on variant change
+                        });
                     }
-
-                    transaction.set(newInvRef, {
-                        id: inventoryId,
-                        productId: productId,
-                        variant_name: variantName,
-                        storeId: store.id,
-                        stock: stockToSet,
-                    });
                 }
             }
+    
+            // Finally, update the product document itself.
+            transaction.update(productRef, productData);
         });
     
         await fetchData(db, user.uid);
@@ -907,3 +903,5 @@ export function useData() {
     }
     return context;
 }
+
+    
