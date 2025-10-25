@@ -379,8 +379,8 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                   )}
                 />
             </div>
-            <div className="flex flex-col sm:flex-row flex-wrap items-end gap-4 pt-4 border-t">
-              <div className="w-full sm:w-auto sm:max-w-[150px] space-y-2">
+            <div className="flex flex-col sm:flex-row flex-wrap items-end gap-2 pt-4 border-t">
+              <div className="flex-auto space-y-2">
                   <Label htmlFor="sku-input">SKU</Label>
                   <Input 
                     id="sku-input" 
@@ -389,7 +389,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     onChange={(e) => setSku(e.target.value)} 
                   />
               </div>
-              <div className="flex-grow w-full sm:w-auto min-w-[150px] space-y-2">
+              <div className="flex-auto space-y-2">
                   <Label htmlFor="itemName-input">Item Name</Label>
                   <Input 
                     id="itemName-input"
@@ -399,7 +399,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                   />
               </div>
                {foundProduct?.variant_track_enabled && (
-                <div className="w-full sm:w-[150px] space-y-2">
+                <div className="flex-auto space-y-2">
                     <Label>Variant</Label>
                     <Select onValueChange={setSelectedVariant} value={selectedVariant}>
                         <SelectTrigger>
@@ -413,7 +413,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     </Select>
                 </div>
                 )}
-              <div className="w-full sm:w-32 space-y-2">
+              <div className="flex-auto space-y-2">
                   <Label htmlFor="sellPrice-input">Sell Price</Label>
                   <Input
                     id="sellPrice-input"
@@ -423,7 +423,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     onChange={(e) => setSellPrice(e.target.value)}
                   />
               </div>
-              <div className="w-full sm:w-20 space-y-2">
+              <div className="flex-auto space-y-2">
                   <Label htmlFor="quantity-input">Qty</Label>
                   <Input 
                     id="quantity-input"
@@ -432,7 +432,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     onChange={(e) => setQuantity(e.target.value)}
                   />
               </div>
-              <div className="w-full sm:w-auto sm:flex-grow-0">
+              <div className="flex-shrink-0">
                 <Button type="button" className="w-full" onClick={addToCart}>
                   <PlusCircle className="mr-2" /> Add to Cart
                 </Button>
