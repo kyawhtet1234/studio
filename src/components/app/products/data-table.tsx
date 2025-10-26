@@ -61,6 +61,11 @@ export function DataTable<TData, TValue>({
       sorting,
       columnFilters,
     },
+    initialState: {
+      pagination: {
+        pageSize: 100,
+      },
+    },
   });
 
   const filters = filterConfig || (filterColumnId && filterPlaceholder ? [{ columnId: filterColumnId, placeholder: filterPlaceholder }] : []);
