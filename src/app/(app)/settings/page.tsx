@@ -135,11 +135,9 @@ export default function SettingsPage() {
                     <TabsTrigger value="paymentTypes">Payment Types</TabsTrigger>
                     <TabsTrigger value="expenseCategories">Expense Categories</TabsTrigger>
                 </TabsList>
-                 {['stores', 'paymentTypes', 'expenseCategories'].includes(activeTab) && (
-                  <div>
+                 <div className="self-start md:self-center">
                     {renderAddButton()}
-                  </div>
-                )}
+                 </div>
             </div>
             <TabsContent value="branding" className="mt-4">
                 <BrandingSettings />

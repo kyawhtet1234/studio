@@ -65,7 +65,7 @@ export default function DashboardPage() {
     <div>
       <PageHeader title="Dashboard">
          <Select onValueChange={setSelectedStore} value={selectedStore}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by store" />
             </SelectTrigger>
             <SelectContent>

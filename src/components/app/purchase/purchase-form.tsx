@@ -298,7 +298,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                   )}
                 />
             </div>
-            <div className={cn("flex flex-col sm:flex-row flex-wrap items-end gap-2 pt-4 border-t", !watchSupplierId && "opacity-50 pointer-events-none")}>
+            <div className={cn("flex flex-col sm:flex-row flex-wrap items-stretch gap-2 pt-4 border-t", !watchSupplierId && "opacity-50 pointer-events-none")}>
               <div className="flex-auto space-y-2">
                 <Label htmlFor="sku-input">SKU</Label>
                 <Input id="sku-input" placeholder="Enter SKU..." value={sku} onChange={(e) => setSku(e.target.value)} />
@@ -328,7 +328,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                 <Label htmlFor="quantity-input">Qty</Label>
                 <Input id="quantity-input" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
               </div>
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 self-end">
                 <Button type="button" className="w-full" onClick={addToCart}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Add to Cart
                 </Button>

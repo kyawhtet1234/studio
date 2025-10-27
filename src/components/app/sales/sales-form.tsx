@@ -379,7 +379,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                   )}
                 />
             </div>
-            <div className="flex flex-col sm:flex-row flex-wrap items-end gap-2 pt-4 border-t">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch gap-2 pt-4 border-t">
               <div className="flex-auto space-y-2">
                   <Label htmlFor="sku-input">SKU</Label>
                   <Input 
@@ -432,7 +432,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     onChange={(e) => setQuantity(e.target.value)}
                   />
               </div>
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 self-end">
                 <Button type="button" className="w-full" onClick={addToCart}>
                   <PlusCircle className="mr-2" /> Add to Cart
                 </Button>

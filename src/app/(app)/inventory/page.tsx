@@ -193,7 +193,7 @@ export default function InventoryPage() {
       <PageHeader title="Inventory">
         <div className="flex flex-wrap items-center gap-2">
             <Select onValueChange={setSortBy} value={sortBy}>
-                <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectTrigger className="w-full sm:w-auto flex-grow sm:flex-grow-0 sm:w-[180px]">
                     <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
@@ -202,7 +202,7 @@ export default function InventoryPage() {
                 </SelectContent>
             </Select>
             <Select onValueChange={setSelectedCategory} value={selectedCategory}>
-                <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectTrigger className="w-full sm:w-auto flex-grow sm:flex-grow-0 sm:w-[180px]">
                     <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -213,7 +213,7 @@ export default function InventoryPage() {
                 </SelectContent>
             </Select>
             <Select onValueChange={setSelectedStore} value={selectedStore}>
-                <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectTrigger className="w-full sm:w-auto flex-grow sm:flex-grow-0 sm:w-[180px]">
                     <SelectValue placeholder="Filter by store" />
                 </SelectTrigger>
                 <SelectContent>

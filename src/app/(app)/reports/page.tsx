@@ -634,7 +634,7 @@ export default function ReportsPage() {
       <PageHeader title="Reports">
         <div className="flex flex-wrap items-center gap-2">
             <Select onValueChange={setSelectedStore} value={selectedStore}>
-                <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectTrigger className="w-full sm:w-auto flex-grow sm:flex-grow-0 sm:w-[180px]">
                     <SelectValue placeholder="Filter by store" />
                 </SelectTrigger>
                 <SelectContent>
