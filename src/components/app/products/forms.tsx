@@ -307,8 +307,8 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full max-h-[80vh]">
-                <ScrollArea className="flex-grow pr-6 -mr-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <ScrollArea className="h-[60vh] pr-6 -mr-6">
                     <div className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField control={form.control} name="sku" render={({ field }) => (
@@ -387,7 +387,7 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
                         )}
                     </div>
                 </ScrollArea>
-                <div className="pt-6 flex-shrink-0">
+                <div className="pt-6">
                     <Button type="submit" className="bg-shiny-blue w-full">{isEditMode ? 'Save Changes' : 'Add Product'}</Button>
                 </div>
             </form>
