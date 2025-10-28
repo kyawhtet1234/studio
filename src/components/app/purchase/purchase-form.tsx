@@ -134,12 +134,12 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
     
     if (foundProduct.supplierId !== supplierId) {
         const supplier = suppliers.find(s => s.id === foundProduct.supplierId);
-        toast({ variant: 'destructive', title: 'Wrong Supplier', description: `Item ${\'\'\'foundProduct.name\'\'\'} belongs to ${\'\'\'supplier?.name\'\'\' || 'another supplier'}.` });
+        toast({ variant: 'destructive', title: 'Wrong Supplier', description: `Item ${foundProduct.name} belongs to ${supplier?.name || 'another supplier'}.` });
         return;
     }
 
     if (foundProduct.variant_track_enabled && !selectedVariant) {
-        toast({ variant: 'destructive', title: 'Variant Required', description: `Please select a variant for ${\'\'\'foundProduct.name\'\'\'}.` });
+        toast({ variant: 'destructive', title: 'Variant Required', description: `Please select a variant for ${foundProduct.name}.` });
         return;
     }
 
@@ -196,7 +196,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
   
     await onSavePurchase(purchaseData);
   
-    toast({ title: "Purchase Saved!", description: `Total: MMK ${\'\'\'total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })\'\'\'}` });
+    toast({ title: "Purchase Saved!", description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
     form.reset();
     remove();
   }

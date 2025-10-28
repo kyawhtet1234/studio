@@ -150,17 +150,17 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
       const currentQuantity = Number(quantity);
 
       if (foundProduct.variant_track_enabled && !selectedVariant) {
-        toast({ variant: 'destructive', title: 'Variant Required', description: `Please select a variant for ${\'\'\'foundProduct.name\'\'\'}.` });
+        toast({ variant: 'destructive', title: 'Variant Required', description: `Please select a variant for ${foundProduct.name}.` });
         return;
       }
 
       const variantName = foundProduct.variant_track_enabled ? selectedVariant : "";
-      const inventoryId = `${\'\'\'foundProduct.id\'\'\'}_${\'\'\'variantName\'\'\'}_${\'\'\'watchStoreId\'\'\'}`;
+      const inventoryId = `${foundProduct.id}_${variantName}_${watchStoreId}`;
       const inventoryItem = inventory.find(i => i.id === inventoryId);
       const availableStock = inventoryItem?.stock || 0;
 
       if(availableStock < currentQuantity) {
-        toast({ variant: 'destructive', title: 'Not enough stock', description: `Only ${\'\'\'availableStock\'\'\'} of ${\'\'\'itemName\'\'\'} ${\'\'\'variantName\'\'\'} available.` });
+        toast({ variant: 'destructive', title: 'Not enough stock', description: `Only ${availableStock} of ${itemName} ${variantName} available.` });
         return;
       }
 
@@ -191,12 +191,12 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
   const handleQuantityChange = (index: number, newQuantity: number) => {
     const item = fields[index];
     const variantName = item.variant_name || "";
-    const inventoryId = `${\'\'\'item.productId\'\'\'}_${\'\'\'variantName\'\'\'}_${\'\'\'watchStoreId\'\'\'}`;
+    const inventoryId = `${item.productId}_${variantName}_${watchStoreId}`;
     const inventoryItem = inventory.find(i => i.id === inventoryId);
     const availableStock = inventoryItem?.stock || 0;
 
     if (newQuantity > availableStock) {
-        toast({ variant: 'destructive', title: 'Not enough stock', description: `Only ${\'\'\'availableStock\'\'\'} of ${\'\'\'item.name\'\'\'} available.` });
+        toast({ variant: 'destructive', title: 'Not enough stock', description: `Only ${availableStock} of ${item.name} available.` });
         return;
     }
 
@@ -233,14 +233,14 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
 
       const completeSaleData: SaleTransaction = {
         ...saleData,
-        id: `sale-${\'\'\'Date.now()\'\'\'}`,
+        id: `sale-${Date.now()}`,
         date: data.date,
         status: 'completed',
       }
 
       setLastSale(completeSaleData);
       
-      toast({ title: 'Sale Saved!', description: `Total: MMK ${\'\'\'total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })\'\'\'}` });
+      toast({ title: 'Sale Saved!', description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
       form.reset();
       remove();
     } catch(error) {
