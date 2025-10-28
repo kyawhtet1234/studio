@@ -134,12 +134,12 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
     
     if (foundProduct.supplierId !== supplierId) {
         const supplier = suppliers.find(s => s.id === foundProduct.supplierId);
-        toast({ variant: 'destructive', title: 'Wrong Supplier', description: `Item ${foundProduct.name} belongs to ${supplier?.name || 'another supplier'}.` });
+        toast({ variant: 'destructive', title: 'Wrong Supplier', description: `Item ${\'\'\'foundProduct.name\'\'\'} belongs to ${\'\'\'supplier?.name\'\'\' || 'another supplier'}.` });
         return;
     }
 
     if (foundProduct.variant_track_enabled && !selectedVariant) {
-        toast({ variant: 'destructive', title: 'Variant Required', description: `Please select a variant for ${foundProduct.name}.` });
+        toast({ variant: 'destructive', title: 'Variant Required', description: `Please select a variant for ${\'\'\'foundProduct.name\'\'\'}.` });
         return;
     }
 
@@ -196,7 +196,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
   
     await onSavePurchase(purchaseData);
   
-    toast({ title: "Purchase Saved!", description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
+    toast({ title: "Purchase Saved!", description: `Total: MMK ${\'\'\'total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })\'\'\'}` });
     form.reset();
     remove();
   }
@@ -298,17 +298,17 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                   )}
                 />
             </div>
-            <div className={cn("flex flex-col sm:flex-row flex-wrap items-stretch gap-2 pt-4 border-t", !watchSupplierId && "opacity-50 pointer-events-none")}>
+            <div className={cn("flex flex-col sm:flex-row flex-wrap items-end gap-2 pt-4 border-t", !watchSupplierId && "opacity-50 pointer-events-none")}>
               <div className="flex-auto space-y-2">
                 <Label htmlFor="sku-input">SKU</Label>
                 <Input id="sku-input" placeholder="Enter SKU..." value={sku} onChange={(e) => setSku(e.target.value)} />
               </div>
-              <div className="flex-auto space-y-2">
+              <div className="flex-auto space-y-2 min-w-[150px]">
                 <Label htmlFor="itemName-input">Item Name</Label>
                 <Input id="itemName-input" placeholder="Item name" value={itemName} readOnly />
               </div>
                {foundProduct?.variant_track_enabled && (
-                    <div className="flex-auto space-y-2">
+                    <div className="flex-auto space-y-2 w-full sm:w-[150px]">
                         <Label>Variant</Label>
                         <Select onValueChange={setSelectedVariant} value={selectedVariant}>
                             <SelectTrigger>
@@ -320,15 +320,15 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                         </Select>
                     </div>
                 )}
-              <div className="flex-auto space-y-2">
+              <div className="flex-auto space-y-2 w-full sm:w-32">
                 <Label htmlFor="buyPrice-input">Purchase Price</Label>
                 <Input id="buyPrice-input" type="number" step="0.01" value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} />
               </div>
-              <div className="flex-auto space-y-2">
+              <div className="flex-auto space-y-2 w-full sm:w-20">
                 <Label htmlFor="quantity-input">Qty</Label>
                 <Input id="quantity-input" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
               </div>
-              <div className="flex-shrink-0 self-end">
+              <div className="flex-shrink-0 self-end w-full sm:w-auto">
                 <Button type="button" className="w-full" onClick={addToCart}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Add to Cart
                 </Button>

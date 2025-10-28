@@ -150,17 +150,17 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
       const currentQuantity = Number(quantity);
 
       if (foundProduct.variant_track_enabled && !selectedVariant) {
-        toast({ variant: 'destructive', title: 'Variant Required', description: `Please select a variant for ${foundProduct.name}.` });
+        toast({ variant: 'destructive', title: 'Variant Required', description: `Please select a variant for ${\'\'\'foundProduct.name\'\'\'}.` });
         return;
       }
 
       const variantName = foundProduct.variant_track_enabled ? selectedVariant : "";
-      const inventoryId = `${foundProduct.id}_${variantName}_${watchStoreId}`;
+      const inventoryId = `${\'\'\'foundProduct.id\'\'\'}_${\'\'\'variantName\'\'\'}_${\'\'\'watchStoreId\'\'\'}`;
       const inventoryItem = inventory.find(i => i.id === inventoryId);
       const availableStock = inventoryItem?.stock || 0;
 
       if(availableStock < currentQuantity) {
-        toast({ variant: 'destructive', title: 'Not enough stock', description: `Only ${availableStock} of ${itemName} ${variantName} available.` });
+        toast({ variant: 'destructive', title: 'Not enough stock', description: `Only ${\'\'\'availableStock\'\'\'} of ${\'\'\'itemName\'\'\'} ${\'\'\'variantName\'\'\'} available.` });
         return;
       }
 
@@ -191,12 +191,12 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
   const handleQuantityChange = (index: number, newQuantity: number) => {
     const item = fields[index];
     const variantName = item.variant_name || "";
-    const inventoryId = `${item.productId}_${variantName}_${watchStoreId}`;
+    const inventoryId = `${\'\'\'item.productId\'\'\'}_${\'\'\'variantName\'\'\'}_${\'\'\'watchStoreId\'\'\'}`;
     const inventoryItem = inventory.find(i => i.id === inventoryId);
     const availableStock = inventoryItem?.stock || 0;
 
     if (newQuantity > availableStock) {
-        toast({ variant: 'destructive', title: 'Not enough stock', description: `Only ${availableStock} of ${item.name} available.` });
+        toast({ variant: 'destructive', title: 'Not enough stock', description: `Only ${\'\'\'availableStock\'\'\'} of ${\'\'\'item.name\'\'\'} available.` });
         return;
     }
 
@@ -233,14 +233,14 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
 
       const completeSaleData: SaleTransaction = {
         ...saleData,
-        id: `sale-${Date.now()}`,
+        id: `sale-${\'\'\'Date.now()\'\'\'}`,
         date: data.date,
         status: 'completed',
       }
 
       setLastSale(completeSaleData);
       
-      toast({ title: 'Sale Saved!', description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
+      toast({ title: 'Sale Saved!', description: `Total: MMK ${\'\'\'total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })\'\'\'}` });
       form.reset();
       remove();
     } catch(error) {
@@ -379,7 +379,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                   )}
                 />
             </div>
-            <div className="flex flex-col sm:flex-row flex-wrap items-stretch gap-2 pt-4 border-t">
+            <div className="flex flex-col sm:flex-row flex-wrap items-end gap-2 pt-4 border-t">
               <div className="flex-auto space-y-2">
                   <Label htmlFor="sku-input">SKU</Label>
                   <Input 
@@ -389,7 +389,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     onChange={(e) => setSku(e.target.value)} 
                   />
               </div>
-              <div className="flex-auto space-y-2">
+              <div className="flex-auto space-y-2 min-w-[150px]">
                   <Label htmlFor="itemName-input">Item Name</Label>
                   <Input 
                     id="itemName-input"
@@ -399,7 +399,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                   />
               </div>
                {foundProduct?.variant_track_enabled && (
-                <div className="flex-auto space-y-2">
+                <div className="flex-auto space-y-2 w-full sm:w-[150px]">
                     <Label>Variant</Label>
                     <Select onValueChange={setSelectedVariant} value={selectedVariant}>
                         <SelectTrigger>
@@ -413,7 +413,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     </Select>
                 </div>
                 )}
-              <div className="flex-auto space-y-2">
+              <div className="flex-auto space-y-2 w-full sm:w-32">
                   <Label htmlFor="sellPrice-input">Sell Price</Label>
                   <Input
                     id="sellPrice-input"
@@ -423,7 +423,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     onChange={(e) => setSellPrice(e.target.value)}
                   />
               </div>
-              <div className="flex-auto space-y-2">
+              <div className="flex-auto space-y-2 w-full sm:w-20">
                   <Label htmlFor="quantity-input">Qty</Label>
                   <Input 
                     id="quantity-input"
@@ -432,7 +432,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     onChange={(e) => setQuantity(e.target.value)}
                   />
               </div>
-              <div className="flex-shrink-0 self-end">
+              <div className="flex-shrink-0 self-end w-full sm:w-auto">
                 <Button type="button" className="w-full" onClick={addToCart}>
                   <PlusCircle className="mr-2" /> Add to Cart
                 </Button>
