@@ -398,21 +398,23 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     readOnly
                   />
               </div>
-               {foundProduct?.variant_track_enabled && (
-                <div className="flex-auto space-y-2 w-full sm:w-[150px]">
-                    <Label>Variant</Label>
-                    <Select onValueChange={setSelectedVariant} value={selectedVariant}>
-                        <SelectTrigger>
-                        <SelectValue placeholder="Select Variant" />
-                        </SelectTrigger>
-                        <SelectContent>
-                        {foundProduct.available_variants.map(variant => (
-                            <SelectItem key={variant} value={variant}>{variant}</SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
+               <div className="flex-auto space-y-2 w-full sm:w-[150px] min-h-[68px]">
+                  {foundProduct?.variant_track_enabled && (
+                    <>
+                      <Label>Variant</Label>
+                      <Select onValueChange={setSelectedVariant} value={selectedVariant}>
+                          <SelectTrigger>
+                          <SelectValue placeholder="Select Variant" />
+                          </SelectTrigger>
+                          <SelectContent>
+                          {foundProduct.available_variants.map(variant => (
+                              <SelectItem key={variant} value={variant}>{variant}</SelectItem>
+                          ))}
+                          </SelectContent>
+                      </Select>
+                    </>
+                  )}
                 </div>
-                )}
               <div className="flex-auto space-y-2 w-full sm:w-32">
                   <Label htmlFor="sellPrice-input">Sell Price</Label>
                   <Input

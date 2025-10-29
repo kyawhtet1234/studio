@@ -307,19 +307,21 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                 <Label htmlFor="itemName-input">Item Name</Label>
                 <Input id="itemName-input" placeholder="Item name" value={itemName} readOnly />
               </div>
-               {foundProduct?.variant_track_enabled && (
-                    <div className="flex-auto space-y-2 w-full sm:w-[150px]">
-                        <Label>Variant</Label>
-                        <Select onValueChange={setSelectedVariant} value={selectedVariant}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select"/>
-                            </SelectTrigger>
-                            <SelectContent>
-                                {foundProduct.available_variants.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                )}
+               <div className="flex-auto space-y-2 w-full sm:w-[150px] min-h-[68px]">
+                  {foundProduct?.variant_track_enabled && (
+                      <>
+                          <Label>Variant</Label>
+                          <Select onValueChange={setSelectedVariant} value={selectedVariant}>
+                              <SelectTrigger>
+                                  <SelectValue placeholder="Select"/>
+                              </SelectTrigger>
+                              <SelectContent>
+                                  {foundProduct.available_variants.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      </>
+                  )}
+                </div>
               <div className="flex-auto space-y-2 w-full sm:w-32">
                 <Label htmlFor="buyPrice-input">Purchase Price</Label>
                 <Input id="buyPrice-input" type="number" step="0.01" value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} />

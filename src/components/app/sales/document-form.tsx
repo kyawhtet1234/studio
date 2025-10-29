@@ -416,21 +416,23 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
                     readOnly
                   />
               </div>
-              {foundProduct?.variant_track_enabled && (
-                <div className="w-full sm:w-[150px] space-y-2">
-                    <Label>Variant</Label>
-                    <Select onValueChange={setSelectedVariant} value={selectedVariant}>
-                        <SelectTrigger>
-                        <SelectValue placeholder="Select Variant" />
-                        </SelectTrigger>
-                        <SelectContent>
-                        {foundProduct.available_variants.map(variant => (
-                            <SelectItem key={variant} value={variant}>{variant}</SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                )}
+              <div className="w-full sm:w-[150px] space-y-2 min-h-[68px]">
+                  {foundProduct?.variant_track_enabled && (
+                    <>
+                      <Label>Variant</Label>
+                      <Select onValueChange={setSelectedVariant} value={selectedVariant}>
+                          <SelectTrigger>
+                          <SelectValue placeholder="Select Variant" />
+                          </SelectTrigger>
+                          <SelectContent>
+                          {foundProduct.available_variants.map(variant => (
+                              <SelectItem key={variant} value={variant}>{variant}</SelectItem>
+                          ))}
+                          </SelectContent>
+                      </Select>
+                    </>
+                  )}
+              </div>
               <div className="w-full sm:w-32 space-y-2">
                   <Label htmlFor={`sellPrice-input-${type}`}>Sell Price</Label>
                   <Input
