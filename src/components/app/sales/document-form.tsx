@@ -1,6 +1,4 @@
-
-
-'use client';
+"use client";
 
 import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -361,7 +359,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Date</FormLabel>
-                      <Popover>
+                      <Popover modal={true}>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button

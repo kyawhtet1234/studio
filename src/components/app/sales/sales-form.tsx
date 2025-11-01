@@ -1,6 +1,4 @@
-
-
-'use client';
+"use client";
 
 import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -343,7 +341,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Date</FormLabel>
-                      <Popover>
+                      <Popover modal={true}>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button

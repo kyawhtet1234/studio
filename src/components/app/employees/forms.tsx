@@ -1,4 +1,3 @@
-
 "use client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -125,7 +124,7 @@ export function RecordAdvanceForm({ employee, onSave, onSuccess }: FormProps<Omi
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
                         <FormLabel>Date of Advance</FormLabel>
-                        <Popover>
+                        <Popover modal={true}>
                             <PopoverTrigger asChild>
                             <FormControl>
                                 <Button
@@ -205,7 +204,7 @@ export function RecordLeaveForm({ employee, onSave, onSuccess }: FormProps<Omit<
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
                         <FormLabel>Leave Date</FormLabel>
-                        <Popover>
+                        <Popover modal={true}>
                             <PopoverTrigger asChild>
                             <FormControl>
                                 <Button
@@ -236,5 +235,3 @@ export function RecordLeaveForm({ employee, onSave, onSuccess }: FormProps<Omit<
         </Form>
     );
 }
-
-    

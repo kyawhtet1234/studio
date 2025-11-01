@@ -1,4 +1,3 @@
-
 "use client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -86,7 +85,7 @@ export function AddExpenseForm({ onSave, onSuccess, categories }: FormProps<Omit
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Date</FormLabel>
-              <Popover>
+              <Popover modal={true}>
                 <PopoverTrigger asChild>
                   <FormControl>
                     <Button
@@ -295,5 +294,3 @@ export function AddLiabilityForm({ onSave, onSuccess, liability }: FormProps<Omi
     </Form>
   );
 }
-
-    
