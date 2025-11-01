@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -35,8 +34,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AddEmployeeForm, RecordAdvanceForm, RecordLeaveForm } from '@/components/app/employees/forms';
 import type { Employee, SalaryAdvance, LeaveRecord } from '@/lib/types';
-import { MoreHorizontal, Calendar as CalendarIcon, DollarSign, Trash2, FileCheck } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, lastDayOfMonth } from 'date-fns';
+import { MoreHorizontal, Calendar as CalendarIcon, DollarSign, Trash2, FileCheck, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, lastDayOfMonth, subMonths, addMonths, isSameMonth } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -70,21 +69,22 @@ export default function EmployeesPage() {
   const [deletingAdvance, setDeletingAdvance] = useState<SalaryAdvance | null>(null);
   const [deletingLeave, setDeletingLeave] = useState<LeaveRecord | null>(null);
   const [isPayrollAlertOpen, setIsPayrollAlertOpen] = useState(false);
+  const [payrollMonth, setPayrollMonth] = useState(new Date());
+
 
   const { toast } = useToast();
 
-  const currentMonth = new Date();
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
+  const monthStart = startOfMonth(payrollMonth);
+  const monthEnd = endOfMonth(payrollMonth);
 
-  const currentMonthAdvances = useMemo(() => {
+  const monthAdvances = useMemo(() => {
     return salaryAdvances.filter(a => {
       const advanceDate = a.date as Date;
       return advanceDate >= monthStart && advanceDate <= monthEnd;
     });
   }, [salaryAdvances, monthStart, monthEnd]);
 
-  const currentMonthLeaves = useMemo(() => {
+  const monthLeaves = useMemo(() => {
     return leaveRecords.filter(l => {
       const leaveDate = l.date as Date;
       return leaveDate >= monthStart && leaveDate <= monthEnd;
@@ -93,9 +93,9 @@ export default function EmployeesPage() {
 
   const employeeCalculations = useMemo(() => {
     return employees.map(employee => {
-        const advances = currentMonthAdvances.filter(a => a.employeeId === employee.id);
+        const advances = monthAdvances.filter(a => a.employeeId === employee.id);
         const totalAdvance = advances.reduce((sum, a) => sum + a.amount, 0);
-        const leaves = currentMonthLeaves.filter(l => l.employeeId === employee.id);
+        const leaves = monthLeaves.filter(l => l.employeeId === employee.id);
         const hasTakenLeave = leaves.length > 0;
         const bonus = hasTakenLeave ? 0 : LEAVE_BONUS;
         const finalSalary = employee.baseSalary - totalAdvance + bonus;
@@ -109,7 +109,7 @@ export default function EmployeesPage() {
             finalSalary
         };
     });
-  }, [employees, currentMonthAdvances, currentMonthLeaves]);
+  }, [employees, monthAdvances, monthLeaves]);
 
   const isPayrollPosted = useMemo(() => {
     const payrollCategory = expenseCategories.find(c => c.name === PAYROLL_CATEGORY_NAME);
@@ -118,11 +118,11 @@ export default function EmployeesPage() {
     return expenses.some(e => {
         const expenseDate = e.date as Date;
         return e.categoryId === payrollCategory.id && 
-               expenseDate.getMonth() === currentMonth.getMonth() &&
-               expenseDate.getFullYear() === currentMonth.getFullYear() &&
+               expenseDate.getMonth() === payrollMonth.getMonth() &&
+               expenseDate.getFullYear() === payrollMonth.getFullYear() &&
                e.description.includes('Monthly Payroll');
     });
-  }, [expenses, expenseCategories, currentMonth]);
+  }, [expenses, expenseCategories, payrollMonth]);
 
 
   const handleOpenAdvanceModal = (employee: Employee) => {
@@ -169,10 +169,7 @@ export default function EmployeesPage() {
 
     if (!payrollCategory) {
         await addExpenseCategory({ name: PAYROLL_CATEGORY_NAME });
-        // Re-fetch or find the newly created category. For simplicity, we might need to inform the user to try again or handle it in context.
-        // A simple but not ideal solution is to just let the user click again. A better one would be for addExpenseCategory to return the new category.
-        // Let's refetch all categories to be sure.
-        const updatedCategories = await expenseCategories; // This doesn't actually refetch, it's just a reference.
+        const updatedCategories = await expenseCategories;
         const newCategory = updatedCategories.find(c => c.name === PAYROLL_CATEGORY_NAME);
         if(!newCategory) {
              toast({ variant: 'destructive', title: 'Error', description: `Could not find or create the '${PAYROLL_CATEGORY_NAME}' category. Please create it manually in Settings and try again.` });
@@ -181,7 +178,6 @@ export default function EmployeesPage() {
         payrollCategory = newCategory;
     }
     
-    // Sometimes the category might be created but not available in the state yet, so we get it again.
     if (!payrollCategory) {
       const allCategories = expenseCategories;
       const foundCategory = allCategories.find(c => c.name === PAYROLL_CATEGORY_NAME);
@@ -201,9 +197,9 @@ export default function EmployeesPage() {
     }
 
     const payrollExpense = {
-        date: lastDayOfMonth(currentMonth),
+        date: lastDayOfMonth(payrollMonth),
         categoryId: payrollCategory.id,
-        description: `Monthly Payroll for ${format(currentMonth, 'MMMM yyyy')}`,
+        description: `Monthly Payroll for ${format(payrollMonth, 'MMMM yyyy')}`,
         amount: totalPayroll,
     };
 
@@ -212,13 +208,26 @@ export default function EmployeesPage() {
     toast({ title: 'Payroll Posted!', description: `An expense of MMK ${totalPayroll.toLocaleString()} has been recorded for this month's payroll.` });
   };
 
+  const changeMonth = (direction: 'prev' | 'next') => {
+      setPayrollMonth(current => direction === 'prev' ? subMonths(current, 1) : addMonths(current, 1));
+  }
+
   return (
     <div>
       <PageHeader title="Employee Management">
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center flex-wrap">
+             <div className="flex items-center gap-2 border rounded-md p-1">
+                <Button variant="ghost" size="icon" onClick={() => changeMonth('prev')}>
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="font-semibold text-sm">{format(payrollMonth, 'MMMM yyyy')}</span>
+                <Button variant="ghost" size="icon" onClick={() => changeMonth('next')} disabled={isSameMonth(payrollMonth, new Date())}>
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+            </div>
             <Button variant="outline" onClick={() => setIsPayrollAlertOpen(true)} disabled={isPayrollPosted}>
                 <FileCheck className="mr-2 h-4 w-4" />
-                {isPayrollPosted ? 'Payroll Posted for this Month' : 'Finalize & Post Payroll'}
+                {isPayrollPosted ? 'Payroll Posted' : 'Finalize & Post Payroll'}
             </Button>
             <AddEntitySheet buttonText="Add Employee" title="Add New Employee" description="Enter the details for a new employee.">
               {(onSuccess) => <AddEmployeeForm onSave={addEmployee} onSuccess={onSuccess} />}
@@ -260,7 +269,7 @@ export default function EmployeesPage() {
                 </div>
 
                 <div>
-                    <h4 className="font-semibold text-sm mb-2">This Month's Advances</h4>
+                    <h4 className="font-semibold text-sm mb-2">{format(payrollMonth, 'MMMM')}'s Advances</h4>
                     <div className="space-y-1 text-xs">
                         {employee.advances.map(a => (
                             <div key={a.id} className="flex justify-between items-center">
@@ -273,7 +282,7 @@ export default function EmployeesPage() {
                 </div>
 
                  <div>
-                    <h4 className="font-semibold text-sm mb-2">This Month's Leaves</h4>
+                    <h4 className="font-semibold text-sm mb-2">{format(payrollMonth, 'MMMM')}'s Leaves</h4>
                      <div className="space-y-1 text-xs">
                         {employee.leaves.map(l => (
                              <div key={l.id} className="flex justify-between items-center">
@@ -348,9 +357,9 @@ export default function EmployeesPage() {
       <AlertDialog open={isPayrollAlertOpen} onOpenChange={setIsPayrollAlertOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Finalize Payroll for {format(currentMonth, 'MMMM yyyy')}?</AlertDialogTitle>
+                <AlertDialogTitle>Finalize Payroll for {format(payrollMonth, 'MMMM yyyy')}?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This will create a single expense entry for the total final salary of all employees for the current month.
+                    This will create a single expense entry for the total final salary of all employees for the selected month.
                     This action can only be performed once per month. Are you sure you want to continue?
                 </AlertDialogDescription>
             </AlertDialogHeader>
