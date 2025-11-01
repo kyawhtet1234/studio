@@ -32,7 +32,7 @@ const ReceiptContent: React.FC<ReceiptProps & { logo: string | null }> = React.f
         <Separator className="my-2 bg-black" />
         <div className="space-y-1">
           {sale.items.map(item => (
-            <div key={item.productId} className="grid grid-cols-12">
+            <div key={`${item.productId}-${item.variant_name}`} className="grid grid-cols-12">
               <div className="col-span-8">
                 <p>{item.name}</p>
                 <p className="pl-2">{item.quantity} x MMK {item.sellPrice.toLocaleString()}</p>
