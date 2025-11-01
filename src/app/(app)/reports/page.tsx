@@ -445,11 +445,7 @@ export default function ReportsPage() {
   const salesByCustomer = useMemo(() => getSalesByCustomerData(), [filteredSales, customers]);
   
   const purchaseHistory = useMemo(() => {
-      return [...filteredPurchases].sort((a, b) => {
-        const dateA = toDate(a.date);
-        const dateB = toDate(b.date);
-        return dateB.getTime() - dateA.getTime();
-      });
+      return [...filteredPurchases].sort((a, b) => toDate(b.date).getTime() - toDate(a.date).getTime());
   }, [filteredPurchases]);
 
   const salesHistory = useMemo(() => {
@@ -801,3 +797,4 @@ export default function ReportsPage() {
     </div>
   );
 }
+
