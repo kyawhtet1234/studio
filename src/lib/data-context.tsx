@@ -232,7 +232,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             inventorySnaps.forEach((invDoc) => {
                 const invData = invDoc.data() as InventoryItem;
                 // Preserve stock of the base item if we are DISABLING variants
-                if (hasVariantsPreviously && !invData.variant_name && invData.storeId === store.id) { // Assuming a single store context, may need adjustment for multi-store
+                if (hasVariantsPreviously && !invData.variant_name) { 
                     baseStockToPreserve = invData.stock;
                 }
                 transaction.delete(invDoc.ref); // Delete all old inventory records
@@ -912,3 +912,5 @@ export function useData() {
     }
     return context;
 }
+
+    

@@ -138,7 +138,7 @@ const PurchaseHistoryTable = ({ data, products, stores, suppliers, onDelete, onV
                     const purchaseDate = toDate(purchase.date);
                     return (
                         <TableRow key={purchase.id}>
-                            <TableCell className="font-medium">{format(purchaseDate, 'PP')}</TableCell>
+                            <TableCell className="font-medium">{format(purchaseDate, 'PPpp')}</TableCell>
                             <TableCell>{stores.find(s => s.id === purchase.storeId)?.name || 'N/A'}</TableCell>
                             <TableCell>{suppliers.find(s => s.id === purchase.supplierId)?.name || 'N/A'}</TableCell>
                             <TableCell className="text-right">MMK {purchase.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
@@ -242,7 +242,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                     const customerName = customers.find(c => c.id === sale.customerId)?.name || 'N/A';
                     return (
                         <TableRow key={sale.id} className={cn(isVoided && "text-muted-foreground bg-muted/30")}>
-                            <TableCell className="font-medium">{format(saleDate, 'PP')}</TableCell>
+                            <TableCell className="font-medium">{format(saleDate, 'PPpp')}</TableCell>
                             <TableCell>{stores.find(s => s.id === sale.storeId)?.name || 'NA'}</TableCell>
                             <TableCell>{customerName}</TableCell>
                             <TableCell>{sale.paymentType}</TableCell>
@@ -486,7 +486,7 @@ export default function ReportsPage() {
       case 'sales':
         return {
           data: salesHistory.map(s => ({
-            Date: format(toDate(s.date), 'PP'),
+            Date: format(toDate(s.date), 'PPpp'),
             Store: stores.find(st => st.id === s.storeId)?.name || 'N/A',
             Customer: customers.find(c => c.id === s.customerId)?.name || 'N/A',
             Payment: s.paymentType,
@@ -500,7 +500,7 @@ export default function ReportsPage() {
        case 'invoice':
         return {
           data: invoiceHistory.map(s => ({
-            Date: format(toDate(s.date), 'PP'),
+            Date: format(toDate(s.date), 'PPpp'),
             'Invoice #': s.id.slice(-6).toUpperCase(),
             Customer: customers.find(c => c.id === s.customerId)?.name || 'N/A',
             Status: s.status,
@@ -513,7 +513,7 @@ export default function ReportsPage() {
       case 'quotation':
         return {
           data: quotationHistory.map(s => ({
-            Date: format(toDate(s.date), 'PP'),
+            Date: format(toDate(s.date), 'PPpp'),
             'Quotation #': `QUO-${s.id.slice(-6).toUpperCase()}`,
             Customer: customers.find(c => c.id === s.customerId)?.name || 'N/A',
             Total: s.total
@@ -523,7 +523,7 @@ export default function ReportsPage() {
       case 'purchase':
         return {
           data: purchaseHistory.map(p => ({
-            Date: format(toDate(p.date), 'PP'),
+            Date: format(toDate(p.date), 'PPpp'),
             Store: stores.find(s => s.id === p.storeId)?.name || 'N/A',
             Supplier: suppliers.find(s => s.id === p.supplierId)?.name || 'N/A',
             Total: p.total
@@ -798,3 +798,6 @@ export default function ReportsPage() {
   );
 }
 
+
+
+    
