@@ -587,28 +587,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const addPurchase = async (purchaseData: Omit<PurchaseTransaction, 'id'>) => {
         if (!user || !db) return;
-
+    
         try {
             await runTransaction(db, async (transaction) => {
-                const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
-                transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.fromDate(toDate(purchaseData.date)) });
-
-                for (const item of purchaseData.items) {
+                
+                // --- Step 1: Read all necessary data first ---
+                const itemRefsAndData = purchaseData.items.map(item => {
                     const variantName = item.variant_name || "";
                     const inventoryId = `${item.productId}_${variantName}_${purchaseData.storeId}`;
                     const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                     const productRef = doc(db, 'users', user.uid, 'products', item.productId);
-
-                    // Read inventory and product
-                    const [invSnap, productSnap] = await Promise.all([
-                        transaction.get(invRef),
-                        transaction.get(productRef)
-                    ]);
-                    
+                    return { item, invRef, productRef };
+                });
+    
+                const docSnaps = await Promise.all(
+                    itemRefsAndData.map(({ invRef, productRef }) => 
+                        Promise.all([transaction.get(invRef), transaction.get(productRef)])
+                    )
+                );
+    
+                // --- Step 2: Perform all writes ---
+                const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
+                transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.fromDate(toDate(purchaseData.date)) });
+    
+                for (let i = 0; i < itemRefsAndData.length; i++) {
+                    const { item, invRef, productRef } = itemRefsAndData[i];
+                    const [invSnap, productSnap] = docSnaps[i];
+    
+                    // Update inventory
                     const currentStock = invSnap.exists() ? invSnap.data().stock : 0;
                     const newStock = currentStock + item.quantity;
-                    
-                    // Update inventory
                     transaction.set(invRef, {
                         id: invRef.id,
                         productId: item.productId,
@@ -616,8 +624,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                         storeId: purchaseData.storeId,
                         stock: newStock
                     }, { merge: true });
-
-                    // Update product buy price if it's different
+    
+                    // Update product buy price if it has changed
                     if (productSnap.exists() && productSnap.data().buyPrice !== item.buyPrice) {
                         transaction.update(productRef, { buyPrice: item.buyPrice });
                     }
@@ -917,3 +925,5 @@ export function useData() {
     }
     return context;
 }
+
+    
