@@ -204,6 +204,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
     const { toast } = useToast();
     const { settings, activeUserRole } = useData();
     const canVoidSales = activeUserRole === 'admin' || settings.users?.salesperson?.actions?.includes('void-sales');
+    const isAdmin = activeUserRole === 'admin';
 
 
     const handleVoid = () => {
@@ -260,7 +261,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                             <TableCell>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" className="h-8 w-8 p-0" disabled={isVoided && !onDelete}>
+                                        <Button variant="ghost" className="h-8 w-8 p-0" disabled={isVoided && !isAdmin}>
                                             <span className="sr-only">Open menu</span>
                                             <MoreHorizontal className="h-4 w-4" />
                                         </Button>
@@ -276,10 +277,12 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                                                 Void Transaction
                                             </DropdownMenuItem>
                                         )}
-                                        <DropdownMenuItem className="text-destructive" onClick={() => setDeleteCandidate(sale.id)}>
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Delete
-                                        </DropdownMenuItem>
+                                        {isAdmin && (
+                                            <DropdownMenuItem className="text-destructive" onClick={() => setDeleteCandidate(sale.id)}>
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Delete
+                                            </DropdownMenuItem>
+                                        )}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>
@@ -804,3 +807,4 @@ export default function ReportsPage() {
     </div>
   );
 }
+
