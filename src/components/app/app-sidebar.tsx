@@ -126,7 +126,7 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="p-4">
          <SidebarMenu>
-          {activeUserRole === 'admin' && (
+          {activeUserRole !== 'salesperson' && (
             <SidebarMenuItem className="mb-2">
               <Link href="/settings" passHref>
                   <SidebarMenuButton 
