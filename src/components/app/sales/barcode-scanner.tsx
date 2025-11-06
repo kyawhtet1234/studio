@@ -13,19 +13,21 @@ interface BarcodeScannerProps {
 
 export function BarcodeScanner({ onScan }: BarcodeScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const codeReaderRef = useRef(new BrowserMultiFormatReader());
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isScanning, setIsScanning] = useState(true);
   const { toast } = useToast();
-  const codeReader = new BrowserMultiFormatReader();
 
   useEffect(() => {
     const startScanner = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        streamRef.current = stream;
         setHasCameraPermission(true);
 
         if (videoRef.current) {
-          codeReader.decodeFromStream(stream, videoRef.current, (result, error) => {
+          codeReaderRef.current.decodeFromStream(stream, videoRef.current, (result, error) => {
             if (result && isScanning) {
               setIsScanning(false);
               onScan(result.getText());
@@ -49,10 +51,14 @@ export function BarcodeScanner({ onScan }: BarcodeScannerProps) {
     startScanner();
 
     return () => {
-      codeReader.reset();
-      setIsScanning(false);
+        setIsScanning(false);
+        // Correctly stop the scanner and release the camera stream
+        codeReaderRef.current.stop();
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+        }
     };
-  }, [onScan]);
+  }, [onScan, isScanning]); // Added isScanning to dependency array
 
   return (
     <div>
