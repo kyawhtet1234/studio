@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useData } from '@/lib/data-context';
 import { PageHeader } from '@/components/app/page-header';
 import { Button } from '@/components/ui/button';
@@ -11,11 +11,14 @@ import Barcode from 'react-barcode';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 export default function BarcodesPage() {
   const { products } = useData();
   const { toast } = useToast();
   const printRef = useRef<HTMLDivElement>(null);
+  const [showName, setShowName] = useState(true);
 
   const handlePrint = async () => {
     const input = printRef.current;
@@ -71,10 +74,16 @@ export default function BarcodesPage() {
   return (
     <div>
       <PageHeader title="Product Barcodes">
-        <Button onClick={handlePrint}>
-          <Printer className="mr-2 h-4 w-4" />
-          Print Barcodes
-        </Button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox id="show-name" checked={showName} onCheckedChange={(checked) => setShowName(!!checked)} />
+            <Label htmlFor="show-name">Show Name</Label>
+          </div>
+          <Button onClick={handlePrint}>
+            <Printer className="mr-2 h-4 w-4" />
+            Print Barcodes
+          </Button>
+        </div>
       </PageHeader>
 
       <Card>
@@ -82,7 +91,7 @@ export default function BarcodesPage() {
           <div className="grid grid-cols-3 gap-x-4 gap-y-8">
             {products.map((product) => (
               <div key={product.id} className="flex flex-col items-center justify-center p-2 border rounded-lg break-inside-avoid">
-                <p className="text-xs font-semibold text-center mb-1 truncate w-full">{product.name}</p>
+                {showName && <p className="text-xs font-semibold text-center mb-1 truncate w-full">{product.name}</p>}
                 <Barcode 
                     value={product.sku}
                     width={1.5}
