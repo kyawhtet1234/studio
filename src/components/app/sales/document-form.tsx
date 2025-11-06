@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -32,8 +33,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Trash2, PlusCircle, UserPlus, CalendarIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Trash2, PlusCircle, UserPlus, CalendarIcon, ScanBarcode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { CartItem, SaleTransaction, Store, Product, Customer } from '@/lib/types';
 import { useData } from "@/lib/data-context";
@@ -43,6 +44,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { BarcodeScanner } from "./barcode-scanner";
 
 
 const formSchema = z.object({
@@ -81,6 +83,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
   const { toast } = useToast();
   const [generatedDocument, setGeneratedDocument] = useState<SaleTransaction | null>(null);
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const [sku, setSku] = useState("");
   const [itemName, setItemName] = useState("");
@@ -133,7 +136,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
 
   useEffect(() => {
     if (sku) {
-        const product = products.find(p => p.sku.toLowerCase().startsWith(sku.toLowerCase()));
+        const product = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
         if (product) {
             setItemName(product.name);
             setSellPrice(product.sellPrice);
@@ -294,6 +297,11 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
     setGeneratedDocument(null);
   }
 
+  const handleBarcodeScan = (scannedSku: string) => {
+    setSku(scannedSku);
+    setIsScannerOpen(false);
+  };
+
   return (
     <>
     <Form {...form}>
@@ -395,17 +403,23 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
                   )}
                 />
             </div>
-            <div className="flex flex-col sm:flex-row flex-wrap items-end gap-4 pt-4 border-t">
-              <div className="w-full sm:w-auto sm:max-w-[150px] space-y-2">
+            <div className="flex flex-col sm:flex-row flex-wrap items-end gap-2 pt-4 border-t">
+              <div className="flex-auto space-y-2">
                   <Label htmlFor={`sku-input-${type}`}>SKU</Label>
-                  <Input 
-                    id={`sku-input-${type}`} 
-                    placeholder="Enter SKU..." 
-                    value={sku} 
-                    onChange={(e) => setSku(e.target.value)} 
-                  />
+                  <div className="flex gap-2">
+                    <Input 
+                      id={`sku-input-${type}`} 
+                      placeholder="Enter SKU..." 
+                      value={sku} 
+                      onChange={(e) => setSku(e.target.value)} 
+                    />
+                    <Button type="button" variant="outline" size="icon" onClick={() => setIsScannerOpen(true)}>
+                        <ScanBarcode className="h-4 w-4" />
+                        <span className="sr-only">Scan Barcode</span>
+                    </Button>
+                  </div>
               </div>
-              <div className="flex-grow w-full sm:w-auto min-w-[150px] space-y-2">
+              <div className="flex-auto space-y-2 min-w-[150px]">
                   <Label htmlFor={`itemName-input-${type}`}>Item Name</Label>
                   <Input 
                     id={`itemName-input-${type}`}
@@ -414,7 +428,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
                     readOnly
                   />
               </div>
-              <div className="w-full sm:w-[150px] space-y-2 min-h-[68px]">
+              <div className="flex-auto space-y-2 w-full sm:w-[150px] min-h-[70px]">
                   {foundProduct?.variant_track_enabled && (
                     <>
                       <Label>Variant</Label>
@@ -431,7 +445,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
                     </>
                   )}
               </div>
-              <div className="w-full sm:w-32 space-y-2">
+              <div className="flex-auto space-y-2 w-full sm:w-32">
                   <Label htmlFor={`sellPrice-input-${type}`}>Sell Price</Label>
                   <Input
                     id={`sellPrice-input-${type}`}
@@ -441,7 +455,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
                     onChange={(e) => setSellPrice(e.target.value)}
                   />
               </div>
-              <div className="w-full sm:w-20 space-y-2">
+              <div className="flex-auto space-y-2 w-full sm:w-20">
                   <Label htmlFor={`quantity-input-${type}`}>Qty</Label>
                   <Input 
                     id={`quantity-input-${type}`}
@@ -450,7 +464,7 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
                     onChange={(e) => setQuantity(e.target.value)}
                   />
               </div>
-              <div className="w-full sm:w-auto sm:flex-grow-0">
+              <div className="flex-shrink-0 self-end w-full sm:w-auto">
                 <Button type="button" className="w-full" onClick={addToCart}>
                   <PlusCircle className="mr-2" /> Add Item
                 </Button>
@@ -570,6 +584,18 @@ export function DocumentForm({ type, stores, customers, onSave, onAddCustomer, s
             </DialogHeader>
             <AddCustomerForm onSave={onAddCustomer} onSuccess={() => setIsAddCustomerOpen(false)} />
         </DialogContent>
+    </Dialog>
+
+    <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Scan Barcode</DialogTitle>
+          <DialogDescription>
+            Point your camera at a barcode to add the item.
+          </DialogDescription>
+        </DialogHeader>
+        <BarcodeScanner onScan={handleBarcodeScan} />
+      </DialogContent>
     </Dialog>
 
     {!isEditMode && 

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -32,8 +33,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import { Trash2, PlusCircle, UserPlus, CalendarIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogDescription } from "@/components/ui/dialog";
+import { Trash2, PlusCircle, UserPlus, CalendarIcon, ScanBarcode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { CartItem, SaleTransaction, Store, Product, Customer, PaymentType } from '@/lib/types';
 import { useData } from "@/lib/data-context";
@@ -45,6 +46,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { BarcodeScanner } from "@/components/app/sales/barcode-scanner";
 
 
 const formSchema = z.object({
@@ -80,6 +82,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
   const { toast } = useToast();
   const [lastSale, setLastSale] = useState<SaleTransaction | null>(null);
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const [sku, setSku] = useState("");
   const [itemName, setItemName] = useState("");
@@ -114,7 +117,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
 
   useEffect(() => {
     if (sku) {
-        const product = products.find(p => p.sku.toLowerCase().startsWith(sku.toLowerCase()));
+        const product = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
         if (product) {
             setItemName(product.name);
             setSellPrice(product.sellPrice);
@@ -253,6 +256,11 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
   const handleCloseReceipt = () => {
     setLastSale(null);
   }
+  
+  const handleBarcodeScan = (scannedSku: string) => {
+    setSku(scannedSku);
+    setIsScannerOpen(false);
+  }
 
   return (
     <>
@@ -380,12 +388,18 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
             <div className="flex flex-col sm:flex-row flex-wrap items-end gap-2 pt-4 border-t">
               <div className="flex-auto space-y-2">
                   <Label htmlFor="sku-input">SKU</Label>
-                  <Input 
-                    id="sku-input" 
-                    placeholder="Enter SKU..." 
-                    value={sku} 
-                    onChange={(e) => setSku(e.target.value)} 
-                  />
+                  <div className="flex gap-2">
+                    <Input 
+                        id="sku-input" 
+                        placeholder="Enter SKU..." 
+                        value={sku} 
+                        onChange={(e) => setSku(e.target.value)} 
+                    />
+                    <Button type="button" variant="outline" size="icon" onClick={() => setIsScannerOpen(true)}>
+                        <ScanBarcode className="h-4 w-4" />
+                        <span className="sr-only">Scan Barcode</span>
+                    </Button>
+                  </div>
               </div>
               <div className="flex-auto space-y-2 min-w-[150px]">
                   <Label htmlFor="itemName-input">Item Name</Label>
@@ -396,7 +410,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     readOnly
                   />
               </div>
-               <div className="flex-auto space-y-2 w-full sm:w-[150px] min-h-[68px]">
+               <div className="flex-auto space-y-2 w-full sm:w-[150px] min-h-[70px]">
                   {foundProduct?.variant_track_enabled && (
                     <>
                       <Label>Variant</Label>
@@ -530,6 +544,18 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
             </DialogHeader>
             <AddCustomerForm onSave={onAddCustomer} onSuccess={() => setIsAddCustomerOpen(false)} />
         </DialogContent>
+    </Dialog>
+
+    <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Scan Barcode</DialogTitle>
+          <DialogDescription>
+            Point your camera at a barcode to add the item to the cart.
+          </DialogDescription>
+        </DialogHeader>
+        <BarcodeScanner onScan={handleBarcodeScan} />
+      </DialogContent>
     </Dialog>
 
     <Dialog open={!!lastSale} onOpenChange={handleCloseReceipt}>
