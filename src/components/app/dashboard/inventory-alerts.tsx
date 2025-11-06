@@ -8,7 +8,7 @@ import { useMemo } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
-const LOW_STOCK_THRESHOLD = 3;
+const DEFAULT_LOW_STOCK_THRESHOLD = 3;
 
 interface InventoryAlertsProps {
   inventory: InventoryItem[];
@@ -27,14 +27,16 @@ export function InventoryAlerts({ inventory, products, stores, className, style 
         if (!product || !store) return null;
 
         const productName = item.variant_name ? `${product.name} (${item.variant_name})` : product.name;
+        const reorderPoint = product.reorderPoint ?? DEFAULT_LOW_STOCK_THRESHOLD;
 
         return {
           ...item,
           productName: productName,
           storeName: store.name,
+          reorderPoint: reorderPoint,
         };
       })
-      .filter((item): item is NonNullable<typeof item> => item !== null && item.stock <= LOW_STOCK_THRESHOLD)
+      .filter((item): item is NonNullable<typeof item> => item !== null && item.stock <= item.reorderPoint)
       .sort((a, b) => a.stock - b.stock);
   }, [inventory, products, stores]);
 
@@ -45,7 +47,7 @@ export function InventoryAlerts({ inventory, products, stores, className, style 
           <AlertTriangle className="h-6 w-6 text-destructive" />
           Low Stock Alerts
         </CardTitle>
-        <CardDescription>Items with stock at or below {LOW_STOCK_THRESHOLD} units.</CardDescription>
+        <CardDescription>Items at or below their reorder point.</CardDescription>
       </CardHeader>
       <CardContent>
         {lowStockItems.length > 0 ? (
@@ -55,6 +57,7 @@ export function InventoryAlerts({ inventory, products, stores, className, style 
                 <TableRow>
                   <TableHead>Product</TableHead>
                   <TableHead>Store</TableHead>
+                  <TableHead className="text-right">Reorder Point</TableHead>
                   <TableHead className="text-right">Remaining Stock</TableHead>
                 </TableRow>
               </TableHeader>
@@ -63,6 +66,7 @@ export function InventoryAlerts({ inventory, products, stores, className, style 
                   <TableRow key={item.id} className="hover:bg-destructive/10">
                     <TableCell className="font-medium">{item.productName}</TableCell>
                     <TableCell>{item.storeName}</TableCell>
+                    <TableCell className="text-right">{item.reorderPoint}</TableCell>
                     <TableCell className="text-right font-bold text-destructive">{item.stock}</TableCell>
                   </TableRow>
                 ))}

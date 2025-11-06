@@ -40,6 +40,7 @@ export type Product = {
   createdAt: Date | Timestamp;
   variant_track_enabled: boolean;
   available_variants: string[];
+  reorderPoint?: number;
 };
 
 export type InventoryItem = {

@@ -38,6 +38,7 @@ const productSchema = z.object({
   supplierId: z.string().min(1, "Please select a supplier."),
   sellPrice: z.coerce.number().positive(),
   buyPrice: z.coerce.number().positive(),
+  reorderPoint: z.coerce.number().min(0).optional(),
   variant_track_enabled: z.boolean().default(false),
   available_variants: z.array(z.string()).optional(),
 }).refine(data => data.sellPrice >= data.buyPrice, {
@@ -252,11 +253,12 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
             ...product,
             sellPrice: product.sellPrice ?? 0,
             buyPrice: product.buyPrice ?? 0,
+            reorderPoint: product.reorderPoint ?? 0,
             variant_track_enabled: product.variant_track_enabled ?? false,
             available_variants: product.available_variants ?? [],
         } : { 
             name: "", sku: "", categoryId: "", supplierId: "", 
-            sellPrice: 0, buyPrice: 0, 
+            sellPrice: 0, buyPrice: 0, reorderPoint: 0,
             variant_track_enabled: false, available_variants: [] 
         },
     });
@@ -275,6 +277,7 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
         if (product) {
             form.reset({
                 ...product,
+                reorderPoint: product.reorderPoint ?? 0,
                 variant_track_enabled: product.variant_track_enabled ?? false,
                 available_variants: product.available_variants ?? [],
             });
@@ -344,6 +347,9 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
                                 <FormItem><FormLabel>Sell Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
                             )}/>
                         </div>
+                        <FormField control={form.control} name="reorderPoint" render={({ field }) => (
+                            <FormItem><FormLabel>Reorder Point</FormLabel><FormControl><Input type="number" step="1" {...field} /></FormControl><FormMessage /></FormItem>
+                        )}/>
                         <FormField
                             control={form.control}
                             name="variant_track_enabled"
