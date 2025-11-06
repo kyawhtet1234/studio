@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -18,6 +19,7 @@ import { QuotationSettings } from '@/components/app/settings/quotation-settings'
 import { ThemeSettings } from '@/components/app/settings/theme-settings';
 import { BusinessGoalsSettings } from '@/components/app/settings/business-goals-settings';
 import { BrandingSettings } from '@/components/app/settings/branding-settings';
+import { UserManagement } from '@/components/app/settings/user-management';
 
 type EditingState = 
   | { type: 'store', data: Store }
@@ -127,6 +129,7 @@ export default function SettingsPage() {
                 <TabsList className="overflow-x-auto self-start h-auto flex-nowrap w-full no-scrollbar">
                     <TabsTrigger value="branding">Branding</TabsTrigger>
                     <TabsTrigger value="theme">Theme</TabsTrigger>
+                    <TabsTrigger value="users">Users</TabsTrigger>
                     <TabsTrigger value="goals">Goals</TabsTrigger>
                     <TabsTrigger value="receipt">Receipt</TabsTrigger>
                     <TabsTrigger value="invoice">Invoice</TabsTrigger>
@@ -144,6 +147,9 @@ export default function SettingsPage() {
             </TabsContent>
             <TabsContent value="theme" className="mt-4">
                 <ThemeSettings />
+            </TabsContent>
+             <TabsContent value="users" className="mt-4">
+                <UserManagement />
             </TabsContent>
             <TabsContent value="goals" className="mt-4">
                 <BusinessGoalsSettings />

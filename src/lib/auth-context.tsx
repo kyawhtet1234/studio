@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
@@ -12,9 +13,13 @@ import {
 } from 'firebase/auth';
 import { useFirebase } from '@/lib/client-provider';
 
+export type ActiveUserRole = 'admin' | 'salesperson';
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  activeUserRole: ActiveUserRole | null;
+  setActiveUserRole: (role: ActiveUserRole | null) => void;
   signUp: (email: string, password: string) => Promise<any>;
   signIn: (email: string, password: string) => Promise<any>;
   logOut: () => Promise<any>;
@@ -25,11 +30,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeUserRole, setActiveUserRole] = useState<ActiveUserRole | null>(null);
   const { auth } = useFirebase();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
         setUser(user);
+        if (!user) {
+          // Clear active role on logout
+          setActiveUserRole(null);
+        }
         setLoading(false);
     });
     return () => unsubscribe();
@@ -44,10 +54,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logOut = () => {
+    setActiveUserRole(null);
     return signOut(auth);
   };
 
-  const value = { user, loading, signUp, signIn, logOut };
+  const value = { user, loading, signUp, signIn, logOut, activeUserRole, setActiveUserRole };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

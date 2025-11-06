@@ -163,6 +163,15 @@ export type LeaveRecord = {
     date: Date | Timestamp;
 };
 
+export interface UserRoleSettings {
+  isEnabled: boolean;
+  permissions: string[]; // e.g., ['/sales', '/products']
+}
+
+export interface UserManagementSettings {
+    adminPin?: string;
+    salesperson?: UserRoleSettings;
+}
 
 export interface DocumentSettings {
   companyName?: string;
@@ -190,4 +199,5 @@ export interface BusinessSettings {
     companyLogo?: string;
   };
   goals?: GoalsSettings;
+  users?: UserManagementSettings;
 }

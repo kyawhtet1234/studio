@@ -1,11 +1,12 @@
 
+
 'use client';
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useFirebase } from '@/lib/client-provider';
 import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup, setDoc, Firestore } from 'firebase/firestore';
 
-import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability, BusinessSettings, DocumentSettings, Employee, SalaryAdvance, LeaveRecord, GoalsSettings, BrandingSettings } from '@/lib/types';
+import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability, BusinessSettings, DocumentSettings, Employee, SalaryAdvance, LeaveRecord, GoalsSettings, BrandingSettings, UserManagementSettings } from '@/lib/types';
 import { toDate } from './utils';
 
 interface DataContextProps {
@@ -82,6 +83,7 @@ interface DataContextProps {
     updateReceiptSettings: (settings: { companyLogo?: string }) => Promise<void>;
     updateGoalsSettings: (settings: GoalsSettings) => Promise<void>;
     updateBrandingSettings: (settings: BrandingSettings) => Promise<void>;
+    updateUserManagementSettings: (settings: UserManagementSettings) => Promise<void>;
     loading: boolean;
 }
 
@@ -885,6 +887,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await updateSettings({ branding: brandingSettings });
     };
 
+    const updateUserManagementSettings = async (userManagementSettings: UserManagementSettings) => {
+        await updateSettings({ users: userManagementSettings });
+    };
+
     return (
         <DataContext.Provider value={{ 
             products, addProduct, updateProduct, deleteProduct,
@@ -911,6 +917,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             updateReceiptSettings,
             updateGoalsSettings,
             updateBrandingSettings,
+            updateUserManagementSettings,
             loading
         }}>
             {children}
@@ -925,5 +932,3 @@ export function useData() {
     }
     return context;
 }
-
-    

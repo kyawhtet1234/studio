@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { AppSidebar } from '@/components/app/app-sidebar';
@@ -10,10 +11,11 @@ import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { AppHeader } from '@/components/app/app-header';
 import { FirebaseClientProvider } from '@/lib/client-provider';
+import { UserSelector } from '@/components/app/user-selector';
 
 function AppContent({ children }: { children: React.ReactNode }) {
-  const { loading: dataLoading } = useData();
-  const { user, loading: authLoading } = useAuth();
+  const { loading: dataLoading, settings } = useData();
+  const { user, loading: authLoading, activeUserRole } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -32,6 +34,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
   
   if (!user) {
       return null;
+  }
+
+  // If roles are enabled but no role is active, show the user selector
+  if (settings.users?.salesperson?.isEnabled && !activeUserRole) {
+    return <UserSelector />;
   }
 
   return (

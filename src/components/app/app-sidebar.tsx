@@ -1,4 +1,5 @@
 
+
 'use client';
 import { usePathname } from 'next/navigation';
 import {
@@ -32,7 +33,7 @@ import { cn } from '@/lib/utils';
 import { useData } from '@/lib/data-context';
 import Image from 'next/image';
 
-const menuItems = [
+const allMenuItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, color: 'bg-blue-500' },
   { href: '/sales', label: 'Sales', icon: ShoppingCart, color: 'bg-green-500' },
   { href: '/products', label: 'Products', icon: Package, color: 'bg-yellow-500' },
@@ -47,7 +48,7 @@ const menuItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { logOut, user } = useAuth();
+  const { logOut, user, activeUserRole } = useAuth();
   const { settings } = useData();
   const router = useRouter();
 
@@ -64,17 +65,23 @@ export function AppSidebar() {
     if (href === '/inventory') {
         return pathname.startsWith('/inventory');
     }
+    if (href === '/products') {
+        return pathname.startsWith('/products');
+    }
     return pathname.startsWith(href);
   }
 
   const appName = settings.branding?.appName || "THE CRAFT SHOP LEDGER";
   const appLogo = settings.branding?.appLogo;
   
-  // Split app name into two lines if it contains "LEDGER"
   const nameParts = appName.split(' LEDGER');
   const firstLine = nameParts[0];
   const secondLine = nameParts.length > 1 ? 'LEDGER' : '';
 
+  const salespersonPermissions = settings.users?.salesperson?.permissions || [];
+  const menuItems = activeUserRole === 'salesperson'
+    ? allMenuItems.filter(item => salespersonPermissions.includes(item.href))
+    : allMenuItems;
 
   return (
     <Sidebar className="bg-background border-r" side="left" collapsible="icon" variant="sidebar">
@@ -119,24 +126,26 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="p-4">
          <SidebarMenu>
-          <SidebarMenuItem className="mb-2">
-             <Link href="/settings" passHref>
-                <SidebarMenuButton 
-                  as="a" 
-                  tooltip="Settings" 
-                  isActive={pathname === '/settings'}
-                   className={cn(
-                    "w-full justify-start rounded-xl border-2 border-transparent shadow-md transition-transform duration-200 hover:scale-105",
-                    "bg-purple-600",
-                    "text-white",
-                    pathname === '/settings' && "ring-4 ring-offset-2 ring-primary"
-                  )}
-                >
-                    <Settings className="h-5 w-5" />
-                    <span className="text-base">Settings</span>
-                </SidebarMenuButton>
-              </Link>
-          </SidebarMenuItem>
+          {activeUserRole === 'admin' && (
+            <SidebarMenuItem className="mb-2">
+              <Link href="/settings" passHref>
+                  <SidebarMenuButton 
+                    as="a" 
+                    tooltip="Settings" 
+                    isActive={pathname === '/settings'}
+                    className={cn(
+                      "w-full justify-start rounded-xl border-2 border-transparent shadow-md transition-transform duration-200 hover:scale-105",
+                      "bg-purple-600",
+                      "text-white",
+                      pathname === '/settings' && "ring-4 ring-offset-2 ring-primary"
+                    )}
+                  >
+                      <Settings className="h-5 w-5" />
+                      <span className="text-base">Settings</span>
+                  </SidebarMenuButton>
+                </Link>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
