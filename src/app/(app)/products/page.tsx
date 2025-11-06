@@ -12,6 +12,9 @@ import { useData } from "@/lib/data-context";
 import type { Product, Category, Supplier, Customer } from "@/lib/types";
 import { toDate } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Barcode } from "lucide-react";
+import Link from "next/link";
 
 type EditingState = 
   | { type: 'product', data: Product }
@@ -39,9 +42,17 @@ export default function ProductsPage() {
     switch (activeTab) {
       case "items":
         return (
-          <AddEntitySheet buttonText="Add Item" title="Add a new item" description="Fill in the details for the new product.">
-            {(onSuccess) => <AddProductForm onSave={addProduct} categories={categories} suppliers={suppliers} onSuccess={onSuccess} allProducts={products} />}
-          </AddEntitySheet>
+          <div className="flex items-center gap-2">
+            <Link href="/products/barcodes">
+                <Button variant="outline">
+                    <Barcode className="mr-2 h-4 w-4" />
+                    Barcodes
+                </Button>
+            </Link>
+            <AddEntitySheet buttonText="Add Item" title="Add a new item" description="Fill in the details for the new product.">
+              {(onSuccess) => <AddProductForm onSave={addProduct} categories={categories} suppliers={suppliers} onSuccess={onSuccess} allProducts={products} />}
+            </AddEntitySheet>
+          </div>
         );
       case "categories":
         return (
