@@ -53,7 +53,7 @@ export function BarcodeScanner({ onScan }: BarcodeScannerProps) {
     return () => {
         setIsScanning(false);
         // Correctly stop the scanner and release the camera stream
-        codeReaderRef.current.stop();
+        codeReaderRef.current.reset();
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => track.stop());
         }
