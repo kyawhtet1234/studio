@@ -1,6 +1,8 @@
 
+
 'use client';
 
+import { useAuth } from "@/lib/auth-context";
 import { useData } from "@/lib/data-context";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
@@ -200,6 +202,9 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
     const [voidCandidate, setVoidCandidate] = useState<string | null>(null);
     const [deleteCandidate, setDeleteCandidate] = useState<string | null>(null);
     const { toast } = useToast();
+    const { settings, activeUserRole } = useData();
+    const canVoidSales = activeUserRole === 'admin' || settings.users?.salesperson?.actions?.includes('void-sales');
+
 
     const handleVoid = () => {
         if (voidCandidate) {
@@ -265,11 +270,13 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                                             <Printer className="mr-2 h-4 w-4" />
                                             Print Receipt
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setVoidCandidate(sale.id)} disabled={isVoided}>
-                                            <Undo2 className="mr-2 h-4 w-4" />
-                                            Void Transaction
-                                        </DropdownMenuItem>
-                                          <DropdownMenuItem className="text-destructive" onClick={() => setDeleteCandidate(sale.id)}>
+                                        {canVoidSales && (
+                                            <DropdownMenuItem onClick={() => setVoidCandidate(sale.id)} disabled={isVoided}>
+                                                <Undo2 className="mr-2 h-4 w-4" />
+                                                Void Transaction
+                                            </DropdownMenuItem>
+                                        )}
+                                        <DropdownMenuItem className="text-destructive" onClick={() => setDeleteCandidate(sale.id)}>
                                             <Trash2 className="mr-2 h-4 w-4" />
                                             Delete
                                         </DropdownMenuItem>
@@ -797,7 +804,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
-
-
-    

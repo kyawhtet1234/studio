@@ -166,6 +166,7 @@ export type LeaveRecord = {
 export interface UserRoleSettings {
   isEnabled: boolean;
   permissions: string[]; // e.g., ['/sales', '/products']
+  actions?: string[]; // e.g., ['void-sales']
 }
 
 export interface UserManagementSettings {

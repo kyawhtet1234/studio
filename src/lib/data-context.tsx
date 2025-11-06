@@ -2,7 +2,7 @@
 
 'use client';
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth, type ActiveUserRole } from '@/lib/auth-context';
 import { useFirebase } from '@/lib/client-provider';
 import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup, setDoc, Firestore } from 'firebase/firestore';
 
@@ -29,6 +29,7 @@ interface DataContextProps {
     salaryAdvances: SalaryAdvance[];
     leaveRecords: LeaveRecord[];
     settings: BusinessSettings;
+    activeUserRole: ActiveUserRole | null; // Add this
     addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<void>;
     updateProduct: (productId: string, product: Partial<Omit<Product, 'id'>>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
@@ -90,7 +91,7 @@ interface DataContextProps {
 const DataContext = createContext<DataContextProps | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
-    const { user } = useAuth();
+    const { user, activeUserRole } = useAuth();
     const { db } = useFirebase();
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -912,6 +913,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             salaryAdvances, addSalaryAdvance, deleteSalaryAdvance,
             leaveRecords, addLeaveRecord, deleteLeaveRecord,
             settings,
+            activeUserRole,
             updateInvoiceSettings,
             updateQuotationSettings,
             updateReceiptSettings,

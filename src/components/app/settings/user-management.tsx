@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { Eye, EyeOff } from 'lucide-react';
 
 const allPages = [
+    { id: '/', label: 'Dashboard' },
     { id: '/sales', label: 'Sales' },
     { id: '/products', label: 'Products' },
     { id: '/purchase', label: 'Purchase' },
@@ -27,6 +28,10 @@ const allPages = [
     { id: '/employees', label: 'Employees' },
 ];
 
+const allActions = [
+    { id: 'void-sales', label: 'Void Sales' },
+]
+
 export function UserManagement() {
   const { toast } = useToast();
   const { settings, updateUserManagementSettings } = useData();
@@ -35,12 +40,17 @@ export function UserManagement() {
   const [showPin, setShowPin] = useState(false);
   const [salespersonEnabled, setSalespersonEnabled] = useState(false);
   const [salespersonPermissions, setSalespersonPermissions] = useState<string[]>([]);
+  const [actionPermissions, setActionPermissions] = useState<string[]>([]);
 
   useEffect(() => {
     if (settings.users) {
       setAdminPin(settings.users.adminPin || '');
-      setSalespersonEnabled(settings.users.salesperson?.isEnabled || false);
-      setSalespersonPermissions(settings.users.salesperson?.permissions || []);
+      const spSettings = settings.users.salesperson;
+      if (spSettings) {
+        setSalespersonEnabled(spSettings.isEnabled || false);
+        setSalespersonPermissions(spSettings.permissions || []);
+        setActionPermissions(spSettings.actions || []);
+      }
     }
   }, [settings.users]);
 
@@ -58,6 +68,7 @@ export function UserManagement() {
       salesperson: {
         isEnabled: salespersonEnabled,
         permissions: salespersonPermissions,
+        actions: actionPermissions,
       },
     };
     await updateUserManagementSettings(newSettings);
@@ -72,6 +83,12 @@ export function UserManagement() {
         checked ? [...prev, pageId] : prev.filter(id => id !== pageId)
     );
   };
+  
+  const handleActionPermissionChange = (actionId: string, checked: boolean) => {
+    setActionPermissions(prev => 
+        checked ? [...prev, actionId] : prev.filter(id => id !== actionId)
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -121,19 +138,36 @@ export function UserManagement() {
                     <Label htmlFor="salesperson-enabled">Enable Salesperson Role</Label>
                 </div>
                 
-                <div className={cn("space-y-4", !salespersonEnabled && "opacity-50 pointer-events-none")}>
-                    <h4 className="font-medium">Page Permissions</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {allPages.map(page => (
-                            <div key={page.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                    id={`perm-${page.id}`}
-                                    checked={salespersonPermissions.includes(page.id)}
-                                    onCheckedChange={(checked) => handlePermissionChange(page.id, !!checked)}
-                                />
-                                <Label htmlFor={`perm-${page.id}`}>{page.label}</Label>
-                            </div>
-                        ))}
+                <div className={cn("space-y-6", !salespersonEnabled && "opacity-50 pointer-events-none")}>
+                    <div>
+                        <h4 className="font-medium mb-4">Page Permissions</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            {allPages.map(page => (
+                                <div key={page.id} className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id={`perm-${page.id}`}
+                                        checked={salespersonPermissions.includes(page.id)}
+                                        onCheckedChange={(checked) => handlePermissionChange(page.id, !!checked)}
+                                    />
+                                    <Label htmlFor={`perm-${page.id}`}>{page.label}</Label>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                     <div>
+                        <h4 className="font-medium mb-4">Action Permissions</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            {allActions.map(action => (
+                                <div key={action.id} className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id={`perm-${action.id}`}
+                                        checked={actionPermissions.includes(action.id)}
+                                        onCheckedChange={(checked) => handleActionPermissionChange(action.id, !!checked)}
+                                    />
+                                    <Label htmlFor={`perm-${action.id}`}>{action.label}</Label>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </CardContent>
