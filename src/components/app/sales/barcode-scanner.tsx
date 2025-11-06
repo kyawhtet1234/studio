@@ -53,12 +53,13 @@ export function BarcodeScanner({ onScan }: BarcodeScannerProps) {
     return () => {
         setIsScanning(false);
         // Correctly stop the scanner and release the camera stream
-        codeReaderRef.current.reset();
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => track.stop());
         }
+        // The `reset` method on BrowserMultiFormatReader is not for stopping the stream in this context.
+        // Stopping the tracks of the MediaStream is the correct way to release the camera.
     };
-  }, [onScan, isScanning]); // Added isScanning to dependency array
+  }, [onScan, isScanning]);
 
   return (
     <div>
