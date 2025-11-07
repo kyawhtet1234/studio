@@ -72,7 +72,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div>
-      <div className="flex items-center py-4 gap-4 flex-wrap">
+      <div className="flex items-center py-4 gap-4 flex-wrap min-h-[68px]">
         {filters.map(({ columnId, placeholder }) => (
           <Input
             key={columnId}
