@@ -36,7 +36,8 @@ export default function BarcodesPage() {
     input.style.width = '210mm'; // A4 width
 
     const canvas = await html2canvas(input, {
-        scale: 2, // Increase scale for better resolution
+        scale: 4, // Increase scale significantly for better resolution
+        useCORS: true,
     });
 
     // Revert the style change after canvas creation
@@ -51,22 +52,22 @@ export default function BarcodesPage() {
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
-    const ratio = imgWidth / imgHeight;
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const ratio = canvasWidth / canvasHeight;
     const imgHeightInPdf = pdfWidth / ratio;
     
-    let height = imgHeightInPdf;
+    let heightLeft = imgHeightInPdf;
     let position = 0;
 
     pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
-    height -= pdfHeight;
+    heightLeft -= pdfHeight;
 
-    while (height > 0) {
+    while (heightLeft > 0) {
         position = position - pdfHeight;
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
-        height -= pdfHeight;
+        heightLeft -= pdfHeight;
     }
 
     pdf.save('product-barcodes.pdf');
