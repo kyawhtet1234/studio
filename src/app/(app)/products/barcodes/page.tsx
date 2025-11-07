@@ -19,6 +19,7 @@ export default function BarcodesPage() {
   const { toast } = useToast();
   const printRef = useRef<HTMLDivElement>(null);
   const [showName, setShowName] = useState(true);
+  const [showPrice, setShowPrice] = useState(false);
 
   const handlePrint = async () => {
     const input = printRef.current;
@@ -79,6 +80,10 @@ export default function BarcodesPage() {
             <Checkbox id="show-name" checked={showName} onCheckedChange={(checked) => setShowName(!!checked)} />
             <Label htmlFor="show-name">Show Name</Label>
           </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox id="show-price" checked={showPrice} onCheckedChange={(checked) => setShowPrice(!!checked)} />
+            <Label htmlFor="show-price">Show Price</Label>
+          </div>
           <Button onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" />
             Print Barcodes
@@ -92,6 +97,7 @@ export default function BarcodesPage() {
             {products.map((product) => (
               <div key={product.id} className="flex flex-col items-center justify-center p-2 border rounded-lg break-inside-avoid">
                 {showName && <p className="text-xs font-semibold text-center mb-1 truncate w-full">{product.name}</p>}
+                {showPrice && <p className="text-xs text-center mb-1">MMK {product.sellPrice.toLocaleString()}</p>}
                 <Barcode 
                     value={product.sku}
                     width={1.5}
