@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Product, Category, Supplier, Store, Customer, PaymentType } from "@/lib/types";
 import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
-import { Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const baseSchema = z.object({
@@ -265,6 +265,7 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
     const { toast } = useToast();
     const isEditMode = !!product;
     const [newVariant, setNewVariant] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const { fields, append, remove } = useFieldArray({
         control: form.control,
@@ -292,6 +293,7 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
     };
 
     async function onSubmit(data: z.infer<typeof productSchema>) {
+        setIsLoading(true);
         if (!isEditMode) {
             const skuExists = allProducts.some(p => p.sku === data.sku);
             if (skuExists) {
@@ -299,13 +301,20 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
                     type: "manual",
                     message: "This SKU already exists. Please use a unique SKU.",
                 });
+                setIsLoading(false);
                 return;
             }
         }
-        await onSave(data);
-        toast({ title: `Product ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
-        form.reset();
-        onSuccess();
+        try {
+            await onSave(data);
+            toast({ title: `Product ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
+            form.reset();
+            onSuccess();
+        } catch (error) {
+            toast({ variant: "destructive", title: "Error", description: "Could not save the product."})
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (
@@ -394,7 +403,10 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
                     </div>
                 </ScrollArea>
                 <div className="pt-6 mt-auto">
-                    <Button type="submit" className="bg-shiny-blue w-full">{isEditMode ? 'Save Changes' : 'Add Product'}</Button>
+                    <Button type="submit" className="bg-shiny-blue w-full" disabled={isLoading}>
+                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                         {isEditMode ? 'Save Changes' : 'Add Product'}
+                    </Button>
                 </div>
             </form>
         </Form>
