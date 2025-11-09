@@ -23,27 +23,15 @@ export default function BarcodesPage() {
 
   const handlePrint = async () => {
     const input = printRef.current;
-    if (!input) {
+    if (!input || products.length === 0) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Could not find barcodes to print.',
+        description: 'No barcodes to print.',
       });
       return;
     }
 
-    // Set a fixed width for the container for consistent PDF rendering
-    input.style.width = '210mm'; // A4 width
-
-    const canvas = await html2canvas(input, {
-        scale: 4, // Increase scale significantly for better resolution
-        useCORS: true,
-    });
-
-    // Revert the style change after canvas creation
-    input.style.width = '';
-
-    const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -52,24 +40,56 @@ export default function BarcodesPage() {
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
-    const ratio = canvasWidth / canvasHeight;
-    const imgHeightInPdf = pdfWidth / ratio;
+    const margin = 10; // 10mm margin on each side
+    const contentWidth = pdfWidth - (margin * 2);
+    const contentHeight = pdfHeight - (margin * 2);
+
+    const allBarcodeElements = Array.from(input.querySelectorAll('.barcode-item'));
     
-    let heightLeft = imgHeightInPdf;
-    let position = 0;
+    // Estimate items per page
+    // This is an estimation, real value depends on item name height
+    const itemHeight = 35; // approximate height of one barcode item in mm
+    const itemsPerRow = 3;
+    const rowsPerPage = Math.floor(contentHeight / itemHeight);
+    const itemsPerPage = itemsPerRow * rowsPerPage;
 
-    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
-    heightLeft -= pdfHeight;
+    for (let i = 0; i < allBarcodeElements.length; i += itemsPerPage) {
+        const chunk = allBarcodeElements.slice(i, i + itemsPerPage);
+        
+        const tempContainer = document.createElement('div');
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.width = `${contentWidth}mm`;
+        
+        const gridContainer = document.createElement('div');
+        gridContainer.className = 'grid grid-cols-3 gap-x-4 gap-y-8 p-4';
+        
+        chunk.forEach(el => gridContainer.appendChild(el.cloneNode(true)));
+        tempContainer.appendChild(gridContainer);
+        document.body.appendChild(tempContainer);
 
-    while (heightLeft > 0) {
-        position = position - pdfHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
-        heightLeft -= pdfHeight;
+        const canvas = await html2canvas(tempContainer, {
+            scale: 3,
+            useCORS: true,
+            width: tempContainer.offsetWidth,
+            height: tempContainer.offsetHeight,
+            windowWidth: tempContainer.scrollWidth,
+            windowHeight: tempContainer.scrollHeight,
+        });
+
+        document.body.removeChild(tempContainer);
+        
+        if (i > 0) {
+            pdf.addPage();
+        }
+
+        const imgData = canvas.toDataURL('image/png');
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgHeight = (imgProps.height * contentWidth) / imgProps.width;
+        
+        pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, imgHeight);
     }
-
+    
     pdf.save('product-barcodes.pdf');
   };
 
@@ -96,7 +116,7 @@ export default function BarcodesPage() {
         <CardContent className="p-4" ref={printRef}>
           <div className="grid grid-cols-3 gap-x-4 gap-y-8">
             {products.map((product) => (
-              <div key={product.id} className="flex flex-col items-center justify-center p-2 border rounded-lg break-inside-avoid">
+              <div key={product.id} className="barcode-item flex flex-col items-center justify-center p-2 border rounded-lg break-inside-avoid">
                 {showName && <p className="text-xs font-semibold text-center mb-1 break-words w-full">{product.name}</p>}
                 {showPrice && <p className="text-xs text-center mb-1">MMK {product.sellPrice.toLocaleString()}</p>}
                 <Barcode 
