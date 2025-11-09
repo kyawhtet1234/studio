@@ -293,7 +293,9 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
     };
 
     async function onSubmit(data: z.infer<typeof productSchema>) {
+        if (isLoading) return; // Prevent submission if already loading
         setIsLoading(true);
+
         if (!isEditMode) {
             const skuExists = allProducts.some(p => p.sku === data.sku);
             if (skuExists) {
@@ -305,6 +307,7 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
                 return;
             }
         }
+
         try {
             await onSave(data);
             toast({ title: `Product ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
@@ -357,7 +360,7 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
                             )}/>
                         </div>
                         <FormField control={form.control} name="reorderPoint" render={({ field }) => (
-                            <FormItem><FormLabel>Reorder Point</FormLabel><FormControl><Input type="number" step="1" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Reorder Point</FormLabel><FormControl><Input type="number" step="1" {...field} placeholder="e.g. 3" /></FormControl><FormMessage /></FormItem>
                         )}/>
                         <FormField
                             control={form.control}
@@ -412,3 +415,4 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
         </Form>
     );
 }
+
