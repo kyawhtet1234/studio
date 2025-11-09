@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useData } from '@/lib/data-context';
 import { PageHeader } from '@/components/app/page-header';
 import { Button } from '@/components/ui/button';
@@ -9,11 +9,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Printer, Loader2 } from 'lucide-react';
 import Barcode from 'react-barcode';
 import jsPDF from 'jspdf';
+import JsBarcode from 'jsbarcode';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import html2canvas from 'html2canvas';
-import { Product } from '@/lib/types';
 
 export default function BarcodesPage() {
   const { products } = useData();
@@ -42,14 +41,19 @@ export default function BarcodesPage() {
             unit: 'mm',
             format: 'a4',
         });
+        
+        // jsPDF does not embed non-standard fonts by default.
+        // For Unicode characters like Burmese, we must rely on the viewing environment's fonts.
+        // We set a common font and let the viewer handle it.
+        pdf.setFont('Helvetica', 'sans-serif');
 
-        const margin = 10; // mm
+        const margin = 10;
         const pageW = pdf.internal.pageSize.getWidth();
         const pageH = pdf.internal.pageSize.getHeight();
         
         const cols = 3;
         const itemW = (pageW - margin * 2) / cols;
-        const itemH = 35; // mm height for each barcode label area
+        const itemH = 35; 
         const rows = Math.floor((pageH - margin * 2) / itemH);
         const itemsPerPage = cols * rows;
 
@@ -67,56 +71,41 @@ export default function BarcodesPage() {
             const x = margin + colIndex * itemW;
             const y = margin + rowIndex * itemH;
 
-            // Create a hidden div for each barcode to render it
-            const container = document.createElement('div');
-            container.style.position = 'absolute';
-            container.style.left = '-9999px';
-            container.style.width = `${itemW * 3.78}px`; // Convert mm to pixels for canvas
-            container.style.height = `${itemH * 3.78}px`;
-            container.style.display = 'flex';
-            container.style.flexDirection = 'column';
-            container.style.justifyContent = 'center';
-            container.style.alignItems = 'center';
-            container.style.background = 'white';
+            // --- Text rendering ---
+            pdf.setFontSize(8);
+            let textY = y + 5;
             
-            let content = '';
-            if (showName) content += `<div style="font-size: 24px; text-align: center; margin-bottom: 4px; word-break: break-word;">${product.name}</div>`;
-            if (showPrice) content += `<div style="font-size: 24px; text-align: center; margin-bottom: 4px;">MMK ${product.sellPrice.toLocaleString()}</div>`;
-            
-            // Generate barcode SVG string
-            const barcodeSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-            new Barcode(barcodeSvg, product.sku, {
-                format: "CODE128",
-                width: 1.5,
-                height: 40,
-                fontSize: 12,
-                displayValue: true,
-            });
+            if (showName) {
+                const nameLines = pdf.splitTextToSize(product.name, itemW - 4);
+                pdf.text(nameLines, x + itemW / 2, textY, { align: 'center' });
+                textY += (nameLines.length * 3);
+            }
+            if (showPrice) {
+                pdf.text(`MMK ${product.sellPrice.toLocaleString()}`, x + itemW / 2, textY, { align: 'center' });
+                textY += 4;
+            }
 
-            content += barcodeSvg.outerHTML;
-            container.innerHTML = content;
-            document.body.appendChild(container);
+            // --- Barcode rendering ---
+            const canvas = document.createElement('canvas');
+            try {
+              JsBarcode(canvas, product.sku, {
+                  format: "CODE128",
+                  width: 1.5,
+                  height: 40,
+                  fontSize: 12,
+                  displayValue: true,
+                  margin: 0,
+              });
+              
+              const barcodeImgData = canvas.toDataURL('image/png');
+              const barcodeImgWidth = itemW * 0.8;
+              const barcodeImgHeight = (barcodeImgWidth / canvas.width) * canvas.height;
+              const barcodeX = x + (itemW - barcodeImgWidth) / 2;
+              pdf.addImage(barcodeImgData, 'PNG', barcodeX, textY, barcodeImgWidth, barcodeImgHeight);
 
-            const canvas = await html2canvas(container, {
-                scale: 2, // Use a higher scale for better quality
-                useCORS: true,
-                backgroundColor: null, // Transparent background
-            });
-            
-            document.body.removeChild(container);
-
-            const imgData = canvas.toDataURL('image/png');
-            const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
-            const ratio = canvasWidth / canvasHeight;
-
-            const pdfImageWidth = itemW - 4; // Add some padding
-            const pdfImageHeight = pdfImageWidth / ratio;
-            
-            const imageX = x + (itemW - pdfImageWidth) / 2;
-            const imageY = y + (itemH - pdfImageHeight) / 2;
-
-            pdf.addImage(imgData, 'PNG', imageX, imageY, pdfImageWidth, pdfImageHeight);
+            } catch (e) {
+              console.error(`Failed to generate barcode for SKU: ${product.sku}`, e);
+            }
         }
 
         pdf.save('product-barcodes.pdf');
@@ -124,7 +113,7 @@ export default function BarcodesPage() {
          toast({
             variant: 'destructive',
             title: 'PDF Export Failed',
-            description: 'An unexpected error occurred while generating the PDF.',
+            description: (error as Error).message || 'An unexpected error occurred.',
         });
         console.error(error);
     } finally {
