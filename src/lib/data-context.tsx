@@ -1,5 +1,4 @@
 
-
 'use client';
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useAuth, type ActiveUserRole } from '@/lib/auth-context';
@@ -81,7 +80,7 @@ interface DataContextProps {
     deleteInventoryItem: (itemId: string) => Promise<void>;
     updateInvoiceSettings: (settings: DocumentSettings) => Promise<void>;
     updateQuotationSettings: (settings: DocumentSettings) => Promise<void>;
-    updateReceiptSettings: (settings: { companyLogo?: string }) => Promise<void>;
+    updateReceiptSettings: (settings: { companyLogo?: string | null }) => Promise<void>;
     updateGoalsSettings: (settings: GoalsSettings) => Promise<void>;
     updateBrandingSettings: (settings: BrandingSettings) => Promise<void>;
     updateUserManagementSettings: (settings: UserManagementSettings) => Promise<void>;
@@ -876,7 +875,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await updateSettings({ quotation: quotationSettings });
     };
 
-    const updateReceiptSettings = async (receiptSettings: { companyLogo?: string }) => {
+    const updateReceiptSettings = async (receiptSettings: { companyLogo?: string | null }) => {
         await updateSettings({ receipt: receiptSettings });
     };
 
@@ -934,3 +933,5 @@ export function useData() {
     }
     return context;
 }
+
+    

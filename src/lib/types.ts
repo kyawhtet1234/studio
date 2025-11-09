@@ -1,5 +1,4 @@
 
-
 import type { Timestamp } from 'firebase/firestore';
 
 export type Category = {
@@ -179,7 +178,7 @@ export interface DocumentSettings {
   companyName?: string;
   companyAddress?: string;
   companyPhone?: string;
-  companyLogo?: string;
+  companyLogo?: string | null;
   terms?: string;
   paymentInfo?: string;
 }
@@ -198,8 +197,10 @@ export interface BusinessSettings {
   invoice?: DocumentSettings;
   quotation?: DocumentSettings;
   receipt?: {
-    companyLogo?: string;
+    companyLogo?: string | null;
   };
   goals?: GoalsSettings;
   users?: UserManagementSettings;
 }
+
+    

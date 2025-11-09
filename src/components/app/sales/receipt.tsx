@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -139,3 +138,5 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, store }) => {
         </div>
     );
 }
+
+    
