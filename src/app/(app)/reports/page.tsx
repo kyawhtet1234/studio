@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import { useAuth } from "@/lib/auth-context";
@@ -321,7 +322,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure you want to delete this sale?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the sale record. This will not adjust inventory. Use 'Void' to restock items if this was a completed sale.
+                        This action cannot be undone. This will permanently delete the sale record and restock the items in inventory.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -808,3 +809,6 @@ export default function ReportsPage() {
   );
 }
 
+
+
+    

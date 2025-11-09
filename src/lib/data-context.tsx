@@ -1,4 +1,5 @@
 
+
 'use client';
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useAuth, type ActiveUserRole } from '@/lib/auth-context';
@@ -491,8 +492,41 @@ export function DataProvider({ children }: { children: ReactNode }) {
     
     const deleteSale = async (saleId: string) => {
         if (!user || !db) return;
-        await deleteDoc(doc(db, 'users', user.uid, 'sales', saleId));
-        setSales(prev => prev.filter(s => s.id !== saleId));
+        try {
+            await runTransaction(db, async (transaction) => {
+                const saleRef = doc(db, 'users', user.uid, 'sales', saleId);
+                const saleSnap = await transaction.get(saleRef);
+                if (!saleSnap.exists()) {
+                    console.warn("Sale document not found for deletion, it might have been already deleted.");
+                    return; 
+                }
+
+                const saleData = saleSnap.data() as SaleTransaction;
+                
+                const inventoryAdjustingStatus: SaleTransaction['status'][] = ['completed', 'paid', 'partially-paid'];
+                if (inventoryAdjustingStatus.includes(saleData.status)) {
+                    for (const item of saleData.items) {
+                        const variantName = item.variant_name || "";
+                        const inventoryId = `${item.productId}_${variantName}_${saleData.storeId}`;
+                        const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
+                        
+                        const invSnap = await transaction.get(invRef);
+                        if (invSnap.exists()) {
+                            transaction.update(invRef, { stock: invSnap.data().stock + item.quantity });
+                        } else {
+                            // If for some reason inventory record doesn't exist, create it.
+                            transaction.set(invRef, { id: inventoryId, productId: item.productId, variant_name: variantName, storeId: saleData.storeId, stock: item.quantity });
+                        }
+                    }
+                }
+                
+                transaction.delete(saleRef);
+            });
+            await fetchData(db, user.uid);
+        } catch(e) {
+            console.error("Delete sale transaction failed: ", e);
+            throw e;
+        }
     };
 
     const markInvoiceAsPaid = async (saleId: string) => {
@@ -933,5 +967,7 @@ export function useData() {
     }
     return context;
 }
+
+    
 
     
