@@ -40,13 +40,11 @@ import type { CartItem, SaleTransaction, Store, Product, Customer, PaymentType }
 import { useData } from "@/lib/data-context";
 import { Receipt } from "./receipt";
 import { AddCustomerForm } from "@/components/app/products/forms";
-import { InvoiceOrQuotation } from "./invoice-quotation";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { BarcodeScanner } from "@/components/app/sales/barcode-scanner";
+import { BarcodeScanner } from "./barcode-scanner";
 
 
 const formSchema = z.object({
@@ -559,31 +557,15 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     </Dialog>
 
     <Dialog open={!!lastSale} onOpenChange={handleCloseReceipt}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Transaction Complete</DialogTitle>
           </DialogHeader>
           {lastSale && (
-            <Tabs defaultValue="receipt">
-              <TabsList>
-                <TabsTrigger value="receipt">Receipt</TabsTrigger>
-                <TabsTrigger value="invoice">Invoice</TabsTrigger>
-              </TabsList>
-              <TabsContent value="receipt">
-                <Receipt
-                  sale={lastSale}
-                  store={stores.find((s) => s.id === lastSale.storeId)}
-                />
-              </TabsContent>
-              <TabsContent value="invoice">
-                <InvoiceOrQuotation 
-                  type="invoice"
-                  sale={lastSale}
-                  store={stores.find((s) => s.id === lastSale.storeId)}
-                  customer={customers.find((c) => c.id === lastSale.customerId)}
-                />
-              </TabsContent>
-            </Tabs>
+            <Receipt
+                sale={lastSale}
+                store={stores.find((s) => s.id === lastSale.storeId)}
+            />
           )}
         </DialogContent>
       </Dialog>
