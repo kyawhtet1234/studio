@@ -6,10 +6,10 @@ import { useData } from '@/lib/data-context';
 import { PageHeader } from '@/components/app/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Printer } from 'lucide-react';
+import { Printer, Loader2 } from 'lucide-react';
 import Barcode from 'react-barcode';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import JsBarcode from 'jsbarcode';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -20,10 +20,10 @@ export default function BarcodesPage() {
   const printRef = useRef<HTMLDivElement>(null);
   const [showName, setShowName] = useState(true);
   const [showPrice, setShowPrice] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handlePrint = async () => {
-    const input = printRef.current;
-    if (!input || products.length === 0) {
+    if (products.length === 0) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -31,66 +31,95 @@ export default function BarcodesPage() {
       });
       return;
     }
+    setIsLoading(true);
 
-    const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-    });
+    // Use a timeout to allow the UI to update with the loader
+    setTimeout(() => {
+        try {
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4',
+            });
 
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    const margin = 10; // 10mm margin on each side
-    const contentWidth = pdfWidth - (margin * 2);
-    const contentHeight = pdfHeight - (margin * 2);
+            const margin = 10;
+            const pageW = pdf.internal.pageSize.getWidth();
+            const pageH = pdf.internal.pageSize.getHeight();
+            const contentW = pageW - margin * 2;
+            
+            const cols = 3;
+            const rows = 8;
+            const itemsPerPage = cols * rows;
 
-    const allBarcodeElements = Array.from(input.querySelectorAll('.barcode-item'));
-    
-    // Estimate items per page
-    // This is an estimation, real value depends on item name height
-    const itemHeight = 35; // approximate height of one barcode item in mm
-    const itemsPerRow = 3;
-    const rowsPerPage = Math.floor(contentHeight / itemHeight);
-    const itemsPerPage = itemsPerRow * rowsPerPage;
+            const itemW = contentW / cols;
+            const itemH = 35; // mm height for each barcode label area
 
-    for (let i = 0; i < allBarcodeElements.length; i += itemsPerPage) {
-        const chunk = allBarcodeElements.slice(i, i + itemsPerPage);
-        
-        const tempContainer = document.createElement('div');
-        tempContainer.style.position = 'absolute';
-        tempContainer.style.left = '-9999px';
-        tempContainer.style.width = `${contentWidth}mm`;
-        
-        const gridContainer = document.createElement('div');
-        gridContainer.className = 'grid grid-cols-3 gap-x-4 gap-y-8 p-4';
-        
-        chunk.forEach(el => gridContainer.appendChild(el.cloneNode(true)));
-        tempContainer.appendChild(gridContainer);
-        document.body.appendChild(tempContainer);
+            let x = margin;
+            let y = margin;
+            let itemCounter = 0;
 
-        const canvas = await html2canvas(tempContainer, {
-            scale: 3,
-            useCORS: true,
-            width: tempContainer.offsetWidth,
-            height: tempContainer.offsetHeight,
-            windowWidth: tempContainer.scrollWidth,
-            windowHeight: tempContainer.scrollHeight,
-        });
+            products.forEach((product, index) => {
+                if (itemCounter >= itemsPerPage) {
+                    pdf.addPage();
+                    x = margin;
+                    y = margin;
+                    itemCounter = 0;
+                }
 
-        document.body.removeChild(tempContainer);
-        
-        if (i > 0) {
-            pdf.addPage();
+                const colIndex = itemCounter % cols;
+                const rowIndex = Math.floor(itemCounter / cols);
+                
+                x = margin + colIndex * itemW;
+                y = margin + rowIndex * itemH;
+
+                pdf.setFontSize(8);
+                pdf.setTextColor(0, 0, 0);
+
+                let textY = y + 5;
+
+                if (showName) {
+                    const splitName = pdf.splitTextToSize(product.name, itemW - 4);
+                    pdf.text(splitName, x + itemW / 2, textY, { align: 'center' });
+                    textY += (splitName.length * 3.5);
+                }
+                if (showPrice) {
+                    pdf.text(`MMK ${product.sellPrice.toLocaleString()}`, x + itemW / 2, textY, { align: 'center' });
+                    textY += 3.5;
+                }
+                
+                // Create a temporary canvas for the barcode
+                const barcodeCanvas = document.createElement('canvas');
+                try {
+                    JsBarcode(barcodeCanvas, product.sku, {
+                        format: "CODE128",
+                        width: 1.5,
+                        height: 40,
+                        fontSize: 12,
+                        margin: 2,
+                        displayValue: true,
+                    });
+                    const barcodeDataUrl = barcodeCanvas.toDataURL('image/png');
+                    pdf.addImage(barcodeDataUrl, 'PNG', x + (itemW - 45) / 2, textY, 45, 15);
+                } catch(e) {
+                    console.error(`Failed to generate barcode for SKU: ${product.sku}`, e);
+                }
+
+
+                itemCounter++;
+            });
+
+            pdf.save('product-barcodes.pdf');
+        } catch (error) {
+             toast({
+                variant: 'destructive',
+                title: 'PDF Export Failed',
+                description: 'An unexpected error occurred while generating the PDF.',
+            });
+            console.error(error);
+        } finally {
+            setIsLoading(false);
         }
-
-        const imgData = canvas.toDataURL('image/png');
-        const imgProps = pdf.getImageProperties(imgData);
-        const imgHeight = (imgProps.height * contentWidth) / imgProps.width;
-        
-        pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, imgHeight);
-    }
-    
-    pdf.save('product-barcodes.pdf');
+    }, 100); // 100ms timeout
   };
 
   return (
@@ -105,16 +134,16 @@ export default function BarcodesPage() {
             <Checkbox id="show-price" checked={showPrice} onCheckedChange={(checked) => setShowPrice(!!checked)} />
             <Label htmlFor="show-price">Show Price</Label>
           </div>
-          <Button onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4" />
-            Print Barcodes
+          <Button onClick={handlePrint} disabled={isLoading}>
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
+            {isLoading ? 'Generating...' : 'Export to PDF'}
           </Button>
         </div>
       </PageHeader>
 
       <Card>
-        <CardContent className="p-4" ref={printRef}>
-          <div className="grid grid-cols-3 gap-x-4 gap-y-8">
+        <CardContent className="p-4">
+          <div ref={printRef} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-8">
             {products.map((product) => (
               <div key={product.id} className="barcode-item flex flex-col items-center justify-center p-2 border rounded-lg break-inside-avoid">
                 {showName && <p className="text-xs font-semibold text-center mb-1 break-words w-full">{product.name}</p>}
