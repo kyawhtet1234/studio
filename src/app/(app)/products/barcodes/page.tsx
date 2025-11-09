@@ -42,35 +42,39 @@ export default function BarcodesPage() {
                 format: 'a4',
             });
 
+            // It's crucial to add a font that supports the characters you need.
+            // jsPDF has built-in fonts that are limited. For Unicode, you must add your own.
+            // Since we cannot add TTF files, we will rely on jsPDF's internal font handling,
+            // which may depend on the browser/OS, but is the best we can do without adding assets.
+            // Setting a standard font like 'Helvetica' is a fallback.
+            pdf.setFont('Helvetica');
+
+
             const margin = 10;
             const pageW = pdf.internal.pageSize.getWidth();
-            const pageH = pdf.internal.pageSize.getHeight();
-            const contentW = pageW - margin * 2;
             
             const cols = 3;
             const rows = 8;
             const itemsPerPage = cols * rows;
 
-            const itemW = contentW / cols;
+            const itemW = (pageW - margin * 2) / cols;
             const itemH = 35; // mm height for each barcode label area
 
-            let x = margin;
-            let y = margin;
             let itemCounter = 0;
 
-            products.forEach((product, index) => {
-                if (itemCounter >= itemsPerPage) {
+            products.forEach((product) => {
+                if (itemCounter > 0 && itemCounter % itemsPerPage === 0) {
                     pdf.addPage();
-                    x = margin;
-                    y = margin;
-                    itemCounter = 0;
                 }
 
-                const colIndex = itemCounter % cols;
-                const rowIndex = Math.floor(itemCounter / cols);
+                const pageIndex = Math.floor(itemCounter / itemsPerPage);
+                const itemIndexOnPage = itemCounter % itemsPerPage;
                 
-                x = margin + colIndex * itemW;
-                y = margin + rowIndex * itemH;
+                const colIndex = itemIndexOnPage % cols;
+                const rowIndex = Math.floor(itemIndexOnPage / cols);
+                
+                const x = margin + colIndex * itemW;
+                const y = margin + rowIndex * itemH;
 
                 pdf.setFontSize(8);
                 pdf.setTextColor(0, 0, 0);
