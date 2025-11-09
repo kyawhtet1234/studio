@@ -97,7 +97,7 @@ export default function BarcodesPage() {
           <div className="grid grid-cols-3 gap-x-4 gap-y-8">
             {products.map((product) => (
               <div key={product.id} className="flex flex-col items-center justify-center p-2 border rounded-lg break-inside-avoid">
-                {showName && <p className="text-xs font-semibold text-center mb-1 truncate w-full">{product.name}</p>}
+                {showName && <p className="text-xs font-semibold text-center mb-1 break-words w-full">{product.name}</p>}
                 {showPrice && <p className="text-xs text-center mb-1">MMK {product.sellPrice.toLocaleString()}</p>}
                 <Barcode 
                     value={product.sku}
