@@ -68,10 +68,13 @@ export default function BarcodesPage() {
             align-items: center;
             box-sizing: border-box;
             page-break-inside: avoid;
+            height: 100px; /* Fixed height for consistency */
           }
           .product-name {
             font-weight: bold;
             word-wrap: break-word;
+            max-height: 2.5em; /* Limit name to 2 lines */
+            overflow: hidden;
           }
           .product-sku {
             color: #555;
@@ -80,6 +83,9 @@ export default function BarcodesPage() {
             font-weight: bold;
             font-size: 11px;
             margin-top: 2px;
+          }
+          svg {
+             max-height: 40px;
           }
         </style>
       `);
@@ -103,13 +109,13 @@ export default function BarcodesPage() {
       printWindow.document.write('</div></body></html>');
       printWindow.document.close();
       
-      // Use a timeout to ensure all content and images are loaded
+      // Use a timeout to ensure all content and scripts for barcode generation are loaded
       setTimeout(() => {
         printWindow.focus();
         printWindow.print();
         printWindow.close();
         setIsLoading(false);
-      }, 500);
+      }, 500); // 500ms delay to allow barcodes to render
 
     } catch (error) {
       console.error('Failed to generate print page:', error);
