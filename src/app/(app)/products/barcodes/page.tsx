@@ -11,6 +11,8 @@ import Barcode from 'react-barcode';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import JsBarcode from 'jsbarcode';
+import { JSDOM } from 'jsdom';
 
 export default function BarcodesPage() {
   const { products } = useData();
@@ -92,89 +94,66 @@ export default function BarcodesPage() {
             margin-top: 2px;
           }
           .barcode-container svg {
-             max-height: 30px;
-             width: 100%;
+             height: 30px !important;
+             width: 100% !important;
           }
         </style>
       `);
       printWindow.document.write('</head><body><div class="label-grid">');
       
-      const barcodeContainer = document.createElement('div');
-      barcodeContainer.style.display = 'none';
-      document.body.appendChild(barcodeContainer);
+      // The JSDOM part is to create an SVG element in a virtual DOM to get the string
+      const dom = new JSDOM();
+      const document = dom.window.document;
 
       products.forEach(product => {
-        // This is a placeholder for the SVG string
-        const tempId = `barcode-${product.sku}`;
-        printWindow.document.write(`<div id="${tempId}" class="label"></div>`);
+        let labelContent = '';
+        if (showName) labelContent += `<div class="product-name">${product.name}</div>`;
+        if (showSku) labelContent += `<div class="product-sku">${product.sku}</div>`;
+        
+        try {
+            const svgNode = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            JsBarcode(svgNode, product.sku, {
+                format: "CODE128",
+                width: 1.2,
+                height: 25,
+                fontSize: 10,
+                margin: 2,
+                displayValue: false
+            });
+            const svgString = svgNode.outerHTML;
+            labelContent += `<div class="barcode-container">${svgString}</div>`;
+        } catch (e) {
+            console.error(`Failed to generate barcode for SKU ${product.sku}:`, e);
+            // Put a placeholder if barcode fails
+            labelContent += `<div class="barcode-container" style="color: red;">Barcode Error</div>`;
+        }
+        
+        if (showPrice) labelContent += `<div class="product-price">MMK ${product.sellPrice.toLocaleString()}</div>`;
+
+        printWindow.document.write(`<div class="label">${labelContent}</div>`);
       });
 
       printWindow.document.write('</div></body></html>');
-      
-      // Use a timeout to ensure the grid is rendered before we populate it.
+      printWindow.document.close();
+
       setTimeout(() => {
-        let allRendered = true;
-        products.forEach(product => {
-            const barcodeElement = document.createElement('div');
-            // We use react-barcode on the main page to generate the SVG
-            const barcodeComponent = (
-              <Barcode value={product.sku} width={1.2} height={25} fontSize={10} margin={2} />
-            );
-            
-            // This is a trick to get the SVG from the React component
-            const tempDiv = document.createElement('div');
-            const root = require('react-dom/client').createRoot(tempDiv);
-            root.render(barcodeComponent);
-
-            const svgElement = tempDiv.querySelector('svg');
-            if (svgElement) {
-              const svgString = new XMLSerializer().serializeToString(svgElement);
-              
-              let labelContent = '';
-              if (showName) labelContent += `<div class="product-name">${product.name}</div>`;
-              if (showSku) labelContent += `<div class="product-sku">${product.sku}</div>`;
-              labelContent += `<div class="barcode-container">${svgString}</div>`;
-              if (showPrice) labelContent += `<div class="product-price">MMK ${product.sellPrice.toLocaleString()}</div>`;
-
-              const targetDiv = printWindow.document.getElementById(`barcode-${product.sku}`);
-              if(targetDiv) {
-                targetDiv.innerHTML = labelContent;
-              }
-            } else {
-              allRendered = false;
+        try {
+          printWindow.focus();
+          printWindow.print();
+        } catch (e) {
+          console.error('Print failed:', e);
+          toast({
+            variant: 'destructive',
+            title: 'Print Failed',
+            description: 'Could not open the print dialog.',
+          });
+        } finally {
+            // some browsers close the window automatically after print
+            if (!printWindow.closed) {
+              printWindow.close();
             }
-        });
-        document.body.removeChild(barcodeContainer);
-
-        if (!allRendered) {
-             toast({
-                variant: 'destructive',
-                title: 'Export Failed',
-                description: 'Could not generate some barcodes.',
-             });
-             printWindow.close();
-             setIsLoading(false);
-             return;
         }
-
-        // Another short timeout to ensure SVGs are painted in the new window
-        setTimeout(() => {
-          try {
-            printWindow.focus();
-            printWindow.print();
-          } catch (e) {
-            console.error('Print failed:', e);
-            toast({
-              variant: 'destructive',
-              title: 'Print Failed',
-              description: 'Could not open the print dialog.',
-            });
-          } finally {
-            printWindow.close();
-            setIsLoading(false);
-          }
-        }, 500);
-      }, 100);
+      }, 500); // A small delay to ensure everything is rendered in the new window.
 
     } catch (error) {
       console.error('Failed to generate print page:', error);
@@ -183,7 +162,8 @@ export default function BarcodesPage() {
         title: 'Export Failed',
         description: 'An unexpected error occurred while preparing the print page.',
       });
-      setIsLoading(false);
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -224,6 +204,7 @@ export default function BarcodesPage() {
               <div
                 key={product.id}
                 className="barcode-item flex flex-col items-center justify-center p-2 border rounded-lg break-inside-avoid text-center"
+                style={{height: '90px'}}
               >
                 {showName && <p className="text-xs font-semibold break-words w-full">{product.name}</p>}
                 {showSku && <p className="text-[10px] text-muted-foreground">{product.sku}</p>}
