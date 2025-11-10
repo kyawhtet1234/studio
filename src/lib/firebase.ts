@@ -17,7 +17,7 @@ let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 
-// Memoized function to get client services
+// This is a memoized function that initializes and returns client-side Firebase services.
 export function getClientServices() {
     if (typeof window !== 'undefined') {
         if (!app) {
@@ -30,8 +30,7 @@ export function getClientServices() {
             db = getFirestore(app);
         }
     }
-    // On the server, we return undefined
-    // This can be handled by the calling components
+    // On the server, this will return undefined, which is handled by components that use it.
     // @ts-ignore
     return { app, db, auth };
 }
