@@ -9,12 +9,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Printer, Loader2 } from 'lucide-react';
 import Barcode from 'react-barcode';
 import { useToast } from '@/hooks/use-toast';
-import ReactDOMServer from 'react-dom/server';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 export default function BarcodesPage() {
   const { products } = useData();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [showName, setShowName] = useState(true);
+  const [showSku, setShowSku] = useState(true);
+  const [showPrice, setShowPrice] = useState(true);
 
   const handlePrint = () => {
     if (products.length === 0) {
@@ -68,7 +72,7 @@ export default function BarcodesPage() {
             align-items: center;
             box-sizing: border-box;
             page-break-inside: avoid;
-            height: 70px; /* Reduced height */
+            height: 70px;
           }
           .product-name {
             font-weight: bold;
@@ -87,50 +91,90 @@ export default function BarcodesPage() {
             font-size: 11px;
             margin-top: 2px;
           }
-          svg {
-             max-height: 30px; /* Reduced barcode height */
+          .barcode-container svg {
+             max-height: 30px;
              width: 100%;
           }
         </style>
       `);
       printWindow.document.write('</head><body><div class="label-grid">');
+      
+      const barcodeContainer = document.createElement('div');
+      barcodeContainer.style.display = 'none';
+      document.body.appendChild(barcodeContainer);
 
       products.forEach(product => {
-        // Render the Barcode component to an HTML string
-        const barcodeHTML = ReactDOMServer.renderToString(
-          <Barcode value={product.sku} width={1.2} height={25} fontSize={10} margin={2} />
-        );
-        const labelContent = `
-          <div class="label">
-            <div class="product-name">${product.name}</div>
-            <div class="product-sku">${product.sku}</div>
-            ${barcodeHTML}
-            <div class="product-price">MMK ${product.sellPrice.toLocaleString()}</div>
-          </div>
-        `;
-        printWindow.document.write(labelContent);
+        // This is a placeholder for the SVG string
+        const tempId = `barcode-${product.sku}`;
+        printWindow.document.write(`<div id="${tempId}" class="label"></div>`);
       });
 
       printWindow.document.write('</div></body></html>');
-      printWindow.document.close();
       
-      // Use a timeout to ensure the browser has time to render the SVGs from the string.
+      // Use a timeout to ensure the grid is rendered before we populate it.
       setTimeout(() => {
-        try {
+        let allRendered = true;
+        products.forEach(product => {
+            const barcodeElement = document.createElement('div');
+            // We use react-barcode on the main page to generate the SVG
+            const barcodeComponent = (
+              <Barcode value={product.sku} width={1.2} height={25} fontSize={10} margin={2} />
+            );
+            
+            // This is a trick to get the SVG from the React component
+            const tempDiv = document.createElement('div');
+            const root = require('react-dom/client').createRoot(tempDiv);
+            root.render(barcodeComponent);
+
+            const svgElement = tempDiv.querySelector('svg');
+            if (svgElement) {
+              const svgString = new XMLSerializer().serializeToString(svgElement);
+              
+              let labelContent = '';
+              if (showName) labelContent += `<div class="product-name">${product.name}</div>`;
+              if (showSku) labelContent += `<div class="product-sku">${product.sku}</div>`;
+              labelContent += `<div class="barcode-container">${svgString}</div>`;
+              if (showPrice) labelContent += `<div class="product-price">MMK ${product.sellPrice.toLocaleString()}</div>`;
+
+              const targetDiv = printWindow.document.getElementById(`barcode-${product.sku}`);
+              if(targetDiv) {
+                targetDiv.innerHTML = labelContent;
+              }
+            } else {
+              allRendered = false;
+            }
+        });
+        document.body.removeChild(barcodeContainer);
+
+        if (!allRendered) {
+             toast({
+                variant: 'destructive',
+                title: 'Export Failed',
+                description: 'Could not generate some barcodes.',
+             });
+             printWindow.close();
+             setIsLoading(false);
+             return;
+        }
+
+        // Another short timeout to ensure SVGs are painted in the new window
+        setTimeout(() => {
+          try {
             printWindow.focus();
             printWindow.print();
-        } catch (e) {
+          } catch (e) {
             console.error('Print failed:', e);
             toast({
-                variant: 'destructive',
-                title: 'Print Failed',
-                description: 'Could not open the print dialog.',
+              variant: 'destructive',
+              title: 'Print Failed',
+              description: 'Could not open the print dialog.',
             });
-        } finally {
+          } finally {
             printWindow.close();
             setIsLoading(false);
-        }
-      }, 500); // A 500ms delay is usually sufficient for rendering.
+          }
+        }, 500);
+      }, 100);
 
     } catch (error) {
       console.error('Failed to generate print page:', error);
@@ -146,14 +190,28 @@ export default function BarcodesPage() {
   return (
     <div>
       <PageHeader title="Product Barcodes">
-        <Button onClick={handlePrint} disabled={isLoading}>
-          {isLoading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Printer className="mr-2 h-4 w-4" />
-          )}
-          {isLoading ? 'Generating...' : 'Export to PDF'}
-        </Button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox id="showName" checked={showName} onCheckedChange={(c) => setShowName(!!c)} />
+            <Label htmlFor="showName">Name</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox id="showSku" checked={showSku} onCheckedChange={(c) => setShowSku(!!c)} />
+            <Label htmlFor="showSku">SKU</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox id="showPrice" checked={showPrice} onCheckedChange={(c) => setShowPrice(!!c)} />
+            <Label htmlFor="showPrice">Price</Label>
+          </div>
+          <Button onClick={handlePrint} disabled={isLoading}>
+            {isLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Printer className="mr-2 h-4 w-4" />
+            )}
+            {isLoading ? 'Generating...' : 'Export to PDF'}
+          </Button>
+        </div>
       </PageHeader>
 
       <Card>
@@ -167,10 +225,10 @@ export default function BarcodesPage() {
                 key={product.id}
                 className="barcode-item flex flex-col items-center justify-center p-2 border rounded-lg break-inside-avoid text-center"
               >
-                <p className="text-xs font-semibold break-words w-full">{product.name}</p>
-                <p className="text-[10px] text-muted-foreground">{product.sku}</p>
+                {showName && <p className="text-xs font-semibold break-words w-full">{product.name}</p>}
+                {showSku && <p className="text-[10px] text-muted-foreground">{product.sku}</p>}
                 <Barcode value={product.sku} width={1.5} height={30} fontSize={10} margin={2} />
-                <p className="text-xs font-bold">MMK {product.sellPrice.toLocaleString()}</p>
+                {showPrice && <p className="text-xs font-bold">MMK {product.sellPrice.toLocaleString()}</p>}
               </div>
             ))}
           </div>
