@@ -12,7 +12,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import JsBarcode from 'jsbarcode';
-import { JSDOM } from 'jsdom';
 
 export default function BarcodesPage() {
   const { products } = useData();
@@ -101,10 +100,6 @@ export default function BarcodesPage() {
       `);
       printWindow.document.write('</head><body><div class="label-grid">');
       
-      // The JSDOM part is to create an SVG element in a virtual DOM to get the string
-      const dom = new JSDOM();
-      const document = dom.window.document;
-
       products.forEach(product => {
         let labelContent = '';
         if (showName) labelContent += `<div class="product-name">${product.name}</div>`;
