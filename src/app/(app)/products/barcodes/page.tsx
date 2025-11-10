@@ -1,31 +1,27 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useData } from '@/lib/data-context';
 import { PageHeader } from '@/components/app/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { FileDown, Loader2 } from 'lucide-react';
+import { Printer, Loader2 } from 'lucide-react';
 import Barcode from 'react-barcode';
 import { useToast } from '@/hooks/use-toast';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import ReactDOMServer from 'react-dom/server';
 
 export default function BarcodesPage() {
   const { products } = useData();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  
-  // A hidden container to render labels for PDF generation
-  const printContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleExportToPDF = async () => {
+  const handlePrint = () => {
     if (products.length === 0) {
       toast({
         variant: 'destructive',
         title: 'No Products',
-        description: 'There are no products to export barcodes for.',
+        description: 'There are no products to generate barcodes for.',
       });
       return;
     }
@@ -33,61 +29,95 @@ export default function BarcodesPage() {
     setIsLoading(true);
 
     try {
-      const doc = new jsPDF('p', 'mm', 'a4');
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 10;
-      const labelsPerRow = 4;
-      const labelsPerCol = 8;
-      const labelWidth = (pageWidth - margin * 2) / labelsPerRow;
-      const labelHeight = (pageHeight - margin * 2) / labelsPerCol;
-      let x = margin;
-      let y = margin;
-      let labelCount = 0;
-
-      const allLabelElements = printContainerRef.current?.children;
-      if (!allLabelElements) {
-        throw new Error("Could not find the hidden label container.");
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not open print window. Please disable your pop-up blocker.' });
+        setIsLoading(false);
+        return;
       }
-
-      for (let i = 0; i < allLabelElements.length; i++) {
-        const labelEl = allLabelElements[i] as HTMLElement;
-
-        const canvas = await html2canvas(labelEl, {
-          scale: 3, // Increase scale for higher resolution
-          backgroundColor: '#ffffff',
-        });
-        
-        const imgData = canvas.toDataURL('image/png');
-        
-        doc.addImage(imgData, 'PNG', x, y, labelWidth, labelHeight);
-        
-        x += labelWidth;
-        labelCount++;
-        
-        if (labelCount % labelsPerRow === 0) {
-          x = margin;
-          y += labelHeight;
-        }
-
-        if (y + labelHeight > pageHeight - margin) {
-          if (i < allLabelElements.length - 1) { // Don't add a new page if it's the last item
-            doc.addPage();
-            x = margin;
-            y = margin;
+      
+      printWindow.document.write('<html><head><title>Print Barcodes</title>');
+      printWindow.document.write(`
+        <style>
+          @media print {
+            @page {
+              size: A4;
+              margin: 10mm;
+            }
           }
-        }
-      }
+          body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+          }
+          .label-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-gap: 10px;
+            page-break-inside: avoid;
+          }
+          .label {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+            font-size: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            page-break-inside: avoid;
+          }
+          .product-name {
+            font-weight: bold;
+            word-wrap: break-word;
+          }
+          .product-sku {
+            color: #555;
+          }
+          .product-price {
+            font-weight: bold;
+            font-size: 11px;
+            margin-top: 2px;
+          }
+        </style>
+      `);
+      printWindow.document.write('</head><body><div class="label-grid">');
 
-      doc.save('barcodes.pdf');
+      products.forEach(product => {
+        const barcodeHTML = ReactDOMServer.renderToString(
+          <Barcode value={product.sku} width={1.2} height={25} fontSize={10} margin={2} />
+        );
+        const labelContent = `
+          <div class="label">
+            <div class="product-name">${product.name}</div>
+            <div class="product-sku">${product.sku}</div>
+            ${barcodeHTML}
+            <div class="product-price">MMK ${product.sellPrice.toLocaleString()}</div>
+          </div>
+        `;
+        printWindow.document.write(labelContent);
+      });
+
+      printWindow.document.write('</div></body></html>');
+      printWindow.document.close();
+      
+      // Use a timeout to ensure all content and images are loaded
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+        setIsLoading(false);
+      }, 500);
+
     } catch (error) {
-      console.error('Failed to export PDF:', error);
+      console.error('Failed to generate print page:', error);
       toast({
         variant: 'destructive',
         title: 'Export Failed',
-        description: 'An unexpected error occurred while generating the PDF.',
+        description: 'An unexpected error occurred while preparing the print page.',
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -95,20 +125,20 @@ export default function BarcodesPage() {
   return (
     <div>
       <PageHeader title="Product Barcodes">
-        <Button onClick={handleExportToPDF} disabled={isLoading}>
+        <Button onClick={handlePrint} disabled={isLoading}>
           {isLoading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <FileDown className="mr-2 h-4 w-4" />
+            <Printer className="mr-2 h-4 w-4" />
           )}
-          {isLoading ? 'Generating...' : 'Export to PDF'}
+          {isLoading ? 'Generating...' : 'Print All Barcodes'}
         </Button>
       </PageHeader>
 
       <Card>
         <CardContent className="p-4">
           <p className="mb-4 text-sm text-muted-foreground">
-            A preview of your product barcodes is shown below. Use the "Export to PDF" button to download a printable file.
+            A preview of your product barcodes is shown below. Use the "Print All Barcodes" button to open a print-friendly page. From there, you can print directly or save as a PDF.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-8">
             {products.slice(0, 12).map((product) => (
@@ -130,21 +160,6 @@ export default function BarcodesPage() {
           )}
         </CardContent>
       </Card>
-      
-      {/* Hidden container for rendering all labels for PDF generation */}
-      <div ref={printContainerRef} className="absolute -left-[9999px] top-0" aria-hidden="true">
-        {products.map(product => (
-          <div
-            key={`print-${product.id}`}
-            style={{ width: '250px', padding: '10px', fontFamily: 'sans-serif', textAlign: 'center', backgroundColor: 'white', border: '1px solid #eee' }}
-          >
-            <p style={{ fontSize: '12px', fontWeight: 'bold', margin: 0 }}>{product.name}</p>
-            <p style={{ fontSize: '10px', color: '#666', margin: '2px 0' }}>{product.sku}</p>
-            <Barcode value={product.sku} width={1.5} height={30} fontSize={10} margin={2} />
-            <p style={{ fontSize: '12px', fontWeight: 'bold', margin: '4px 0 0 0' }}>MMK {product.sellPrice.toLocaleString()}</p>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
