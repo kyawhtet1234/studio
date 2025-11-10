@@ -57,7 +57,7 @@ export default function BarcodesPage() {
           }
           .label-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             grid-gap: 10px;
             page-break-inside: avoid;
           }
@@ -119,7 +119,6 @@ export default function BarcodesPage() {
             labelContent += `<div class="barcode-container">${svgString}</div>`;
         } catch (e) {
             console.error(`Failed to generate barcode for SKU ${product.sku}:`, e);
-            // Put a placeholder if barcode fails
             labelContent += `<div class="barcode-container" style="color: red;">Barcode Error</div>`;
         }
         
@@ -143,12 +142,11 @@ export default function BarcodesPage() {
             description: 'Could not open the print dialog.',
           });
         } finally {
-            // some browsers close the window automatically after print
             if (!printWindow.closed) {
               printWindow.close();
             }
         }
-      }, 500); // A small delay to ensure everything is rendered in the new window.
+      }, 500); 
 
     } catch (error) {
       console.error('Failed to generate print page:', error);
