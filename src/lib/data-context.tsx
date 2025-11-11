@@ -677,11 +677,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const deletePurchase = async (purchaseId: string) => {
         if (!user || !db) return;
         try {
-            const purchaseToDelete = purchases.find(p => p.id === purchaseId);
-            if (!purchaseToDelete) throw new Error("Purchase not found");
-
             await runTransaction(db, async (transaction) => {
                 const purchaseRef = doc(db, 'users', user.uid, 'purchases', purchaseId);
+                const purchaseSnap = await transaction.get(purchaseRef);
+                if (!purchaseSnap.exists()) {
+                     throw new Error("Purchase not found");
+                }
+                const purchaseToDelete = purchaseSnap.data() as PurchaseTransaction;
+
                 transaction.delete(purchaseRef);
                 
                 for(const item of purchaseToDelete.items) {
