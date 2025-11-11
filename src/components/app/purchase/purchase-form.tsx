@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -32,7 +33,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Trash2, PlusCircle, CalendarIcon } from "lucide-react";
+import { Trash2, PlusCircle, CalendarIcon, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Store, PurchaseTransaction, Supplier, Product } from "@/lib/types";
 import { useData } from "@/lib/data-context";
@@ -76,6 +77,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
   const [quantity, setQuantity] = useState<number | string>(1);
   const [foundProduct, setFoundProduct] = useState<Product | null>(null);
   const [selectedVariant, setSelectedVariant] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(formSchema),
@@ -179,6 +181,8 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
       return;
     }
     
+    setIsLoading(true);
+
     const purchaseData = {
       storeId: data.storeId,
       supplierId: data.supplierId, 
@@ -192,11 +196,16 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
       total: total,
     };
   
-    await onSavePurchase(purchaseData);
-  
-    toast({ title: "Purchase Saved!", description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
-    form.reset();
-    remove();
+    try {
+      await onSavePurchase(purchaseData);
+      toast({ title: "Purchase Saved!", description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
+      form.reset();
+      remove();
+    } catch (error) {
+      toast({ variant: 'destructive', title: "Save Failed", description: (error as Error).message });
+    } finally {
+      setIsLoading(false);
+    }
   }
   
   const isFormLocked = fields.length > 0;
@@ -397,7 +406,10 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
             <p className="text-sm font-medium text-destructive">{form.formState.errors.cart.message || form.formState.errors.cart.root?.message}</p>
         )}
         <div className="flex justify-end">
-            <Button type="submit" size="lg">Save Purchase</Button>
+            <Button type="submit" size="lg" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Purchase
+            </Button>
         </div>
       </form>
     </Form>
