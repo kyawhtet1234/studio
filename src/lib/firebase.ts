@@ -13,14 +13,18 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
+// Memoization variables to ensure Firebase is initialized only once.
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 
-// This is a memoized function that initializes and returns client-side Firebase services.
+/**
+ * Initializes and returns client-side Firebase services.
+ * This function is memoized to prevent re-initialization on every call.
+ */
 export function getClientServices() {
     if (typeof window !== 'undefined') {
-        if (!app) {
+        if (!app) { // Only initialize if it hasn't been already
             if (getApps().length > 0) {
                 app = getApp();
             } else {
@@ -30,7 +34,8 @@ export function getClientServices() {
             db = getFirestore(app);
         }
     }
-    // On the server, this will return undefined, which is handled by components that use it.
+    // On the server, this will return undefined for client-side services.
+    // This is expected and handled by components that use this function.
     // @ts-ignore
     return { app, db, auth };
 }
