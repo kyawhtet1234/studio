@@ -34,7 +34,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogDescription } from "@/components/ui/dialog";
-import { Trash2, PlusCircle, UserPlus, CalendarIcon, ScanBarcode } from "lucide-react";
+import { Trash2, PlusCircle, UserPlus, CalendarIcon, ScanBarcode, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { CartItem, SaleTransaction, Store, Product, Customer, PaymentType } from '@/lib/types';
 import { useData } from "@/lib/data-context";
@@ -81,6 +81,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
   const [lastSale, setLastSale] = useState<SaleTransaction | null>(null);
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [sku, setSku] = useState("");
   const [itemName, setItemName] = useState("");
@@ -205,7 +206,9 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
   };
   
   async function onSubmit(data: SalesFormValues) {
-    
+    if (isLoading) return;
+    setIsLoading(true);
+
     const saleData: Omit<SaleTransaction, 'id' | 'status'> = {
         storeId: data.storeId,
         customerId: data.customerId,
@@ -248,6 +251,8 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
         title: 'Sale Failed',
         description: (error as Error).message,
       });
+    } finally {
+        setIsLoading(false);
     }
   }
 
@@ -530,7 +535,10 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
             <p className="text-sm font-medium text-destructive">{form.formState.errors.cart.message || form.formState.errors.cart.root?.message}</p>
         )}
         <div className="flex justify-end">
-            <Button type="submit" size="lg">Save Transaction</Button>
+            <Button type="submit" size="lg" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Transaction
+            </Button>
         </div>
       </form>
     </Form>
@@ -572,5 +580,3 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     </>
   );
 }
-
-    
