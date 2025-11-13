@@ -48,7 +48,7 @@ interface DataContextProps {
     addPaymentType: (paymentType: Omit<PaymentType, 'id'>) => Promise<void>;
     updatePaymentType: (paymentTypeId: string, paymentType: Partial<Omit<PaymentType, 'id'>>) => Promise<void>;
     deletePaymentType: (paymentTypeId: string) => Promise<void>;
-    addSale: (sale: Omit<SaleTransaction, 'id'>) => Promise<void>;
+    addSale: (sale: Omit<SaleTransaction, 'id'>) => Promise<string | void>;
     updateSale: (saleId: string, sale: Partial<Omit<SaleTransaction, 'id'>>) => Promise<void>;
     voidSale: (saleId: string) => Promise<void>;
     deleteSale: (saleId: string) => Promise<void>;
@@ -425,9 +425,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setPaymentTypes(prev => prev.filter(pt => pt.id !== paymentTypeId));
     };
 
-    const addSale = async (saleData: Omit<SaleTransaction, 'id'>) => {
-        if (!user || !db) return;
+    const addSale = async (saleData: Omit<SaleTransaction, 'id'>): Promise<string> => {
+        if (!user || !db) return Promise.reject("User not logged in.");
         const isInventoryDeducted = saleData.status === 'paid' || saleData.status === 'partially-paid' || saleData.status === 'completed';
+
+        let newSaleId = '';
 
         try {
             await runTransaction(db, async (transaction) => {
@@ -460,6 +462,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
                 // --- WRITES SECOND ---
                 const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
+                newSaleId = newSaleRef.id;
                 transaction.set(newSaleRef, { ...saleData, date: Timestamp.fromDate(toDate(saleData.date)) });
 
                 if (isInventoryDeducted) {
@@ -473,6 +476,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
             });
             await fetchData(db, user.uid);
+            return newSaleId;
         } catch (e) {
             console.error("Sale transaction failed: ", e);
             throw e;
@@ -974,3 +978,4 @@ export function useData() {
     
 
     
+

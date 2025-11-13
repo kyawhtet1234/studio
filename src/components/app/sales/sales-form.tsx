@@ -71,14 +71,14 @@ type SalesFormValues = z.infer<typeof formSchema>;
 interface SalesFormProps {
     stores: Store[];
     customers: Customer[];
-    onSave: (sale: Omit<SaleTransaction, 'id' | 'status'>) => Promise<void>;
+    onSave: (sale: Omit<SaleTransaction, 'id' | 'status'>) => Promise<string | void>;
     onAddCustomer: (customer: Omit<Customer, 'id'>) => Promise<void>;
 }
 
 export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFormProps) {
-  const { products, inventory, paymentTypes } = useData();
+  const { products, inventory, paymentTypes, sales: allSales } = useData();
   const { toast } = useToast();
-  const [lastSale, setLastSale] = useState<SaleTransaction | null>(null);
+  const [lastSaleId, setLastSaleId] = useState<string | null>(null);
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -231,20 +231,14 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     };
     
     try {
-      await onSave(saleData);
-
-      const completeSaleData: SaleTransaction = {
-        ...saleData,
-        id: `sale-${Date.now()}`,
-        date: data.date,
-        status: 'completed',
-      }
-
-      setLastSale(completeSaleData);
+      const newSaleId = await onSave(saleData);
       
       toast({ title: 'Sale Saved!', description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
       form.reset();
       remove();
+      if(newSaleId) {
+        setLastSaleId(newSaleId);
+      }
     } catch(error) {
        toast({
         variant: 'destructive',
@@ -257,13 +251,15 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
   }
 
   const handleCloseReceipt = () => {
-    setLastSale(null);
+    setLastSaleId(null);
   }
   
   const handleBarcodeScan = (scannedSku: string) => {
     setSku(scannedSku);
     setIsScannerOpen(false);
   }
+  
+  const lastSale = allSales.find(s => s.id === lastSaleId);
 
   return (
     <>
@@ -564,7 +560,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
       </DialogContent>
     </Dialog>
 
-    <Dialog open={!!lastSale} onOpenChange={handleCloseReceipt}>
+    <Dialog open={!!lastSaleId} onOpenChange={handleCloseReceipt}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Transaction Complete</DialogTitle>

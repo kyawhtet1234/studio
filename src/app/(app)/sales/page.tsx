@@ -13,7 +13,7 @@ export default function SalesPage() {
   const { addSale, stores, customers, addCustomer } = useData();
 
   const handleSaveDocument = async (docData: Omit<SaleTransaction, 'id'>) => {
-    await addSale(docData);
+    return await addSale(docData);
   };
 
   return (
