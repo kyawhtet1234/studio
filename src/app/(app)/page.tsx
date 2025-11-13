@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { StatCard } from "@/components/app/dashboard/stat-card";
 import { SalesChart } from "@/components/app/dashboard/sales-chart";
 import { BestSellers } from "@/components/app/dashboard/best-sellers";
-import { DollarSign, TrendingUp } from "lucide-react";
+import { DollarSign, TrendingUp, ReceiptText, BarChartBig } from "lucide-react";
 import type { Timestamp } from 'firebase/firestore';
 import { useMemo, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -38,6 +38,7 @@ export default function DashboardPage() {
   
     let todaySales = 0;
     let todayCogs = 0;
+    let todayTransactions = 0;
   
     salesData.forEach(sale => {
       const saleDate = toDate(sale.date);
@@ -45,6 +46,7 @@ export default function DashboardPage() {
   
       if (saleDate.getTime() === today.getTime()) {
         todaySales += sale.total;
+        todayTransactions++;
         sale.items.forEach(item => {
           const product = products.find(p => p.id === item.productId);
           if (product) {
@@ -55,10 +57,11 @@ export default function DashboardPage() {
     });
   
     const todayProfit = todaySales - todayCogs;
-    return { todaySales, todayProfit };
+    const avgTransactionValue = todayTransactions > 0 ? todaySales / todayTransactions : 0;
+    return { todaySales, todayProfit, todayTransactions, avgTransactionValue };
   }
 
-  const { todaySales, todayProfit } = useMemo(() => getTodayMetrics(filteredSales), [filteredSales, products]);
+  const { todaySales, todayProfit, todayTransactions, avgTransactionValue } = useMemo(() => getTodayMetrics(filteredSales), [filteredSales, products]);
   const isFiltered = selectedStore !== 'all';
 
   return (
@@ -76,7 +79,7 @@ export default function DashboardPage() {
             </SelectContent>
         </Select>
       </PageHeader>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
           title="Today's Sales"
           value={`MMK ${todaySales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -92,6 +95,22 @@ export default function DashboardPage() {
           description="Gross profit (Sales - COGS)."
           loading={loading}
           className="bg-shiny-blue rounded-xl shadow-lg"
+        />
+         <StatCard 
+          title="Today's Transactions"
+          value={todayTransactions.toLocaleString()}
+          icon={ReceiptText}
+          description="Total number of sales today."
+          loading={loading}
+          className="bg-shiny-teal rounded-xl shadow-lg"
+        />
+        <StatCard 
+          title="Average Transaction"
+          value={`MMK ${avgTransactionValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          icon={BarChartBig}
+          description="Average value per transaction today."
+          loading={loading}
+          className="bg-shiny-rose-gold rounded-xl shadow-lg"
         />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
