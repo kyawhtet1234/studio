@@ -11,6 +11,7 @@ import { useMemo, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { SaleTransaction } from '@/lib/types';
 import { InventoryAlerts } from '@/components/app/dashboard/inventory-alerts';
+import { endOfYesterday, startOfYesterday, startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay } from 'date-fns';
 
 // Helper function to safely convert date
 const toDate = (date: Date | Timestamp): Date => {
@@ -32,36 +33,93 @@ export default function DashboardPage() {
   }, [sales, selectedStore]);
 
 
-  const getTodayMetrics = (salesData: SaleTransaction[]) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const { 
+    todaySales, 
+    todayProfit, 
+    todayTransactions, 
+    avgTransactionValue,
+    salesChange,
+    profitChange,
+    transactionsChange,
+    monthlySalesChange,
+    monthlyProfitChange,
+    monthlyTransactionsChange
+   } = useMemo(() => {
+    const todayStart = startOfDay(new Date());
+    const todayEnd = endOfDay(new Date());
+    const yesterdayStart = startOfYesterday();
+    const yesterdayEnd = endOfYesterday();
+    
+    const currentMonthStart = startOfMonth(new Date());
+    const prevMonthStart = startOfMonth(subMonths(new Date(), 1));
+    const prevMonthEnd = endOfMonth(subMonths(new Date(), 1));
+
+    let todaySales = 0, todayCogs = 0, todayTransactions = 0;
+    let yesterdaySales = 0, yesterdayCogs = 0, yesterdayTransactions = 0;
+    let thisMonthSales = 0, thisMonthCogs = 0, thisMonthTransactions = 0;
+    let prevMonthSales = 0, prevMonthCogs = 0, prevMonthTransactions = 0;
   
-    let todaySales = 0;
-    let todayCogs = 0;
-    let todayTransactions = 0;
-  
-    salesData.forEach(sale => {
+    filteredSales.forEach(sale => {
       const saleDate = toDate(sale.date);
-      saleDate.setHours(0, 0, 0, 0);
-  
-      if (saleDate.getTime() === today.getTime()) {
+      let saleCogs = 0;
+      sale.items.forEach(item => {
+        const product = products.find(p => p.id === item.productId);
+        if (product) {
+          saleCogs += product.buyPrice * item.quantity;
+        }
+      });
+
+      // Today's Metrics
+      if (saleDate >= todayStart && saleDate <= todayEnd) {
         todaySales += sale.total;
+        todayCogs += saleCogs;
         todayTransactions++;
-        sale.items.forEach(item => {
-          const product = products.find(p => p.id === item.productId);
-          if (product) {
-            todayCogs += product.buyPrice * item.quantity;
-          }
-        });
+      }
+      // Yesterday's Metrics
+      if (saleDate >= yesterdayStart && saleDate <= yesterdayEnd) {
+        yesterdaySales += sale.total;
+        yesterdayCogs += saleCogs;
+        yesterdayTransactions++;
+      }
+      // This Month's Metrics
+       if (saleDate >= currentMonthStart && saleDate <= todayEnd) {
+        thisMonthSales += sale.total;
+        thisMonthCogs += saleCogs;
+        thisMonthTransactions++;
+      }
+      // Previous Month's Metrics
+      if (saleDate >= prevMonthStart && saleDate <= prevMonthEnd) {
+        prevMonthSales += sale.total;
+        prevMonthCogs += saleCogs;
+        prevMonthTransactions++;
       }
     });
   
     const todayProfit = todaySales - todayCogs;
-    const avgTransactionValue = todayTransactions > 0 ? todaySales / todayTransactions : 0;
-    return { todaySales, todayProfit, todayTransactions, avgTransactionValue };
-  }
+    const yesterdayProfit = yesterdaySales - yesterdayCogs;
+    const thisMonthProfit = thisMonthSales - thisMonthCogs;
+    const prevMonthProfit = prevMonthSales - prevMonthCogs;
 
-  const { todaySales, todayProfit, todayTransactions, avgTransactionValue } = useMemo(() => getTodayMetrics(filteredSales), [filteredSales, products]);
+    const calcChange = (current: number, previous: number) => {
+        if (previous === 0) return current > 0 ? 100 : 0;
+        return ((current - previous) / previous) * 100;
+    };
+    
+    return {
+        todaySales,
+        todayProfit,
+        todayTransactions,
+        avgTransactionValue: todayTransactions > 0 ? todaySales / todayTransactions : 0,
+        salesChange: calcChange(todaySales, yesterdaySales),
+        profitChange: calcChange(todayProfit, yesterdayProfit),
+        transactionsChange: calcChange(todayTransactions, yesterdayTransactions),
+        monthlySalesChange: calcChange(thisMonthSales, prevMonthSales),
+        monthlyProfitChange: calcChange(thisMonthProfit, prevMonthProfit),
+        monthlyTransactionsChange: calcChange(thisMonthTransactions, prevMonthTransactions)
+    };
+
+  }, [filteredSales, products]);
+
   const isFiltered = selectedStore !== 'all';
 
   return (
@@ -84,7 +142,8 @@ export default function DashboardPage() {
           title="Today's Sales"
           value={`MMK ${todaySales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={DollarSign}
-          description="Total sales recorded today."
+          dailyChange={{ value: salesChange, label: 'vs yesterday' }}
+          monthlyChange={{ value: monthlySalesChange, label: 'vs last month' }}
           loading={loading}
           className="bg-shiny-green rounded-xl shadow-lg"
         />
@@ -92,7 +151,8 @@ export default function DashboardPage() {
           title="Today's Profit"
           value={`MMK ${todayProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={TrendingUp}
-          description="Gross profit (Sales - COGS)."
+          dailyChange={{ value: profitChange, label: 'vs yesterday' }}
+          monthlyChange={{ value: monthlyProfitChange, label: 'vs last month' }}
           loading={loading}
           className="bg-shiny-blue rounded-xl shadow-lg"
         />
@@ -100,7 +160,8 @@ export default function DashboardPage() {
           title="Today's Transactions"
           value={todayTransactions.toLocaleString()}
           icon={ReceiptText}
-          description="Total number of sales today."
+          dailyChange={{ value: transactionsChange, label: 'vs yesterday' }}
+          monthlyChange={{ value: monthlyTransactionsChange, label: 'vs last month' }}
           loading={loading}
           className="bg-shiny-teal rounded-xl shadow-lg"
         />
