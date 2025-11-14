@@ -1,6 +1,5 @@
 
 
-
 'use client';
 
 import { useAuth } from "@/lib/auth-context";
@@ -38,7 +37,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
 
-const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales: number, profit: number, totalQuantity: number }, periodLabel: string }) => (
+const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales: number, profit: number, totalQuantity: number, transactions: number }, periodLabel: string }) => (
     <Card className="bg-shiny-blue rounded-xl shadow-lg">
       <CardContent className="p-0 overflow-x-auto">
           <Table>
@@ -46,6 +45,8 @@ const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales
               <TableRow className="bg-shiny-yellow hover:bg-shiny-yellow/90">
                 <TableHead className="text-black font-bold">{periodLabel}</TableHead>
                 <TableHead className="text-right text-black font-bold">Total Items</TableHead>
+                <TableHead className="text-right text-black font-bold">Transactions</TableHead>
+                <TableHead className="text-right text-black font-bold">Avg. Transaction</TableHead>
                 <TableHead className="text-right text-black font-bold">Sales</TableHead>
                 <TableHead className="text-right text-black font-bold">Profit (Sales - COGS)</TableHead>
               </TableRow>
@@ -55,13 +56,15 @@ const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales
                   <TableRow key={report.key}>
                       <TableCell className="font-medium">{report.date}</TableCell>
                       <TableCell className="text-right">{report.totalQuantity}</TableCell>
+                      <TableCell className="text-right">{report.transactions}</TableCell>
+                      <TableCell className="text-right">MMK {report.avgTransaction.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                       <TableCell className="text-right">MMK {report.sales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                       <TableCell className="text-right">MMK {report.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   </TableRow>
               ))}
               {data.length === 0 && (
                   <TableRow>
-                      <TableCell colSpan={4} className="text-center h-24">
+                      <TableCell colSpan={6} className="text-center h-24">
                           No reports found.
                       </TableCell>
                   </TableRow>
@@ -71,6 +74,8 @@ const ReportTable = ({ data, total, periodLabel }: { data: any[], total: { sales
               <TableRow>
                 <TableCell className="font-bold">Total</TableCell>
                 <TableCell className="text-right font-bold">{total.totalQuantity}</TableCell>
+                <TableCell className="text-right font-bold">{total.transactions}</TableCell>
+                <TableCell className="text-right font-bold">MMK {(total.sales / (total.transactions || 1)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 <TableCell className="text-right font-bold">MMK {total.sales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 <TableCell className="text-right font-bold">MMK {total.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
               </TableRow>
@@ -362,7 +367,7 @@ export default function ReportsPage() {
 
 
   const getReportData = (period: 'daily' | 'monthly') => {
-    const reports: { [key: string]: { key: string, date: string, sales: number, cogs: number, profit: number, totalQuantity: number } } = {};
+    const reports: { [key: string]: { key: string, date: string, sales: number, cogs: number, profit: number, totalQuantity: number, transactions: number, avgTransaction: number } } = {};
     
     const includedSales = filteredSales.filter(s => s.status === 'completed' || s.status === 'paid');
     
@@ -379,10 +384,12 @@ export default function ReportsPage() {
         }
 
         if (!reports[key]) {
-            reports[key] = { key, date: dateLabel, sales: 0, cogs: 0, profit: 0, totalQuantity: 0 };
+            reports[key] = { key, date: dateLabel, sales: 0, cogs: 0, profit: 0, totalQuantity: 0, transactions: 0, avgTransaction: 0 };
         }
 
         reports[key].sales += sale.total;
+        reports[key].transactions++;
+
         let saleCogs = 0;
         let saleQuantity = 0;
         sale.items.forEach(item => {
@@ -395,13 +402,18 @@ export default function ReportsPage() {
         reports[key].totalQuantity += saleQuantity;
     });
 
-    const data = Object.values(reports).sort((a,b) => b.key.localeCompare(a.key));
+    const data = Object.values(reports).map(report => ({
+        ...report,
+        avgTransaction: report.sales / report.transactions
+    })).sort((a,b) => b.key.localeCompare(a.key));
+
     const total = data.reduce((acc, report) => {
         acc.sales += report.sales;
         acc.profit += report.profit;
         acc.totalQuantity += report.totalQuantity;
+        acc.transactions += report.transactions;
         return acc;
-    }, { sales: 0, profit: 0, totalQuantity: 0 });
+    }, { sales: 0, profit: 0, totalQuantity: 0, transactions: 0 });
 
     return { data, total };
   };
@@ -448,8 +460,9 @@ export default function ReportsPage() {
         acc.sales += report.sales;
         acc.profit += report.profit;
         acc.totalQuantity += report.totalQuantity;
+        acc.transactions += report.transactions;
         return acc;
-    }, { sales: 0, profit: 0, totalQuantity: 0 });
+    }, { sales: 0, profit: 0, totalQuantity: 0, transactions: 0 });
   }, [filteredMonthlyReports]);
 
 
@@ -481,12 +494,12 @@ export default function ReportsPage() {
     switch (activeTab) {
       case 'daily':
         return { 
-          data: dailyReports.map(r => ({ Period: r.date, 'Total Items': r.totalQuantity, Sales: r.sales, Profit: r.profit })),
+          data: dailyReports.map(r => ({ Period: r.date, 'Total Items': r.totalQuantity, 'Transactions': r.transactions, 'Avg Transaction': r.avgTransaction, Sales: r.sales, Profit: r.profit })),
           title: 'Daily Sales Report'
         };
       case 'monthly':
         return {
-          data: filteredMonthlyReports.map(r => ({ Period: r.date, 'Total Items': r.totalQuantity, Sales: r.sales, Profit: r.profit })),
+          data: filteredMonthlyReports.map(r => ({ Period: r.date, 'Total Items': r.totalQuantity, 'Transactions': r.transactions, 'Avg Transaction': r.avgTransaction, Sales: r.sales, Profit: r.profit })),
           title: 'Monthly Sales Report'
         };
       case 'salesByCustomer':
@@ -692,7 +705,7 @@ export default function ReportsPage() {
                     </SelectContent>
                 </Select>
             </div>
-            <ReportTable data={filteredMonthlyReports} total={filteredMonthlyTotal} period-label="Month" />
+            <ReportTable data={filteredMonthlyReports} total={filteredMonthlyTotal} periodLabel="Month" />
         </TabsContent>
         <TabsContent value="salesByCustomer" className="mt-4">
             <SalesByCustomerTable data={salesByCustomer} />
