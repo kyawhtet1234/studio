@@ -9,6 +9,7 @@ import type { SaleTransaction } from "@/lib/types";
 import type { Timestamp } from 'firebase/firestore';
 import { cn } from "@/lib/utils";
 import { useData } from "@/lib/data-context";
+import { format, subDays, startOfDay } from 'date-fns';
 
 const chartConfig = {
   sales: {
@@ -29,34 +30,34 @@ export function SalesChart({ sales, className, style }: { sales: SaleTransaction
   const dailySalesGoal = settings.goals?.dailySalesGoal;
 
   const { monthlySales, hasSales } = useMemo(() => {
-    const data = new Array(30).fill(0).map((_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (29 - i));
-      return { date: date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }), sales: 0 };
-    });
+    // Initialize data for the last 30 days
+    const data = Array.from({ length: 30 }, (_, i) => {
+      const d = subDays(new Date(), i);
+      return {
+        date: format(startOfDay(d), 'MMM d'), // e.g., "Nov 14"
+        sales: 0,
+      };
+    }).reverse();
+
+    const dateMap = new Map<string, { date: string; sales: number }>();
+    data.forEach(d => dateMap.set(d.date, d));
 
     let hasSales = false;
-
+    
     const completedSales = sales.filter(s => s.status === 'completed');
 
     completedSales.forEach(sale => {
       const saleDate = toDate(sale.date);
-      const today = new Date();
-      const diffTime = today.getTime() - saleDate.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 3600 * 24));
+      const dateKey = format(startOfDay(saleDate), 'MMM d');
       
-      if (diffDays >= 0 && diffDays < 30) {
-        const index = 29 - diffDays;
-        if(data[index]) {
-            data[index].sales += sale.total;
-            if (sale.total > 0) {
-              hasSales = true;
-            }
-        }
+      if (dateMap.has(dateKey)) {
+        const dayData = dateMap.get(dateKey)!;
+        dayData.sales += sale.total;
+        if (sale.total > 0) hasSales = true;
       }
     });
 
-    return { monthlySales: data, hasSales };
+    return { monthlySales: Array.from(dateMap.values()), hasSales };
   }, [sales]);
 
   const darkBlueStyle = { fill: 'hsl(220 25% 10%)', fontWeight: 'bold' };
