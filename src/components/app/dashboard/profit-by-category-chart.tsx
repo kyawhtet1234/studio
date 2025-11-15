@@ -32,6 +32,20 @@ interface ProfitByCategoryChartProps {
   style?: React.CSSProperties;
 }
 
+const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    return (
+        <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs font-bold">
+            {`${name} (${(percent * 100).toFixed(0)}%)`}
+        </text>
+    );
+};
+
+
 export function ProfitByCategoryChart({ sales, products, categories, className, style }: ProfitByCategoryChartProps) {
   const { profitByCategory, chartConfig } = useMemo(() => {
     const categoryProfit: { [key: string]: { name: string, profit: number } } = {};
@@ -99,8 +113,8 @@ export function ProfitByCategoryChart({ sales, products, categories, className, 
                   nameKey="name"
                   innerRadius={60}
                   strokeWidth={5}
-                  label={({ name, profit }) => `${name}: ${((profit / profitByCategory.reduce((acc, curr) => acc + curr.profit, 0)) * 100).toFixed(0)}%`}
                   labelLine={false}
+                  label={<CustomLabel />}
                 >
                   {profitByCategory.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={chartConfig[entry.name]?.color || CHART_COLORS[index % CHART_COLORS.length]} />
