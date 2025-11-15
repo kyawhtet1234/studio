@@ -7,7 +7,7 @@ import type { Timestamp } from 'firebase/firestore';
 import { cn } from "@/lib/utils";
 import { useMemo } from 'react';
 import { PieChart, Pie, ResponsiveContainer, Cell } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 
 const toDate = (date: Date | Timestamp): Date => {
   if (date instanceof Date) {
@@ -31,20 +31,6 @@ interface ProfitByCategoryChartProps {
   className?: string;
   style?: React.CSSProperties;
 }
-
-const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
-    const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-    return (
-        <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs font-bold">
-            {`${name} (${(percent * 100).toFixed(0)}%)`}
-        </text>
-    );
-};
-
 
 export function ProfitByCategoryChart({ sales, products, categories, className, style }: ProfitByCategoryChartProps) {
   const { profitByCategory, chartConfig } = useMemo(() => {
@@ -97,7 +83,7 @@ export function ProfitByCategoryChart({ sales, products, categories, className, 
       </CardHeader>
       <CardContent>
          {profitByCategory.length > 0 ? (
-          <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[250px]">
+          <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <ChartTooltip
@@ -113,13 +99,17 @@ export function ProfitByCategoryChart({ sales, products, categories, className, 
                   nameKey="name"
                   innerRadius={60}
                   strokeWidth={5}
+                  label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                   labelLine={false}
-                  label={<CustomLabel />}
                 >
                   {profitByCategory.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={chartConfig[entry.name]?.color || CHART_COLORS[index % CHART_COLORS.length]} />
                   ))}
                 </Pie>
+                 <ChartLegend
+                  content={<ChartLegendContent nameKey="name" />}
+                  className="-translate-y-[2rem] flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+                />
               </PieChart>
             </ResponsiveContainer>
           </ChartContainer>
