@@ -7,7 +7,8 @@ import type { Timestamp } from 'firebase/firestore';
 import { cn } from "@/lib/utils";
 import { useMemo } from 'react';
 import { PieChart, Pie, ResponsiveContainer, Cell } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 
 const toDate = (date: Date | Timestamp): Date => {
   if (date instanceof Date) {
@@ -78,41 +79,60 @@ export function ProfitByCategoryChart({ sales, products, categories, className, 
   return (
     <Card className={cn(className, "shadow-drop-shadow-black")} style={style}>
       <CardHeader>
-        <CardTitle>Profit by Category</CardTitle>
+        <CardTitle className="text-black font-bold">Profit by Category</CardTitle>
         <CardDescription>Top 5 most profitable categories this month.</CardDescription>
       </CardHeader>
       <CardContent>
          {profitByCategory.length > 0 ? (
-          <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[350px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent
-                    hideLabel
-                    formatter={(value, name) => [`MMK ${Number(value).toLocaleString()}`, name]}
-                  />}
-                />
-                <Pie
-                  data={profitByCategory}
-                  dataKey="profit"
-                  nameKey="name"
-                  innerRadius={60}
-                  strokeWidth={5}
-                  label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}
-                >
-                  {profitByCategory.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={chartConfig[entry.name]?.color || CHART_COLORS[index % CHART_COLORS.length]} />
-                  ))}
-                </Pie>
-                 <ChartLegend
-                  content={<ChartLegendContent nameKey="name" />}
-                  className="-translate-y-[2rem] flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </ChartContainer>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+              <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent
+                        hideLabel
+                        formatter={(value, name) => [`MMK ${Number(value).toLocaleString()}`, name]}
+                      />}
+                    />
+                    <Pie
+                      data={profitByCategory}
+                      dataKey="profit"
+                      nameKey="name"
+                      innerRadius={60}
+                      strokeWidth={5}
+                      label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                      labelLine={false}
+                    >
+                      {profitByCategory.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={chartConfig[entry.name]?.color || CHART_COLORS[index % CHART_COLORS.length]} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+               <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Category</TableHead>
+                                <TableHead className="text-right">Profit</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {profitByCategory.map((item, index) => (
+                            <TableRow key={index}>
+                                <TableCell className="font-medium flex items-center gap-2">
+                                    <div className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: chartConfig[item.name]?.color || CHART_COLORS[index % CHART_COLORS.length] }} />
+                                    {item.name}
+                                </TableCell>
+                                <TableCell className="text-right">MMK {item.profit.toLocaleString()}</TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                </div>
+          </div>
         ) : (
           <div className="h-[300px] flex items-center justify-center">
             <p className="text-muted-foreground">No profit data for this month.</p>
