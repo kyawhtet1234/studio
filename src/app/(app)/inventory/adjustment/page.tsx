@@ -143,7 +143,7 @@ export default function StockAdjustmentPage() {
       <PageHeader title="Bulk Stock Adjustment" />
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <Card className="bg-shiny-pink rounded-xl shadow-lg">
+          <Card className="bg-shiny-blue rounded-xl shadow-lg">
             <CardHeader>
               <CardTitle>Adjustment Details</CardTitle>
             </CardHeader>
