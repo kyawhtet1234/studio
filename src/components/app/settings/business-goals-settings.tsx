@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -15,16 +16,22 @@ export function BusinessGoalsSettings() {
   const { settings, updateGoalsSettings } = useData();
 
   const [dailySalesGoal, setDailySalesGoal] = useState(0);
+  const [monthlySalesGoalForIncentive, setMonthlySalesGoalForIncentive] = useState(0);
+  const [employeeIncentiveAmount, setEmployeeIncentiveAmount] = useState(0);
 
   useEffect(() => {
     if (settings.goals) {
       setDailySalesGoal(settings.goals.dailySalesGoal || 0);
+      setMonthlySalesGoalForIncentive(settings.goals.monthlySalesGoalForIncentive || 0);
+      setEmployeeIncentiveAmount(settings.goals.employeeIncentiveAmount || 0);
     }
   }, [settings.goals]);
 
   const handleSave = async () => {
     const newSettings: GoalsSettings = {
       dailySalesGoal: Number(dailySalesGoal),
+      monthlySalesGoalForIncentive: Number(monthlySalesGoalForIncentive),
+      employeeIncentiveAmount: Number(employeeIncentiveAmount),
     };
     await updateGoalsSettings(newSettings);
     toast({
@@ -37,7 +44,7 @@ export function BusinessGoalsSettings() {
     <Card>
       <CardHeader>
         <CardTitle>Business Goals</CardTitle>
-        <CardDescription>Set your business targets to track performance.</CardDescription>
+        <CardDescription>Set your business targets to track performance and manage incentives.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
@@ -49,6 +56,29 @@ export function BusinessGoalsSettings() {
             onChange={(e) => setDailySalesGoal(Number(e.target.value))} 
             placeholder="e.g., 500000" 
           />
+        </div>
+        <div className="space-y-4 p-4 border rounded-md">
+            <h4 className="font-medium">Employee Incentive Program</h4>
+            <div className="space-y-2">
+                <Label htmlFor="monthly-sales-goal">Monthly Sales Goal for Incentive (MMK)</Label>
+                <Input 
+                    id="monthly-sales-goal" 
+                    type="number"
+                    value={monthlySalesGoalForIncentive} 
+                    onChange={(e) => setMonthlySalesGoalForIncentive(Number(e.target.value))} 
+                    placeholder="e.g., 15000000" 
+                />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="incentive-amount">Employee Incentive Amount (MMK)</Label>
+                <Input 
+                    id="incentive-amount" 
+                    type="number"
+                    value={employeeIncentiveAmount} 
+                    onChange={(e) => setEmployeeIncentiveAmount(Number(e.target.value))} 
+                    placeholder="e.g., 50000" 
+                />
+            </div>
         </div>
       </CardContent>
       <CardFooter>

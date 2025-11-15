@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -33,8 +34,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AddEmployeeForm, RecordAdvanceForm, RecordLeaveForm } from '@/components/app/employees/forms';
-import type { Employee, SalaryAdvance, LeaveRecord } from '@/lib/types';
-import { MoreHorizontal, Calendar as CalendarIcon, DollarSign, Trash2, FileCheck, ChevronLeft, ChevronRight } from 'lucide-react';
+import type { Employee, SalaryAdvance, LeaveRecord, SaleTransaction } from '@/lib/types';
+import { MoreHorizontal, Calendar as CalendarIcon, DollarSign, Trash2, FileCheck, ChevronLeft, ChevronRight, Gift, TrendingUp, CheckCircle2, XCircle } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, lastDayOfMonth, subMonths, addMonths, isSameMonth } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
@@ -60,6 +61,8 @@ export default function EmployeesPage() {
     addExpense,
     expenseCategories,
     addExpenseCategory,
+    sales,
+    settings,
   } = useData();
 
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
@@ -90,6 +93,25 @@ export default function EmployeesPage() {
       return leaveDate >= monthStart && leaveDate <= monthEnd;
     });
   }, [leaveRecords, monthStart, monthEnd]);
+  
+  const { totalMonthSales, isGoalMet, monthlySalesGoal, incentiveAmount } = useMemo(() => {
+    const goal = settings.goals?.monthlySalesGoalForIncentive || 0;
+    const incentive = settings.goals?.employeeIncentiveAmount || 0;
+
+    const totalSales = sales
+        .filter(s => {
+            const saleDate = s.date as Date;
+            return saleDate >= monthStart && saleDate <= monthEnd && s.status === 'completed';
+        })
+        .reduce((sum, s) => sum + s.total, 0);
+    
+    return {
+        totalMonthSales: totalSales,
+        isGoalMet: goal > 0 && totalSales >= goal,
+        monthlySalesGoal: goal,
+        incentiveAmount: incentive
+    }
+  }, [sales, monthStart, monthEnd, settings.goals]);
 
   const employeeCalculations = useMemo(() => {
     return employees.map(employee => {
@@ -98,7 +120,8 @@ export default function EmployeesPage() {
         const leaves = monthLeaves.filter(l => l.employeeId === employee.id);
         const hasTakenLeave = leaves.length > 0;
         const bonus = hasTakenLeave ? 0 : LEAVE_BONUS;
-        const finalSalary = employee.baseSalary - totalAdvance + bonus;
+        const monthlyIncentive = isGoalMet ? incentiveAmount : 0;
+        const finalSalary = employee.baseSalary - totalAdvance + bonus + monthlyIncentive;
         return {
             ...employee,
             advances,
@@ -106,10 +129,11 @@ export default function EmployeesPage() {
             leaves,
             hasTakenLeave,
             bonus,
+            monthlyIncentive,
             finalSalary
         };
     });
-  }, [employees, monthAdvances, monthLeaves]);
+  }, [employees, monthAdvances, monthLeaves, isGoalMet, incentiveAmount]);
 
   const isPayrollPosted = useMemo(() => {
     const payrollCategory = expenseCategories.find(c => c.name === PAYROLL_CATEGORY_NAME);
@@ -234,6 +258,30 @@ export default function EmployeesPage() {
             </AddEntitySheet>
         </div>
       </PageHeader>
+
+      <Card className="mb-6 bg-shiny-blue">
+        <CardHeader>
+            <CardTitle>Monthly Sales Incentive</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                    {isGoalMet ? <CheckCircle2 className="h-6 w-6 text-green-500" /> : <XCircle className="h-6 w-6 text-destructive" />}
+                    <span className="font-semibold">{isGoalMet ? "Goal Met!" : "Goal Not Met"}</span>
+                </div>
+                <div className="flex-1 flex items-baseline gap-2">
+                    <span className="text-xl font-bold">MMK {totalMonthSales.toLocaleString()}</span>
+                    <span className="text-sm text-muted-foreground">/ MMK {monthlySalesGoal.toLocaleString()}</span>
+                </div>
+                {isGoalMet && (
+                    <div className="flex items-center gap-2 text-green-600 font-semibold">
+                        <Gift className="h-5 w-5" />
+                        <span>Each employee gets an incentive of MMK {incentiveAmount.toLocaleString()}!</span>
+                    </div>
+                )}
+            </div>
+        </CardContent>
+      </Card>
       
       <div className="grid grid-cols-1 gap-6">
         {employeeCalculations.map(employee => (
@@ -262,6 +310,10 @@ export default function EmployeesPage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">No-Leave Bonus</span>
                   <span className={`font-medium ${employee.hasTakenLeave ? 'text-muted-foreground' : 'text-green-600'}`}>{employee.hasTakenLeave ? 'N/A' : `+ MMK ${employee.bonus.toLocaleString()}`}</span>
+                </div>
+                 <div className="flex justify-between">
+                  <span className="text-muted-foreground">Monthly Incentive</span>
+                  <span className={`font-medium ${!isGoalMet ? 'text-muted-foreground' : 'text-green-600'}`}>{!isGoalMet ? 'N/A' : `+ MMK ${employee.monthlyIncentive.toLocaleString()}`}</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold border-t pt-2">
                   <span>Final Salary</span>
@@ -373,3 +425,4 @@ export default function EmployeesPage() {
     </div>
   );
 }
+

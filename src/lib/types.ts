@@ -185,6 +185,8 @@ export interface DocumentSettings {
 
 export interface GoalsSettings {
     dailySalesGoal?: number;
+    monthlySalesGoalForIncentive?: number;
+    employeeIncentiveAmount?: number;
 }
 
 export interface BrandingSettings {
