@@ -466,7 +466,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 // --- WRITES SECOND ---
                 const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
                 newSaleId = newSaleRef.id;
-                transaction.set(newSaleRef, { ...saleData, date: Timestamp.fromDate(toDate(saleData.date)) });
+
+                const cleanedItems = saleData.items.map(item => ({
+                    ...item,
+                    cogs: item.cogs ?? null,
+                    sourceCost: item.sourceCost ?? null,
+                    sourcedQuantity: item.sourcedQuantity ?? null,
+                }));
+
+                transaction.set(newSaleRef, { ...saleData, items: cleanedItems, date: Timestamp.fromDate(toDate(saleData.date)) });
 
                 if (isInventoryDeducted) {
                     for (let i = 0; i < inventorySnaps.length; i++) {
@@ -990,6 +998,7 @@ export function useData() {
     
 
     
+
 
 
 
