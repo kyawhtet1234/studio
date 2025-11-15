@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { SaleTransaction } from '@/lib/types';
 import { InventoryAlerts } from '@/components/app/dashboard/inventory-alerts';
 import { endOfYesterday, startOfYesterday, startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay } from 'date-fns';
+import { ProfitByCategoryChart } from '@/components/app/dashboard/profit-by-category-chart';
 
 // Helper function to safely convert date
 const toDate = (date: Date | Timestamp): Date => {
@@ -22,7 +23,7 @@ const toDate = (date: Date | Timestamp): Date => {
 };
 
 export default function DashboardPage() {
-  const { sales, products, loading, stores, inventory } = useData();
+  const { sales, products, loading, stores, inventory, categories } = useData();
   const [selectedStore, setSelectedStore] = useState<string>('all');
 
   const filteredSales = useMemo(() => {
@@ -178,8 +179,9 @@ export default function DashboardPage() {
         <SalesChart sales={filteredSales} isFiltered={isFiltered} className="bg-shiny-orange rounded-xl shadow-drop-shadow-black" />
         <BestSellers sales={filteredSales} products={products} className="bg-shiny-purple rounded-xl shadow-lg" />
       </div>
-      <div className="mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
         <InventoryAlerts inventory={inventory} products={products} stores={stores} className="bg-shiny-yellow rounded-xl shadow-lg" />
+        <ProfitByCategoryChart sales={sales} products={products} categories={categories} className="bg-shiny-pink rounded-xl shadow-lg" />
       </div>
     </div>
   );
