@@ -181,7 +181,7 @@ export default function DashboardPage() {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
         <InventoryAlerts inventory={inventory} products={products} stores={stores} className="bg-shiny-yellow rounded-xl shadow-lg" />
-        <ProfitByCategoryChart sales={sales} products={products} categories={categories} className="bg-shiny-pink rounded-xl shadow-lg" />
+        <ProfitByCategoryChart sales={sales} products={products} categories={categories} className="bg-shiny-blue rounded-xl shadow-lg" />
       </div>
     </div>
   );
