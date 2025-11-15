@@ -643,7 +643,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     <Input 
                         id="source-cost"
                         type="number"
-                        value={specialOrderState?.sourceCost}
+                        value={specialOrderState?.sourceCost || ''}
                         onChange={(e) => setSpecialOrderState(prev => prev ? {...prev, sourceCost: e.target.value} : null)}
                         placeholder="Cost from partner store"
                         autoFocus
@@ -673,5 +673,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     </>
   );
 }
+
+    
 
     
