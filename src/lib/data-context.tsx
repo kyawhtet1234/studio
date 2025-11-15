@@ -438,10 +438,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 // --- READS FIRST ---
                 if (isInventoryDeducted) {
                     for (const item of saleData.items) {
-                        const variantName = item.variant_name || "";
-                        const inventoryId = `${item.productId}_${variantName}_${saleData.storeId}`;
-                        const inventoryRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
-                        inventoryLookups.push({ ref: inventoryRef, item });
+                        const inStockQuantity = item.quantity - (item.sourcedQuantity || 0);
+                        if (inStockQuantity > 0) {
+                            const variantName = item.variant_name || "";
+                            const inventoryId = `${item.productId}_${variantName}_${saleData.storeId}`;
+                            const inventoryRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
+                            inventoryLookups.push({ ref: inventoryRef, item, inStockQuantity });
+                        }
                     }
                 }
                 const inventorySnaps = await Promise.all(inventoryLookups.map(lookup => transaction.get(lookup.ref)));
@@ -449,14 +452,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 // --- VALIDATION ---
                 for (let i = 0; i < inventorySnaps.length; i++) {
                     const invSnap = inventorySnaps[i];
-                    const { item } = inventoryLookups[i];
+                    const { item, inStockQuantity } = inventoryLookups[i];
                     
                     if (!invSnap.exists()) {
                         throw new Error(`Product ${item.name} is out of stock.`);
                     }
                     const currentStock = invSnap.data().stock || 0;
-                    if (currentStock < item.quantity) {
-                        throw new Error(`Not enough stock for ${item.name}. Available: ${currentStock}, Requested: ${item.quantity}`);
+                    if (currentStock < inStockQuantity) {
+                        throw new Error(`Not enough stock for ${item.name}. Available: ${currentStock}, Requested from stock: ${inStockQuantity}`);
                     }
                 }
 
@@ -468,9 +471,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 if (isInventoryDeducted) {
                     for (let i = 0; i < inventorySnaps.length; i++) {
                         const invSnap = inventorySnaps[i];
-                        const { ref, item } = inventoryLookups[i];
+                        const { ref, inStockQuantity } = inventoryLookups[i];
                         const currentStock = invSnap.data()!.stock;
-                        const newStock = currentStock - item.quantity;
+                        const newStock = currentStock - inStockQuantity;
                         transaction.update(ref, { stock: newStock });
                     }
                 }
@@ -510,16 +513,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 const inventoryAdjustingStatus: SaleTransaction['status'][] = ['completed', 'paid', 'partially-paid'];
                 if (inventoryAdjustingStatus.includes(saleData.status)) {
                     for (const item of saleData.items) {
+                         const inStockQuantity = item.quantity - (item.sourcedQuantity || 0);
+                        if (inStockQuantity <= 0) continue;
+
                         const variantName = item.variant_name || "";
                         const inventoryId = `${item.productId}_${variantName}_${saleData.storeId}`;
                         const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                         
                         const invSnap = await transaction.get(invRef);
                         if (invSnap.exists()) {
-                            transaction.update(invRef, { stock: invSnap.data().stock + item.quantity });
+                            transaction.update(invRef, { stock: invSnap.data().stock + inStockQuantity });
                         } else {
                             // If for some reason inventory record doesn't exist, create it.
-                            transaction.set(invRef, { id: inventoryId, productId: item.productId, variant_name: variantName, storeId: saleData.storeId, stock: item.quantity });
+                            transaction.set(invRef, { id: inventoryId, productId: item.productId, variant_name: variantName, storeId: saleData.storeId, stock: inStockQuantity });
                         }
                     }
                 }
@@ -546,6 +552,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 if(saleData.status === 'completed' || saleData.status === 'paid') return;
 
                 for (const item of saleData.items) {
+                    const inStockQuantity = item.quantity - (item.sourcedQuantity || 0);
+                    if (inStockQuantity <= 0) continue;
+
                     const variantName = item.variant_name || "";
                     const inventoryId = `${item.productId}_${variantName}_${saleData.storeId}`;
                     const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
@@ -553,9 +562,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     if (!invSnap.exists()) throw new Error(`Inventory for ${item.name} not found.`);
                     
                     const currentStock = invSnap.data().stock || 0;
-                    if (currentStock < item.quantity) throw new Error(`Not enough stock for ${item.name}.`);
+                    if (currentStock < inStockQuantity) throw new Error(`Not enough stock for ${item.name}.`);
                     
-                    transaction.update(invRef, { stock: currentStock - item.quantity });
+                    transaction.update(invRef, { stock: currentStock - inStockQuantity });
                 }
                 transaction.update(saleRef, { status: 'paid' });
             });
@@ -604,14 +613,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 const inventoryAdjustingStatus: SaleTransaction['status'][] = ['completed', 'paid', 'partially-paid'];
                 if (inventoryAdjustingStatus.includes(saleData.status)) {
                     for (const item of saleData.items) {
+                        const inStockQuantity = item.quantity - (item.sourcedQuantity || 0);
+                        if (inStockQuantity <= 0) continue;
+
                         const variantName = item.variant_name || "";
                         const inventoryId = `${item.productId}_${variantName}_${saleData.storeId}`;
                         const invRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                         const invSnap = await transaction.get(invRef);
                         if (invSnap.exists()) {
-                            transaction.update(invRef, { stock: invSnap.data().stock + item.quantity });
+                            transaction.update(invRef, { stock: invSnap.data().stock + inStockQuantity });
                         } else {
-                            transaction.set(invRef, { id: inventoryId, productId: item.productId, variant_name: variantName, storeId: saleData.storeId, stock: item.quantity });
+                            transaction.set(invRef, { id: inventoryId, productId: item.productId, variant_name: variantName, storeId: saleData.storeId, stock: inStockQuantity });
                         }
                     }
                 }
@@ -978,5 +990,6 @@ export function useData() {
     
 
     
+
 
 

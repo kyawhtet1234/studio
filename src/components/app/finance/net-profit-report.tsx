@@ -46,9 +46,14 @@ export function NetProfitReport({ sales, products, expenses }: NetProfitReportPr
       data[monthKey].revenue += sale.total;
       
       sale.items.forEach(item => {
-        const product = products.find(p => p.id === item.productId);
-        if (product) {
-          data[monthKey].cogs += product.buyPrice * item.quantity;
+        if (item.cogs) {
+            data[monthKey].cogs += item.cogs;
+        } else {
+            // Fallback for older transactions
+            const product = products.find(p => p.id === item.productId);
+            if (product) {
+              data[monthKey].cogs += product.buyPrice * item.quantity;
+            }
         }
       });
     });

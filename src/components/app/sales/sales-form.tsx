@@ -34,7 +34,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogDescription } from "@/components/ui/dialog";
-import { Trash2, PlusCircle, UserPlus, CalendarIcon, ScanBarcode, Loader2 } from "lucide-react";
+import { Trash2, PlusCircle, UserPlus, CalendarIcon, ScanBarcode, Loader2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { CartItem, SaleTransaction, Store, Product, Customer, PaymentType } from '@/lib/types';
 import { useData } from "@/lib/data-context";
@@ -61,12 +61,22 @@ const formSchema = z.object({
       sellPrice: z.number(),
       quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
       total: z.number(),
+      cogs: z.number().optional(),
+      sourcedQuantity: z.number().optional(),
+      sourceCost: z.number().optional(),
     })
   ).min(1, "Cart cannot be empty."),
   discount: z.coerce.number().min(0).optional(),
 });
 
 type SalesFormValues = z.infer<typeof formSchema>;
+
+interface SpecialOrderState {
+  product: Product;
+  totalQuantity: number;
+  inStockQuantity: number;
+  sourceCost: string;
+}
 
 interface SalesFormProps {
     stores: Store[];
@@ -82,6 +92,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [specialOrderState, setSpecialOrderState] = useState<SpecialOrderState | null>(null);
 
   const [sku, setSku] = useState("");
   const [itemName, setItemName] = useState("");
@@ -138,6 +149,14 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     }
   }, [sku, products]);
 
+  const clearItemInput = () => {
+    setSku("");
+    setItemName("");
+    setSellPrice("");
+    setQuantity(1);
+    setFoundProduct(null);
+    setSelectedVariant('');
+  };
 
   function addToCart() {
     if (!watchStoreId) {
@@ -160,7 +179,12 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
       const availableStock = inventoryItem?.stock || 0;
 
       if(availableStock < currentQuantity) {
-        toast({ variant: 'destructive', title: 'Not enough stock', description: `Only ${availableStock} of ${itemName} ${variantName} available.` });
+        setSpecialOrderState({
+          product: foundProduct,
+          totalQuantity: currentQuantity,
+          inStockQuantity: availableStock,
+          sourceCost: ''
+        });
         return;
       }
 
@@ -172,24 +196,55 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
         sellPrice: currentPrice,
         quantity: currentQuantity,
         total: currentPrice * currentQuantity,
+        cogs: foundProduct.buyPrice * currentQuantity,
       };
       append(newItem);
-      
-      setSku("");
-      setItemName("");
-      setSellPrice("");
-      setQuantity(1);
-      setFoundProduct(null);
-      setSelectedVariant('');
-      
+      clearItemInput();
       document.getElementById('sku-input')?.focus();
     } else {
         toast({ variant: 'destructive', title: 'Invalid Item', description: 'Please fill all item details before adding to cart.' });
     }
   }
 
+  const handleConfirmSpecialOrder = () => {
+    if (!specialOrderState || !foundProduct) return;
+
+    const sourceCost = parseFloat(specialOrderState.sourceCost);
+    if (isNaN(sourceCost) || sourceCost <= 0) {
+      toast({ variant: "destructive", title: "Invalid Source Cost" });
+      return;
+    }
+
+    const { product, totalQuantity, inStockQuantity } = specialOrderState;
+    const sourcedQuantity = totalQuantity - inStockQuantity;
+    const blendedCogs = (inStockQuantity * product.buyPrice) + (sourcedQuantity * sourceCost);
+    
+    const newItem: CartItem = {
+        productId: product.id,
+        sku: product.sku,
+        name: product.name,
+        variant_name: selectedVariant || "",
+        sellPrice: Number(sellPrice),
+        quantity: totalQuantity,
+        total: Number(sellPrice) * totalQuantity,
+        cogs: blendedCogs,
+        sourcedQuantity: sourcedQuantity,
+        sourceCost: sourceCost,
+    };
+    append(newItem);
+
+    setSpecialOrderState(null);
+    clearItemInput();
+    document.getElementById('sku-input')?.focus();
+  };
+
   const handleQuantityChange = (index: number, newQuantity: number) => {
     const item = fields[index];
+    // Special order items cannot have their quantity changed in the cart.
+    if(item.sourcedQuantity && item.sourcedQuantity > 0) {
+        toast({ variant: 'destructive', title: 'Action Not Allowed', description: 'Remove and re-add special order items to change quantity.'});
+        return;
+    }
     const variantName = item.variant_name || "";
     const inventoryId = `${item.productId}_${variantName}_${watchStoreId}`;
     const inventoryItem = inventory.find(i => i.id === inventoryId);
@@ -221,7 +276,10 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
             variant_name: item.variant_name || "",
             sellPrice: item.sellPrice,
             quantity: item.quantity,
-            total: item.total
+            total: item.total,
+            cogs: item.cogs,
+            sourceCost: item.sourceCost,
+            sourcedQuantity: item.sourcedQuantity,
         })),
         subtotal: subtotal,
         discount: data.discount || 0,
@@ -474,7 +532,12 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                             fields.map((item, index) => (
                             <TableRow key={item.id}>
                                 <TableCell>{item.sku}</TableCell>
-                                <TableCell>{item.name}</TableCell>
+                                <TableCell>
+                                    {item.name}
+                                    {item.sourcedQuantity && item.sourcedQuantity > 0 && (
+                                        <span className="ml-2 text-xs text-blue-600 font-semibold">(Sourced)</span>
+                                    )}
+                                </TableCell>
                                 <TableCell>{item.variant_name || '-'}</TableCell>
                                 <TableCell className="text-right">MMK {item.sellPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                 <TableCell className="text-right">
@@ -558,6 +621,40 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
         </DialogHeader>
         <BarcodeScanner onScan={handleBarcodeScan} />
       </DialogContent>
+    </Dialog>
+
+    <Dialog open={!!specialOrderState} onOpenChange={() => setSpecialOrderState(null)}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Special Order / External Sourcing</DialogTitle>
+                <DialogDescription>
+                    The quantity requested exceeds available stock. Please enter the cost for the externally sourced items.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <div className="p-4 rounded-md border bg-muted">
+                    <p><strong>Item:</strong> {specialOrderState?.product.name}</p>
+                    <p><strong>Total Quantity Requested:</strong> {specialOrderState?.totalQuantity}</p>
+                    <p><strong>In-Stock Quantity:</strong> {specialOrderState?.inStockQuantity}</p>
+                    <p className="font-semibold"><strong>Quantity to Source:</strong> {specialOrderState ? specialOrderState.totalQuantity - specialOrderState.inStockQuantity : 0}</p>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="source-cost">Source Cost per Unit (MMK)</Label>
+                    <Input 
+                        id="source-cost"
+                        type="number"
+                        value={specialOrderState?.sourceCost}
+                        onChange={(e) => setSpecialOrderState(prev => prev ? {...prev, sourceCost: e.target.value} : null)}
+                        placeholder="Cost from partner store"
+                        autoFocus
+                    />
+                </div>
+            </div>
+            <DialogClose asChild>
+                <Button variant="outline" onClick={() => setSpecialOrderState(null)}>Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleConfirmSpecialOrder}>Confirm & Add to Cart</Button>
+        </DialogContent>
     </Dialog>
 
     <Dialog open={!!lastSaleId} onOpenChange={handleCloseReceipt}>

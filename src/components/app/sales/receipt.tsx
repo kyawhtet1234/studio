@@ -32,7 +32,10 @@ const ReceiptContent: React.FC<ReceiptProps & { logo: string | null }> = React.f
         <div className="space-y-1">
           {sale.items.map(item => (
             <div key={`${item.productId}-${item.variant_name}`}>
-                <p>{item.name} {item.variant_name && `(${item.variant_name})`}</p>
+                <p>
+                  {item.name} {item.variant_name && `(${item.variant_name})`}
+                  {item.sourcedQuantity && item.sourcedQuantity > 0 && <span className='text-[10px]'> (Sourced)</span>}
+                </p>
                 <div className="flex justify-between">
                     <p className="pl-2">{item.quantity} x MMK {item.sellPrice.toLocaleString()}</p>
                     <p>MMK {item.total.toLocaleString()}</p>

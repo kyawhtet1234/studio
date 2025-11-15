@@ -58,6 +58,10 @@ export type CartItem = {
   sellPrice: number;
   quantity: number;
   total: number;
+  // For special orders
+  cogs?: number; // Blended COGS for this line item
+  sourcedQuantity?: number;
+  sourceCost?: number;
 };
 
 export type SaleTransaction = {
