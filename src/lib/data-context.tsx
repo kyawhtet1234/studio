@@ -473,8 +473,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     sourceCost: item.sourceCost ?? null,
                     sourcedQuantity: item.sourcedQuantity ?? null,
                 }));
+                
+                const finalSaleData = {
+                    ...saleData,
+                    items: cleanedItems,
+                    date: Timestamp.fromDate(toDate(saleData.date)),
+                    customerId: saleData.customerId || null,
+                };
 
-                transaction.set(newSaleRef, { ...saleData, items: cleanedItems, date: Timestamp.fromDate(toDate(saleData.date)) });
+
+                transaction.set(newSaleRef, finalSaleData);
 
                 if (isInventoryDeducted) {
                     for (let i = 0; i < inventorySnaps.length; i++) {
@@ -998,6 +1006,7 @@ export function useData() {
     
 
     
+
 
 
 
