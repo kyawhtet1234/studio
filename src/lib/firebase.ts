@@ -14,9 +14,9 @@ const firebaseConfig = {
 };
 
 // Memoization variables to ensure Firebase is initialized only once.
-let app: FirebaseApp | undefined;
-let auth: Auth | undefined;
-let db: Firestore | undefined;
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
 
 /**
  * Initializes and returns client-side Firebase services.
