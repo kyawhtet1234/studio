@@ -17,6 +17,7 @@ interface MonthlyReport {
   grossProfit: number;
   expenses: number;
   netProfit: number;
+  netProfitPercentage: number;
 }
 
 const chartConfig = {
@@ -25,7 +26,7 @@ const chartConfig = {
 
 export function NetProfitChart({ sales, products, expenses, className }: { sales: SaleTransaction[], products: Product[], expenses: Expense[], className?:string }) {
   const monthlyData = useMemo(() => {
-    const data: { [key: string]: Omit<MonthlyReport, 'month'> } = {};
+    const data: { [key: string]: Omit<MonthlyReport, 'month' | 'netProfitPercentage'> } = {};
 
     // Initialize last 12 months
     for (let i = 11; i >= 0; i--) {
@@ -61,11 +62,13 @@ export function NetProfitChart({ sales, products, expenses, className }: { sales
     return Object.entries(data).map(([month, values]) => {
       const grossProfit = values.revenue - values.cogs;
       const netProfit = grossProfit - values.expenses;
+      const netProfitPercentage = values.revenue > 0 ? (netProfit / values.revenue) * 100 : 0;
       return { 
         month: format(new Date(month), 'MMM yy'), 
         ...values, 
         grossProfit, 
-        netProfit 
+        netProfit,
+        netProfitPercentage,
       };
     });
   }, [sales, products, expenses]);
@@ -95,7 +98,11 @@ export function NetProfitChart({ sales, products, expenses, className }: { sales
               <ChartTooltip 
                 cursor={false} 
                 content={<ChartTooltipContent 
-                    formatter={(value) => `MMK ${Number(value).toLocaleString()}`}
+                    formatter={(value, name, props) => {
+                      const { payload } = props;
+                      const percentage = payload.netProfitPercentage;
+                      return [`MMK ${Number(value).toLocaleString()}`, `${percentage.toFixed(1)}% Margin`];
+                    }}
                     indicator="dot" 
                 />} 
               />
