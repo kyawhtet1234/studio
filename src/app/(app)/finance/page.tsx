@@ -49,6 +49,7 @@ export default function FinancePage() {
     addLiability,
     updateLiability,
     deleteLiability,
+    stores,
     loading 
   } = useData();
   const [activeTab, setActiveTab] = useState("overview");
@@ -95,7 +96,7 @@ export default function FinancePage() {
   }
 
   const { monthSales, monthExpenses, netProfit } = getFinancialMetrics();
-  const expenseCols = expenseColumns({ onDelete: deleteExpense, categories: expenseCategories });
+  const expenseCols = expenseColumns({ onDelete: deleteExpense, categories: expenseCategories, stores });
   const allocationCols = cashAllocationColumns({
     onEdit: (data) => setEditingAllocation(data),
     onDelete: deleteCashAllocation,
@@ -117,7 +118,7 @@ export default function FinancePage() {
       case 'expenses':
         return (
           <AddEntitySheet buttonText="Add Expense" title="Add a new expense" description="Enter the details for the new expense.">
-            {(onSuccess) => <AddExpenseForm onSave={addExpense} onSuccess={onSuccess} categories={expenseCategories} />}
+            {(onSuccess) => <AddExpenseForm onSave={addExpense} onSuccess={onSuccess} categories={expenseCategories} stores={stores} />}
           </AddEntitySheet>
         );
        case 'allocations':

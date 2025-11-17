@@ -79,7 +79,7 @@ export function ProfitByCategoryChart({ sales, products, categories, className, 
   return (
     <Card className={cn(className, "shadow-drop-shadow-black")} style={style}>
       <CardHeader>
-        <CardTitle className="text-black font-bold">Profit by Category</CardTitle>
+        <CardTitle>Profit by Category</CardTitle>
         <CardDescription>Top 5 most profitable categories this month.</CardDescription>
       </CardHeader>
       <CardContent>

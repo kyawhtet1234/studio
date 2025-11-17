@@ -33,6 +33,13 @@ export default function DashboardPage() {
     }
     return sales.filter(sale => sale.storeId === selectedStore && sale.status === 'completed');
   }, [sales, selectedStore]);
+  
+  const filteredExpenses = useMemo(() => {
+    if (selectedStore === 'all') {
+      return expenses;
+    }
+    return expenses.filter(expense => expense.storeId === selectedStore);
+  }, [expenses, selectedStore]);
 
 
   const { 
@@ -99,7 +106,7 @@ export default function DashboardPage() {
       }
     });
 
-    const thisMonthExpenses = expenses.reduce((acc, expense) => {
+    const thisMonthExpenses = filteredExpenses.reduce((acc, expense) => {
         const expenseDate = toDate(expense.date);
         if (expenseDate >= currentMonthStart && expenseDate <= todayEnd) {
             return acc + expense.amount;
@@ -136,7 +143,7 @@ export default function DashboardPage() {
         monthNetProfitPercentage,
     };
 
-  }, [filteredSales, products, expenses]);
+  }, [filteredSales, products, filteredExpenses]);
 
   const isFiltered = selectedStore !== 'all';
 
@@ -194,11 +201,11 @@ export default function DashboardPage() {
       </div>
        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
         <SalesChart sales={filteredSales} isFiltered={isFiltered} className="bg-shiny-orange rounded-xl shadow-drop-shadow-black" />
-        <NetProfitChart sales={sales} products={products} expenses={expenses} className="bg-shiny-purple rounded-xl shadow-lg" />
+        <NetProfitChart sales={filteredSales} products={products} expenses={filteredExpenses} className="bg-shiny-purple rounded-xl shadow-lg" />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
         <BestSellers sales={filteredSales} products={products} className="bg-shiny-purple rounded-xl shadow-lg" />
-        <ProfitByCategoryChart sales={sales} products={products} categories={categories} className="bg-shiny-blue rounded-xl shadow-lg" />
+        <ProfitByCategoryChart sales={filteredSales} products={products} categories={categories} className="bg-shiny-blue rounded-xl shadow-lg" />
       </div>
       <div className="grid grid-cols-1 gap-4 mt-6">
         <InventoryAlerts inventory={inventory} products={products} stores={stores} className="bg-shiny-yellow rounded-xl shadow-lg" />

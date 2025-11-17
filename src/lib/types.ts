@@ -58,17 +58,16 @@ export type CartItem = {
   sellPrice: number;
   quantity: number;
   total: number;
-  // For special orders
-  cogs?: number; // Blended COGS for this line item
-  sourcedQuantity?: number;
-  sourceCost?: number;
+  cogs: number | null;
+  sourcedQuantity?: number | null;
+  sourceCost?: number | null;
 };
 
 export type SaleTransaction = {
   id: string;
   date: Date | Timestamp;
   storeId: string;
-  customerId?: string;
+  customerId?: string | null;
   items: CartItem[];
   subtotal: number;
   discount: number;
@@ -113,6 +112,7 @@ export type ExpenseCategory = {
 export type Expense = {
     id: string;
     date: Date | Timestamp;
+    storeId: string;
     categoryId: string;
     description: string;
     amount: number;
@@ -208,5 +208,3 @@ export interface BusinessSettings {
   goals?: GoalsSettings;
   users?: UserManagementSettings;
 }
-
-    

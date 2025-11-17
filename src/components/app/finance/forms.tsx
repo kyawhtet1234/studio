@@ -1,3 +1,4 @@
+
 "use client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,12 +26,13 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { Expense, ExpenseCategory, CashAllocation, Liability } from "@/lib/types";
+import type { Expense, ExpenseCategory, CashAllocation, Liability, Store } from "@/lib/types";
 import { useEffect } from "react";
 
 
 const expenseSchema = z.object({
   date: z.date(),
+  storeId: z.string().min(1, "Please select a store."),
   categoryId: z.string().min(1, "Please select a category."),
   description: z.string().min(2, "Description must be at least 2 characters."),
   amount: z.coerce.number().positive("Amount must be a positive number."),
@@ -57,11 +59,12 @@ interface FormProps<T> {
   entity?: any;
 }
 
-export function AddExpenseForm({ onSave, onSuccess, categories }: FormProps<Omit<Expense, 'id'>> & { categories: ExpenseCategory[] }) {
+export function AddExpenseForm({ onSave, onSuccess, categories, stores }: FormProps<Omit<Expense, 'id'>> & { categories: ExpenseCategory[], stores: Store[] }) {
   const form = useForm({ 
     resolver: zodResolver(expenseSchema), 
     defaultValues: { 
         date: new Date(), 
+        storeId: "",
         categoryId: "",
         description: "",
         amount: 0,
@@ -118,6 +121,16 @@ export function AddExpenseForm({ onSave, onSuccess, categories }: FormProps<Omit
             </FormItem>
           )}
         />
+        <FormField control={form.control} name="storeId" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Store</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value}>
+              <FormControl><SelectTrigger><SelectValue placeholder="Select a store" /></SelectTrigger></FormControl>
+              <SelectContent>{stores.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}/>
         <FormField control={form.control} name="categoryId" render={({ field }) => (
           <FormItem>
             <FormLabel>Category</FormLabel>

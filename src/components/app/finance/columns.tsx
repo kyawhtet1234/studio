@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import type { Expense, ExpenseCategory, CashAllocation, Liability } from "@/lib/types";
+import type { Expense, ExpenseCategory, CashAllocation, Liability, Store } from "@/lib/types";
 import { format } from 'date-fns';
 import { Progress } from "@/components/ui/progress";
 
@@ -101,11 +101,16 @@ const ActionsCell = <TData extends DeletableRow>({
   );
 };
 
-export const expenseColumns = ({ onDelete, categories }: { onDelete: (id: string) => void, categories: ExpenseCategory[] }): ColumnDef<Expense>[] => [
+export const expenseColumns = ({ onDelete, categories, stores }: { onDelete: (id: string) => void, categories: ExpenseCategory[], stores: Store[] }): ColumnDef<Expense>[] => [
   { 
     accessorKey: "date", 
     header: "Date",
     cell: ({ row }) => format(new Date(row.original.date as Date), "PPP")
+  },
+  {
+    accessorKey: "storeId",
+    header: "Store",
+    cell: ({ row }) => stores.find(s => s.id === row.original.storeId)?.name || 'N/A'
   },
   { 
     accessorKey: "categoryId", 
