@@ -99,9 +99,18 @@ export function NetProfitChart({ sales, products, expenses, className }: { sales
                 cursor={false} 
                 content={<ChartTooltipContent 
                     formatter={(value, name, props) => {
-                      const { payload } = props;
-                      const percentage = payload.netProfitPercentage;
-                      return [`MMK ${Number(value).toLocaleString()}`, `${percentage.toFixed(1)}% Margin`];
+                        const { payload } = props;
+                        const percentage = payload.netProfitPercentage;
+                        return (
+                          <div className="flex flex-col gap-1">
+                            <span className="font-semibold">
+                              MMK {Number(value).toLocaleString()}
+                            </span>
+                            <span className="text-muted-foreground text-xs">
+                              ({percentage.toFixed(1)}% Margin)
+                            </span>
+                          </div>
+                        );
                     }}
                     indicator="dot" 
                 />} 
