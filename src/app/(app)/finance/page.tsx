@@ -69,9 +69,13 @@ export default function FinancePage() {
       if (saleDate >= startOfMonth) {
         monthSales += sale.total;
         sale.items.forEach(item => {
-          const product = products.find(p => p.id === item.productId);
-          if (product) {
-            monthCogs += product.buyPrice * item.quantity;
+           if (item.cogs) {
+            monthCogs += item.cogs;
+          } else {
+            const product = products.find(p => p.id === item.productId);
+            if (product) {
+              monthCogs += product.buyPrice * item.quantity;
+            }
           }
         });
       }
@@ -169,7 +173,7 @@ export default function FinancePage() {
                     className="bg-shiny-red rounded-xl shadow-lg"
                     />
                     <StatCard 
-                    title="This Month's Profit"
+                    title="This Month's Net Profit"
                     value={`MMK ${netProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                     icon={TrendingUp}
                     description="Net Profit (Sales - COGS - Expenses)."
