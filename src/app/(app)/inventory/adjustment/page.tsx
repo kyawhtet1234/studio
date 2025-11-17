@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Trash2, PlusCircle } from 'lucide-react';
+import { Trash2, PlusCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useData } from '@/lib/data-context';
 import type { Store, Product, InventoryItem } from '@/lib/types';
@@ -38,7 +38,7 @@ type AdjustmentFormValues = z.infer<typeof formSchema>;
 export default function StockAdjustmentPage() {
   const { products, stores, inventory, updateInventory } = useData();
   const { toast } = useToast();
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [sku, setSku] = useState('');
   const [foundProduct, setFoundProduct] = useState<Product | null>(null);
   const [selectedVariant, setSelectedVariant] = useState('');
@@ -120,6 +120,7 @@ export default function StockAdjustmentPage() {
   }
 
   async function onSubmit(data: AdjustmentFormValues) {
+    setIsSubmitting(true);
     const itemsToUpdate: InventoryItem[] = data.items.map(item => ({
         id: item.id,
         productId: item.productId,
@@ -135,6 +136,8 @@ export default function StockAdjustmentPage() {
         remove();
     } catch (error) {
         toast({ variant: 'destructive', title: 'Adjustment Failed', description: (error as Error).message });
+    } finally {
+        setIsSubmitting(false);
     }
   }
 
@@ -263,7 +266,10 @@ export default function StockAdjustmentPage() {
                 <p className="text-sm font-medium text-destructive">{form.formState.errors.items.message || form.formState.errors.items.root?.message}</p>
             )}
           <div className="flex justify-end">
-            <Button type="submit" size="lg">Complete Adjustment</Button>
+            <Button type="submit" size="lg" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting ? 'Completing...' : 'Complete Adjustment'}
+            </Button>
           </div>
         </form>
       </Form>
