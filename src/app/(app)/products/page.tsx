@@ -57,7 +57,7 @@ export default function ProductsPage() {
       case "categories":
         return (
           <AddEntitySheet buttonText="Add Category" title="Add a new category" description="Enter the name for the new category.">
-             {(onSuccess) => <AddCategoryForm onSave={addCategory} onSuccess={onSuccess} />}
+             {(onSuccess) => <AddCategoryForm onSave={addCategory} onSuccess={onSuccess} allCategories={categories} />}
           </AddEntitySheet>
         );
       case "suppliers":
@@ -111,6 +111,7 @@ export default function ProductsPage() {
                 onSave={(data) => updateCategory(editingEntity.data.id, data)}
                 onSuccess={onSuccess} 
                 category={editingEntity.data}
+                allCategories={categories}
               />}
           </EditEntitySheet>
         );

@@ -55,7 +55,7 @@ interface FormProps<T> {
   entity?: any;
 }
 
-export function AddCategoryForm({ onSave, onSuccess, category }: FormProps<Omit<Category, 'id'>> & { category?: Category }) {
+export function AddCategoryForm({ onSave, onSuccess, category, allCategories }: FormProps<Omit<Category, 'id'>> & { category?: Category, allCategories: Category[] }) {
   const form = useForm({ resolver: zodResolver(baseSchema), defaultValues: { name: category?.name || "" } });
   const { toast } = useToast();
   const isEditMode = !!category;
@@ -65,6 +65,18 @@ export function AddCategoryForm({ onSave, onSuccess, category }: FormProps<Omit<
   }, [category, form]);
 
   async function onSubmit(data: z.infer<typeof baseSchema>) {
+    const isDuplicate = allCategories.some(
+      c => c.name.toLowerCase() === data.name.toLowerCase() && c.id !== category?.id
+    );
+
+    if (isDuplicate) {
+      form.setError("name", {
+        type: "manual",
+        message: "This category name already exists.",
+      });
+      return;
+    }
+
     await onSave(data);
     toast({ title: `Category ${isEditMode ? 'Updated' : 'Added'}`, description: `${data.name} has been successfully ${isEditMode ? 'updated' : 'added'}.` });
     form.reset();
