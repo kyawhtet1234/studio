@@ -51,7 +51,7 @@ export function InventoryAlerts({ inventory, products, stores, className, style 
       </CardHeader>
       <CardContent>
         {lowStockItems.length > 0 ? (
-          <div className="max-h-60 overflow-y-auto no-scrollbar">
+          <div className="max-h-96 overflow-y-auto no-scrollbar">
             <Table>
               <TableHeader>
                 <TableRow>

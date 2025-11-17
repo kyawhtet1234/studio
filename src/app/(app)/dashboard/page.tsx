@@ -13,6 +13,7 @@ import type { SaleTransaction } from '@/lib/types';
 import { InventoryAlerts } from '@/components/app/dashboard/inventory-alerts';
 import { endOfYesterday, startOfYesterday, startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay } from 'date-fns';
 import { ProfitByCategoryChart } from '@/components/app/dashboard/profit-by-category-chart';
+import { NetProfitChart } from '@/components/app/dashboard/net-profit-chart';
 
 // Helper function to safely convert date
 const toDate = (date: Date | Timestamp): Date => {
@@ -154,7 +155,7 @@ export default function DashboardPage() {
             </SelectContent>
         </Select>
       </PageHeader>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
           title="Today's Sales"
           value={`MMK ${todaySales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -172,14 +173,6 @@ export default function DashboardPage() {
           monthlyChange={{ value: monthlyProfitChange, label: 'vs last month' }}
           loading={loading}
           className="bg-shiny-blue rounded-xl shadow-lg"
-        />
-        <StatCard 
-          title="This Month's Net Profit"
-          value={`MMK ${monthNetProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          icon={TrendingUp}
-          description={`${monthNetProfitPercentage.toFixed(1)}% of Sales`}
-          loading={loading}
-          className="bg-shiny-purple rounded-xl shadow-lg"
         />
          <StatCard 
           title="Today's Transactions"
@@ -199,13 +192,16 @@ export default function DashboardPage() {
           className="bg-shiny-rose-gold rounded-xl shadow-lg"
         />
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
         <SalesChart sales={filteredSales} isFiltered={isFiltered} className="bg-shiny-orange rounded-xl shadow-drop-shadow-black" />
-        <BestSellers sales={filteredSales} products={products} className="bg-shiny-purple rounded-xl shadow-lg" />
+        <NetProfitChart sales={sales} products={products} expenses={expenses} className="bg-shiny-purple rounded-xl shadow-lg" />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-        <InventoryAlerts inventory={inventory} products={products} stores={stores} className="bg-shiny-yellow rounded-xl shadow-lg" />
+        <BestSellers sales={filteredSales} products={products} className="bg-shiny-purple rounded-xl shadow-lg" />
         <ProfitByCategoryChart sales={sales} products={products} categories={categories} className="bg-shiny-blue rounded-xl shadow-lg" />
+      </div>
+      <div className="grid grid-cols-1 gap-4 mt-6">
+        <InventoryAlerts inventory={inventory} products={products} stores={stores} className="bg-shiny-yellow rounded-xl shadow-lg" />
       </div>
     </div>
   );
