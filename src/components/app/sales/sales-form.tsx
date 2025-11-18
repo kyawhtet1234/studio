@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -677,3 +678,4 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     
 
     
+
