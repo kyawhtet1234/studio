@@ -266,7 +266,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
 
     const saleData: Omit<SaleTransaction, 'id' | 'status'> = {
         storeId: data.storeId,
-        customerId: data.customerId,
+        customerId: data.customerId || null,
         paymentType: data.paymentType,
         date: data.date,
         items: data.cart.map(item => ({
@@ -358,7 +358,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
                     <FormItem>
                         <FormLabel>Customer</FormLabel>
                         <div className="flex gap-2">
-                        <Select onValueChange={field.onChange} value={field.value} defaultValue="">
+                        <Select onValueChange={field.onChange} value={field.value || ''} defaultValue="">
                             <FormControl>
                                 <SelectTrigger>
                                 <SelectValue placeholder="Select a customer (optional)" />
