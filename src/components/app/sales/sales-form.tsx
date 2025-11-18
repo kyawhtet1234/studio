@@ -294,11 +294,10 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
       toast({ 
           title: 'Sale Saved!',
           description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          action: (
+            <Button onClick={() => setLastSaleId(newSaleId as string)}>Print Receipt</Button>
+          ),
       });
-      
-      if (newSaleId) {
-        setLastSaleId(newSaleId as string);
-      }
       
       form.reset();
       remove();
@@ -678,4 +677,3 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     </>
   );
 }
-
