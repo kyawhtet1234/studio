@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -292,12 +291,17 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     try {
       const newSaleId = await onSave(saleData);
       
-      toast({ title: 'Sale Saved!', description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
+      toast({ 
+          title: 'Sale Saved!',
+          description: `Total: MMK ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          action: (
+              <Button variant="outline" onClick={() => setLastSaleId(newSaleId as string)}>
+                  Print Receipt
+              </Button>
+          )
+      });
       form.reset();
       remove();
-      if(newSaleId) {
-        setLastSaleId(newSaleId);
-      }
     } catch(error) {
        toast({
         variant: 'destructive',
@@ -676,6 +680,3 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
 }
 
     
-
-    
-
