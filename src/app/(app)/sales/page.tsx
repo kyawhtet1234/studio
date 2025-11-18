@@ -17,6 +17,7 @@ import { Receipt } from "@/components/app/sales/receipt";
 export default function SalesPage() {
   const { addSale, stores, customers, addCustomer, sales: allSales } = useData();
   const [lastSaleId, setLastSaleId] = useState<string | null>(null);
+  const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
 
   const handleSaveDocument = async (docData: Omit<SaleTransaction, 'id'>) => {
     return await addSale(docData);
@@ -24,11 +25,17 @@ export default function SalesPage() {
   
   const lastSale = allSales.find(s => s.id === lastSaleId);
 
+  const handlePrintLastReceipt = () => {
+    if (lastSaleId) {
+      setIsReceiptDialogOpen(true);
+    }
+  };
+
   return (
     <div>
       <PageHeader title="Sales & Documents">
         <Button
-            onClick={() => setLastSaleId(lastSaleId)}
+            onClick={handlePrintLastReceipt}
             disabled={!lastSaleId}
             variant="outline"
         >
@@ -65,7 +72,7 @@ export default function SalesPage() {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={!!lastSaleId} onOpenChange={() => setLastSaleId(null)}>
+      <Dialog open={isReceiptDialogOpen} onOpenChange={setIsReceiptDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Last Sale Receipt</DialogTitle>
