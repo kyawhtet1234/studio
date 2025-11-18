@@ -34,7 +34,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogDescription } from "@/components/ui/dialog";
-import { Trash2, PlusCircle, UserPlus, CalendarIcon, ScanBarcode, Loader2, AlertTriangle } from "lucide-react";
+import { Trash2, PlusCircle, UserPlus, CalendarIcon, ScanBarcode, Loader2, AlertTriangle, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { CartItem, SaleTransaction, Store, Product, Customer, PaymentType } from '@/lib/types';
 import { useData } from "@/lib/data-context";
@@ -83,12 +83,12 @@ interface SalesFormProps {
     customers: Customer[];
     onSave: (sale: Omit<SaleTransaction, 'id' | 'status'>) => Promise<string | void>;
     onAddCustomer: (customer: Omit<Customer, 'id'>) => Promise<void>;
+    setLastSaleId: (id: string | null) => void;
 }
 
-export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFormProps) {
-  const { products, inventory, paymentTypes, sales: allSales } = useData();
+export function SalesForm({ stores, customers, onSave, onAddCustomer, setLastSaleId }: SalesFormProps) {
+  const { products, inventory, paymentTypes } = useData();
   const { toast } = useToast();
-  const [lastSaleId, setLastSaleId] = useState<string | null>(null);
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -293,11 +293,11 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
       
       toast({ 
           title: 'Sale Saved!',
-          description: `Click here to print receipt.`,
-          onClick: () => setLastSaleId(newSaleId as string),
-          className: 'cursor-pointer hover:bg-secondary',
       });
       
+      if (newSaleId) {
+        setLastSaleId(newSaleId as string);
+      }
       form.reset();
       remove();
     } catch(error) {
@@ -311,17 +311,11 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
     }
   }
 
-  const handleCloseReceipt = () => {
-    setLastSaleId(null);
-  }
-  
   const handleBarcodeScan = (scannedSku: string) => {
     setSku(scannedSku);
     setIsScannerOpen(false);
   }
   
-  const lastSale = allSales.find(s => s.id === lastSaleId);
-
   return (
     <>
     <Form {...form}>
@@ -659,22 +653,6 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer }: SalesFor
             <Button onClick={handleConfirmSpecialOrder}>Confirm & Add to Cart</Button>
         </DialogContent>
     </Dialog>
-
-    <Dialog open={!!lastSaleId} onOpenChange={handleCloseReceipt}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Transaction Complete</DialogTitle>
-          </DialogHeader>
-          {lastSale && (
-            <Receipt
-                sale={lastSale}
-                store={stores.find((s) => s.id === lastSale.storeId)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
-
-    

@@ -7,18 +7,35 @@ import { DocumentForm } from "@/components/app/sales/document-form";
 import type { SaleTransaction } from '@/lib/types';
 import { useData } from "@/lib/data-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Printer } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Receipt } from "@/components/app/sales/receipt";
 
 
 export default function SalesPage() {
-  const { addSale, stores, customers, addCustomer } = useData();
+  const { addSale, stores, customers, addCustomer, sales: allSales } = useData();
+  const [lastSaleId, setLastSaleId] = useState<string | null>(null);
 
   const handleSaveDocument = async (docData: Omit<SaleTransaction, 'id'>) => {
     return await addSale(docData);
   };
+  
+  const lastSale = allSales.find(s => s.id === lastSaleId);
 
   return (
     <div>
-      <PageHeader title="Sales & Documents" />
+      <PageHeader title="Sales & Documents">
+        <Button
+            onClick={() => setLastSaleId(lastSaleId)}
+            disabled={!lastSaleId}
+            variant="outline"
+        >
+            <Printer className="mr-2 h-4 w-4" />
+            Print Last Receipt
+        </Button>
+      </PageHeader>
       <Tabs defaultValue="sale">
         <TabsList className="overflow-x-auto self-start h-auto flex-nowrap w-full no-scrollbar">
             <TabsTrigger value="sale">New Sale</TabsTrigger>
@@ -27,7 +44,13 @@ export default function SalesPage() {
         </TabsList>
         <TabsContent value="sale">
             <div className="mt-4">
-                <SalesForm stores={stores} customers={customers} onSave={(saleData) => addSale({...saleData, status: 'completed' })} onAddCustomer={addCustomer} />
+                <SalesForm 
+                    stores={stores} 
+                    customers={customers} 
+                    onSave={(saleData) => addSale({...saleData, status: 'completed' })} 
+                    onAddCustomer={addCustomer}
+                    setLastSaleId={setLastSaleId}
+                />
             </div>
         </TabsContent>
         <TabsContent value="invoice">
@@ -41,8 +64,20 @@ export default function SalesPage() {
             </div>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!lastSaleId} onOpenChange={() => setLastSaleId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Last Sale Receipt</DialogTitle>
+          </DialogHeader>
+          {lastSale && (
+            <Receipt
+                sale={lastSale}
+                store={stores.find((s) => s.id === lastSale.storeId)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-    
