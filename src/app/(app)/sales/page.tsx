@@ -22,8 +22,8 @@ export default function SalesPage() {
 
   const handleSaveDocument = async (docData: Omit<SaleTransaction, 'id'>) => {
     const newId = await addSale(docData);
-    if (docData.status === 'completed') {
-      setLastSaleId(newId as string);
+    if (docData.status === 'completed' && newId) {
+      setLastSaleId(newId);
     }
     return newId;
   };
@@ -33,12 +33,19 @@ export default function SalesPage() {
   useEffect(() => {
     if (lastSaleId && lastSale) {
       setIsReceiptDialogOpen(true);
-      // Automatically trigger print after a short delay to allow the dialog to render
-      setTimeout(() => {
-        receiptRef.current?.handlePrint();
-      }, 100);
     }
   }, [lastSaleId, lastSale]);
+
+  useEffect(() => {
+    if (isReceiptDialogOpen && receiptRef.current) {
+        // Automatically trigger print after a short delay to allow the dialog to render
+        const timer = setTimeout(() => {
+            receiptRef.current?.handlePrint();
+        }, 300); // Increased delay to ensure rendering
+        return () => clearTimeout(timer);
+    }
+  }, [isReceiptDialogOpen]);
+
 
   const handleDialogChange = (open: boolean) => {
     setIsReceiptDialogOpen(open);
