@@ -292,20 +292,15 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer, setLastSal
     try {
       const newSaleId = await onSave(saleData);
       
-      const {id: toastId} = toast({ 
+      toast({ 
           title: 'Sale Saved!',
           description: 'The transaction has been completed.',
           duration: 5000,
-          action: (
-            <Button variant="outline" onClick={() => {
-                setLastSaleId(newSaleId as string);
-                dismiss(toastId);
-            }}>
-                <Printer className="mr-2 h-4 w-4" />
-                Print Receipt
-            </Button>
-          )
       });
+
+      if (newSaleId) {
+        setLastSaleId(newSaleId as string);
+      }
       
       form.reset();
       remove();

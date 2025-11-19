@@ -7,7 +7,7 @@ import { DocumentForm } from "@/components/app/sales/document-form";
 import type { SaleTransaction } from '@/lib/types';
 import { useData } from "@/lib/data-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -20,29 +20,34 @@ export default function SalesPage() {
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
 
   const handleSaveDocument = async (docData: Omit<SaleTransaction, 'id'>) => {
-    return await addSale(docData);
+    const newId = await addSale(docData);
+    if (docData.status === 'completed') {
+      setLastSaleId(newId as string);
+    }
+    return newId;
   };
   
   const lastSale = allSales.find(s => s.id === lastSaleId);
-
-  const handlePrintLastReceipt = () => {
+  
+  useEffect(() => {
     if (lastSaleId) {
       setIsReceiptDialogOpen(true);
     }
-  };
+  }, [lastSaleId]);
+
+  const handleDialogChange = (open: boolean) => {
+    setIsReceiptDialogOpen(open);
+    if (!open) {
+        // Reset lastSaleId when dialog is closed to allow re-opening for the same sale if needed
+        // Or to ensure the effect triggers for a new sale with the same ID (highly unlikely but good practice)
+        setLastSaleId(null);
+    }
+  }
+
 
   return (
     <div>
-      <PageHeader title="Sales & Documents">
-        <Button
-            onClick={handlePrintLastReceipt}
-            disabled={!lastSaleId}
-            variant="outline"
-        >
-            <Printer className="mr-2 h-4 w-4" />
-            Print Last Receipt
-        </Button>
-      </PageHeader>
+      <PageHeader title="Sales & Documents" />
       <Tabs defaultValue="sale">
         <TabsList className="overflow-x-auto self-start h-auto flex-nowrap w-full no-scrollbar">
             <TabsTrigger value="sale">New Sale</TabsTrigger>
@@ -72,7 +77,7 @@ export default function SalesPage() {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={isReceiptDialogOpen} onOpenChange={setIsReceiptDialogOpen}>
+      <Dialog open={isReceiptDialogOpen} onOpenChange={handleDialogChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Last Sale Receipt</DialogTitle>
