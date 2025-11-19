@@ -54,7 +54,7 @@ export default function SalesPage() {
                 <SalesForm 
                     stores={stores} 
                     customers={customers} 
-                    onSave={(saleData) => addSale({...saleData, status: 'completed' })} 
+                    onSave={handleSaveDocument} 
                     onAddCustomer={addCustomer}
                     setLastSaleId={setLastSaleId}
                 />
@@ -88,3 +88,5 @@ export default function SalesPage() {
     </div>
   );
 }
+
+    

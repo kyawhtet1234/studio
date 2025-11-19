@@ -88,7 +88,7 @@ interface SalesFormProps {
 
 export function SalesForm({ stores, customers, onSave, onAddCustomer, setLastSaleId }: SalesFormProps) {
   const { products, inventory, paymentTypes } = useData();
-  const { toast } = useToast();
+  const { toast, dismiss } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -264,11 +264,12 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer, setLastSal
     if (isLoading) return;
     setIsLoading(true);
 
-    const saleData: Omit<SaleTransaction, 'id' | 'status'> = {
+    const saleData: Omit<SaleTransaction, 'id'> = {
         storeId: data.storeId,
         customerId: data.customerId || null,
         paymentType: data.paymentType,
         date: data.date,
+        status: 'completed',
         items: data.cart.map(item => ({
             productId: item.productId,
             name: item.name,
@@ -291,13 +292,21 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer, setLastSal
     try {
       const newSaleId = await onSave(saleData);
       
-      toast({ 
+      const {id: toastId} = toast({ 
           title: 'Sale Saved!',
+          description: 'The transaction has been completed.',
+          duration: 5000,
+          action: (
+            <Button variant="outline" onClick={() => {
+                setLastSaleId(newSaleId as string);
+                dismiss(toastId);
+            }}>
+                <Printer className="mr-2 h-4 w-4" />
+                Print Receipt
+            </Button>
+          )
       });
       
-      if (newSaleId) {
-        setLastSaleId(newSaleId as string);
-      }
       form.reset();
       remove();
     } catch(error) {
@@ -656,3 +665,5 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer, setLastSal
     </>
   );
 }
+
+    

@@ -3,7 +3,7 @@
 
 import { AppSidebar } from '@/components/app/app-sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
-import { DataProvider, useData } from '@/lib/data-context';
+import { useData } from '@/lib/data-context';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -59,8 +59,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     return (
-        <DataProvider>
-            <AppContent>{children}</AppContent>
-        </DataProvider>
+        <AppContent>{children}</AppContent>
     )
 }
+
+    

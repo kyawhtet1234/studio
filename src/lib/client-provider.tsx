@@ -7,6 +7,9 @@ import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import { FirebaseProvider } from '@/lib/provider';
 import type { FirebaseApp } from 'firebase/app';
+import { AuthProvider } from './auth-context';
+import { DataProvider } from './data-context';
+import { Loader2 } from 'lucide-react';
 
 interface FirebaseClientProviderProps {
     children: ReactNode;
@@ -23,12 +26,22 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
 
     if (!services) {
         // The loader in AppContent will be shown while services are initializing.
-        return null;
+        return (
+            <div className="flex min-h-screen w-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        );
     }
 
     return (
         <FirebaseProvider app={services.app} auth={services.auth} db={services.db}>
-            {children}
+            <AuthProvider>
+                <DataProvider>
+                    {children}
+                </DataProvider>
+            </AuthProvider>
         </FirebaseProvider>
     );
 }
+
+    
