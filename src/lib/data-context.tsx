@@ -161,6 +161,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (user && db) {
             fetchData(db, user.uid);
         } else if (!user) {
+            // Clear all data on logout
             setProducts([]);
             setCategories([]);
             setSuppliers([]);
@@ -995,3 +996,5 @@ export function useData() {
     }
     return context;
 }
+
+    
