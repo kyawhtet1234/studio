@@ -9,7 +9,7 @@ import {
   signOut,
   User,
 } from 'firebase/auth';
-import { getClientServices } from '@/lib/firebase';
+import { useAuth as useFirebaseAuth } from '@/firebase/provider';
 
 export type ActiveUserRole = 'admin' | 'salesperson';
 
@@ -26,7 +26,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { auth } = getClientServices();
+  const auth = useFirebaseAuth();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeUserRole, setActiveUserRole] = useState<ActiveUserRole | null>(null);
@@ -34,9 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!auth) {
-        // Firebase might not be initialized on the first server render.
-        // It will be available on the client.
-        setLoading(false);
+        setLoading(true);
         return;
     };
 
