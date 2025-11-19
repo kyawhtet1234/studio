@@ -7,6 +7,9 @@ import { Separator } from '@/components/ui/separator';
 import type { SaleTransaction, Store } from '@/lib/types';
 import { format } from 'date-fns';
 import { useData } from '@/lib/data-context';
+import { renderToString } from 'react-dom/server';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export interface ReceiptHandle {
   handlePrint: () => void;
@@ -17,13 +20,13 @@ interface ReceiptProps {
   store: Store | undefined;
 }
 
-const ReceiptContent: React.FC<ReceiptProps & { logo: string | null }> = React.forwardRef(({ sale, store, logo }, ref) => {
+export const ReceiptContent: React.FC<{ sale: SaleTransaction; store: Store | undefined; logo: string | null }> = ({ sale, store, logo }) => {
     return (
-      <div ref={ref as React.Ref<HTMLDivElement>} id="receipt-content" className="p-4 bg-white text-black font-mono text-xs w-full max-w-[300px] mx-auto">
+      <div id="receipt-content" className="p-4 bg-white text-black font-mono text-xs w-full max-w-[300px] mx-auto">
         <div className="text-center">
           {logo && (
             <div className="mb-2 flex justify-center">
-              <Image src={logo} alt="Company Logo" width={80} height={80} className="object-contain" style={{ maxHeight: '60px', width: 'auto'}}/>
+              <img src={logo} alt="Company Logo" style={{ maxHeight: '60px', width: 'auto'}}/>
             </div>
           )}
           <h2 className="text-sm font-bold">{store?.name || 'CloudPOS'}</h2>
@@ -69,7 +72,7 @@ const ReceiptContent: React.FC<ReceiptProps & { logo: string | null }> = React.f
         <p className="text-center mt-4 text-[10px]">Thank you for your purchase!</p>
       </div>
     );
-});
+};
 ReceiptContent.displayName = 'ReceiptContent';
 
 
@@ -142,10 +145,55 @@ export const Receipt = React.forwardRef<ReceiptHandle, ReceiptProps>(({ sale, st
 
     return (
         <div className="w-full">
-            <div className="overflow-y-auto max-h-[60vh] border rounded-lg bg-gray-100 p-4">
-               <ReceiptContent ref={contentRef} sale={sale} store={store} logo={logo} />
+            <div ref={contentRef} className="overflow-y-auto max-h-[60vh] border rounded-lg bg-gray-100 p-4">
+               <ReceiptContent sale={sale} store={store} logo={logo} />
             </div>
         </div>
     );
 });
 Receipt.displayName = 'Receipt';
+
+export const generateReceiptPdf = async (sale: SaleTransaction, store: Store | undefined, logo: string | null) => {
+    const receiptElement = document.createElement('div');
+    receiptElement.style.position = 'absolute';
+    receiptElement.style.left = '-9999px';
+    receiptElement.innerHTML = renderToString(
+        <ReceiptContent sale={sale} store={store} logo={logo} />
+    );
+    document.body.appendChild(receiptElement);
+
+    const canvas = await html2canvas(receiptElement, {
+        scale: 2,
+        useCORS: true, 
+    });
+    
+    document.body.removeChild(receiptElement);
+
+    const imgData = canvas.toDataURL('image/png');
+    
+    // Standard receipt paper is often 80mm wide. Let's use that.
+    const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [80, 297] // 80mm width, standard A4 height for long receipts
+    });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    
+    let heightLeft = pdfHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+    heightLeft -= pdf.internal.pageSize.getHeight();
+
+    while (heightLeft > 0) {
+        position = heightLeft - pdfHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pdf.internal.pageSize.getHeight();
+    }
+    
+    pdf.autoPrint();
+    window.open(pdf.output('bloburl'), '_blank');
+};

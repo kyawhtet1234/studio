@@ -38,13 +38,13 @@ import { Trash2, PlusCircle, UserPlus, CalendarIcon, ScanBarcode, Loader2, Alert
 import { useToast } from "@/hooks/use-toast";
 import type { CartItem, SaleTransaction, Store, Product, Customer, PaymentType } from '@/lib/types';
 import { useData } from "@/lib/data-context";
-import { Receipt } from "./receipt";
 import { AddCustomerForm } from "@/components/app/products/forms";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { BarcodeScanner } from "./barcode-scanner";
+import { generateReceiptPdf } from "./receipt";
 
 
 const formSchema = z.object({
@@ -87,7 +87,7 @@ interface SalesFormProps {
 }
 
 export function SalesForm({ stores, customers, onSave, onAddCustomer, setLastSaleId }: SalesFormProps) {
-  const { products, inventory, paymentTypes } = useData();
+  const { products, inventory, paymentTypes, settings } = useData();
   const { toast, dismiss } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -299,7 +299,10 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer, setLastSal
       });
 
       if (newSaleId) {
-        setLastSaleId(newSaleId as string);
+        const fullSaleData = { ...saleData, id: newSaleId as string, date: new Date() };
+        const store = stores.find(s => s.id === fullSaleData.storeId);
+        const logo = settings.receipt?.companyLogo || null;
+        await generateReceiptPdf(fullSaleData as SaleTransaction, store, logo);
       }
       
       form.reset();
