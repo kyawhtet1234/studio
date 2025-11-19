@@ -157,12 +157,21 @@ export const generateReceiptPdf = async (sale: SaleTransaction, store: Store | u
     const receiptElement = document.createElement('div');
     receiptElement.style.position = 'absolute';
     receiptElement.style.left = '-9999px';
-    receiptElement.innerHTML = renderToString(
-        <ReceiptContent sale={sale} store={store} logo={logo} />
-    );
+    // This is a temporary container that will be removed after rendering.
+    // It's necessary for html2canvas to calculate layout.
     document.body.appendChild(receiptElement);
+    
+    // We use a temporary div to render our component for canvas conversion
+    const tempContainer = document.createElement('div');
+    receiptElement.appendChild(tempContainer);
+    
+    // A simplified render approach that doesn't rely on ReactDOM.createRoot
+    // which is better for this kind of one-off rendering.
+    const saleSlip = <ReceiptContent sale={sale} store={store} logo={logo} />;
+    tempContainer.innerHTML = renderToString(saleSlip);
 
-    const canvas = await html2canvas(receiptElement, {
+
+    const canvas = await html2canvas(tempContainer, {
         scale: 2,
         useCORS: true, 
     });
