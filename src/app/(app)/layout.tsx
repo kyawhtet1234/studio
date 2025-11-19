@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { AppSidebar } from '@/components/app/app-sidebar';
@@ -10,7 +9,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { AppHeader } from '@/components/app/app-header';
-import { FirebaseClientProvider } from '@/lib/client-provider';
 import { UserSelector } from '@/components/app/user-selector';
 
 function AppContent({ children }: { children: React.ReactNode }) {
@@ -61,10 +59,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     return (
-        <FirebaseClientProvider>
-          <DataProvider>
-              <AppContent>{children}</AppContent>
-          </DataProvider>
-        </FirebaseClientProvider>
+        <DataProvider>
+            <AppContent>{children}</AppContent>
+        </DataProvider>
     )
 }

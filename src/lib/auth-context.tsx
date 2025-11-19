@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
@@ -11,7 +10,7 @@ import {
   User,
   Auth,
 } from 'firebase/auth';
-import { useFirebase } from '@/lib/client-provider';
+import { useAuth as useFirebaseAuth } from '@/lib/provider';
 
 export type ActiveUserRole = 'admin' | 'salesperson';
 
@@ -31,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeUserRole, setActiveUserRole] = useState<ActiveUserRole | null>(null);
-  const { auth } = useFirebase();
+  const auth = useFirebaseAuth();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {

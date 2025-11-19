@@ -2,43 +2,33 @@
 'use client';
 
 import { getClientServices } from '@/lib/firebase';
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
+import { FirebaseProvider } from '@/lib/provider';
+import type { FirebaseApp } from 'firebase/app';
 
-interface FirebaseServices {
-    auth: Auth;
-    db: Firestore;
+interface FirebaseClientProviderProps {
+    children: ReactNode;
 }
 
-const FirebaseContext = createContext<FirebaseServices | null>(null);
-
-export function useFirebase() {
-    const context = useContext(FirebaseContext);
-    if (context === null) {
-        throw new Error('useFirebase must be used within a FirebaseClientProvider');
-    }
-    return context;
-}
-
-export function FirebaseClientProvider({ children }: { children: ReactNode }) {
-    const [services, setServices] = useState<FirebaseServices | null>(null);
+export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
+    const [services, setServices] = useState<{ app: FirebaseApp; auth: Auth; db: Firestore; } | null>(null);
 
     useEffect(() => {
         // getClientServices is memoized and only runs on the client.
-        const { auth, db } = getClientServices();
-        setServices({ auth, db });
+        const { app, auth, db } = getClientServices();
+        setServices({ app, auth, db });
     }, []);
 
     if (!services) {
-        // You can render a loader here if you want.
-        // For now, we render nothing, and the loader in AppContent will be shown.
-        return null; 
+        // The loader in AppContent will be shown while services are initializing.
+        return null;
     }
 
     return (
-        <FirebaseContext.Provider value={services}>
+        <FirebaseProvider app={services.app} auth={services.auth} db={services.db}>
             {children}
-        </FirebaseContext.Provider>
+        </FirebaseProvider>
     );
 }
