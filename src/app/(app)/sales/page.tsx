@@ -41,7 +41,7 @@ export default function SalesPage() {
         // Automatically trigger print after a short delay to allow the dialog to render
         const timer = setTimeout(() => {
             receiptRef.current?.handlePrint();
-        }, 300); // Increased delay to ensure rendering
+        }, 500);
         return () => clearTimeout(timer);
     }
   }, [isReceiptDialogOpen]);
