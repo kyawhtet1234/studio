@@ -1,4 +1,3 @@
-
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
@@ -13,19 +12,21 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
+// This function is the single source of truth for Firebase services.
+export function getClientServices() {
+  if (typeof window === 'undefined') {
+    return { app: null, db: null, auth: null };
+  }
 
-if (typeof window !== 'undefined' && !getApps().length) {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-} else if (typeof window !== 'undefined') {
-  app = getApp();
-  auth = getAuth(app);
-  db = getFirestore(app);
+  if (getApps().length === 0) {
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    return { app, db, auth };
+  } 
+  
+  const app = getApp();
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  return { app, db, auth };
 }
-
-// @ts-ignore
-export { app, db, auth };

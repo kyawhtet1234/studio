@@ -2,8 +2,8 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { useAuth as useAuthContext, type ActiveUserRole } from '@/lib/auth-context';
-import { db } from '@/lib/firebase';
+import { useAuth, type ActiveUserRole } from '@/lib/auth-context';
+import { getClientServices } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup, setDoc, Firestore } from 'firebase/firestore';
 
 import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability, BusinessSettings, DocumentSettings, Employee, SalaryAdvance, LeaveRecord, GoalsSettings, BrandingSettings, UserManagementSettings } from '@/lib/types';
@@ -91,7 +91,8 @@ interface DataContextProps {
 const DataContext = createContext<DataContextProps | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
-    const { user, activeUserRole } = useAuthContext();
+    const { user, activeUserRole } = useAuth();
+    const [db, setDb] = useState<Firestore | null>(null);
     
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -114,11 +115,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [settings, setSettings] = useState<BusinessSettings>({});
     const [loading, setLoading] = useState(true);
 
-    const fetchData = useCallback(async (uid: string) => {
-        if (!db) {
-            console.error("Firestore not initialized yet.");
-            return;
-        }
+    useEffect(() => {
+        const { db: firestoreDb } = getClientServices();
+        setDb(firestoreDb);
+    }, []);
+
+    const fetchData = useCallback(async (db: Firestore, uid: string) => {
         setLoading(true);
         try {
             const collectionsToFetch = [
@@ -164,7 +166,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         if (user && db) {
-            fetchData(user.uid);
+            fetchData(db, user.uid);
         } else if (!user) {
             // Clear all data on logout
             setProducts([]);
@@ -216,7 +218,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             }
         }
         await batch.commit();
-        await fetchData(user.uid);
+        await fetchData(db, user.uid);
     };
 
     const updateProduct = async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {
@@ -230,26 +232,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
             }
             const originalProductData = productSnap.data() as Product;
     
-            // First, query for all inventory items related to this product to delete them.
             const inventoryQuery = query(collection(db, 'users', user.uid, 'inventory'), where('productId', '==', productId));
-            const inventorySnaps = await getDocs(inventoryQuery); // This read is outside the transaction write phase which is fine.
+            const inventorySnaps = await getDocs(inventoryQuery); 
 
             let baseStockToPreserve = 0;
             const hasVariantsPreviously = originalProductData.variant_track_enabled;
 
             inventorySnaps.forEach((invDoc) => {
                 const invData = invDoc.data() as InventoryItem;
-                // Preserve stock of the base item if we are DISABLING variants
                 if (hasVariantsPreviously && !invData.variant_name) { 
                     baseStockToPreserve = invData.stock;
                 }
-                transaction.delete(invDoc.ref); // Delete all old inventory records
+                transaction.delete(invDoc.ref);
             });
 
-            // Update the product document
             transaction.update(productRef, productData);
     
-            // Recreate inventory records based on the new product data.
             const newVariants = (productData.variant_track_enabled && productData.available_variants && productData.available_variants.length > 0)
                 ? productData.available_variants
                 : [""];
@@ -261,10 +259,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     const newInvRef = doc(db, 'users', user.uid, 'inventory', inventoryId);
                     
                     let stockToSet = 0;
-                    // If we are moving from variants to no-variants, restore the base stock
                     if (!productData.variant_track_enabled && !variantName) {
-                        // This logic might need refinement if stock should be preserved per store.
-                        // The current simple approach just preserves the first found base stock.
                         stockToSet = baseStockToPreserve;
                     }
 
@@ -363,7 +358,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             }
         }
         await batch.commit();
-        await fetchData(user.uid);
+        await fetchData(db, user.uid);
     };
 
     const updateStore = async (storeId: string, storeData: Partial<Omit<Store, 'id'>>) => {
@@ -493,7 +488,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     }
                 }
             });
-            await fetchData(user.uid);
+            await fetchData(db, user.uid);
             return newSaleId;
         } catch (e) {
             console.error("Sale transaction failed: ", e);
@@ -539,7 +534,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
                         if (invSnap.exists()) {
                             transaction.update(invRef, { stock: invSnap.data().stock + inStockQuantity });
                         } else {
-                            // If for some reason inventory record doesn't exist, create it.
                             transaction.set(invRef, { id: inventoryId, productId: item.productId, variant_name: variantName, storeId: saleData.storeId, stock: inStockQuantity });
                         }
                     }
@@ -547,7 +541,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 
                 transaction.delete(saleRef);
             });
-            await fetchData(user.uid);
+            await fetchData(db, user.uid);
         } catch(e) {
             console.error("Delete sale transaction failed: ", e);
             throw e;
@@ -583,7 +577,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
                 transaction.update(saleRef, { status: 'paid' });
             });
-            await fetchData(user.uid);
+            await fetchData(db, user.uid);
         } catch (e) {
             console.error("Mark as paid transaction failed: ", e);
             throw e;
@@ -608,7 +602,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     status: newStatus
                 });
             });
-            await fetchData(user.uid);
+            await fetchData(db, user.uid);
         } catch (e) {
             console.error("Record payment failed: ", e);
             throw e;
@@ -645,7 +639,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 
                 transaction.update(saleRef, { status: 'voided', balance: saleData.total, paidAmount: 0 });
             });
-            await fetchData(user.uid);
+            await fetchData(db, user.uid);
         } catch(e) {
             console.error("Void sale transaction failed: ", e);
             throw e;
@@ -658,7 +652,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         try {
             await runTransaction(db, async (transaction) => {
                 
-                // --- Step 1: Read all necessary data first ---
                 const itemRefsAndData = purchaseData.items.map(item => {
                     const variantName = item.variant_name || "";
                     const inventoryId = `${item.productId}_${variantName}_${purchaseData.storeId}`;
@@ -673,7 +666,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     )
                 );
     
-                // --- Step 2: Perform all writes ---
                 const newPurchaseRef = doc(collection(db, 'users', user.uid, 'purchases'));
                 transaction.set(newPurchaseRef, { ...purchaseData, date: Timestamp.fromDate(toDate(purchaseData.date)) });
     
@@ -681,7 +673,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     const { item, invRef, productRef } = itemRefsAndData[i];
                     const [invSnap, productSnap] = docSnaps[i];
     
-                    // Update inventory
                     const currentStock = invSnap.exists() ? invSnap.data().stock : 0;
                     const newStock = currentStock + item.quantity;
                     transaction.set(invRef, {
@@ -692,13 +683,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
                         stock: newStock
                     }, { merge: true });
     
-                    // Update product buy price if it has changed
                     if (productSnap.exists() && productSnap.data().buyPrice !== item.buyPrice) {
                         transaction.update(productRef, { buyPrice: item.buyPrice });
                     }
                 }
             });
-            await fetchData(user.uid);
+            await fetchData(db, user.uid);
         } catch (e) {
             console.error("Purchase transaction failed: ", e);
             throw e;
@@ -728,7 +718,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     }
                 }
             });
-            await fetchData(user.uid);
+            await fetchData(db, user.uid);
         } catch (e) {
             console.error("Delete purchase transaction failed: ", e);
             throw e;
@@ -802,7 +792,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 const newTxRef = doc(collection(db, 'users', user.uid, 'cashTransactions'));
                 transaction.set(newTxRef, { ...tx, date: Timestamp.now() });
             });
-            await fetchData(user.uid);
+            await fetchData(db, user.uid);
         } catch (e) {
             console.error("Cash transaction failed: ", e);
             throw e;
@@ -919,7 +909,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         });
 
         await batch.commit();
-        await fetchData(user.uid);
+        await fetchData(db, user.uid);
     };
 
     const deleteInventoryItem = async (itemId: string) => {

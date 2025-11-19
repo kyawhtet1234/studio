@@ -8,8 +8,9 @@ import {
   signInWithEmailAndPassword,
   signOut,
   User,
+  Auth,
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { getClientServices } from '@/lib/firebase';
 
 export type ActiveUserRole = 'admin' | 'salesperson';
 
@@ -26,11 +27,20 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [auth, setAuth] = useState<Auth | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeUserRole, setActiveUserRole] = useState<ActiveUserRole | null>(null);
 
   useEffect(() => {
+    // This ensures Firebase is only initialized on the client side.
+    const { auth: firebaseAuth } = getClientServices();
+    setAuth(firebaseAuth);
+  }, []);
+
+  useEffect(() => {
+    if (!auth) return;
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
         setUser(user);
         if (!user) {
@@ -39,17 +49,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [auth]);
 
   const signUp = (email: string, password: string) => {
+    if (!auth) return Promise.reject(new Error("Auth not initialized"));
     return createUserWithEmailAndPassword(auth, email, password);
   };
 
   const signIn = (email: string, password: string) => {
+    if (!auth) return Promise.reject(new Error("Auth not initialized"));
     return signInWithEmailAndPassword(auth, email, password);
   };
 
   const logOut = () => {
+    if (!auth) return Promise.reject(new Error("Auth not initialized"));
     setActiveUserRole(null);
     return signOut(auth);
   };
