@@ -8,7 +8,6 @@ import {
   signInWithEmailAndPassword,
   signOut,
   User,
-  Auth,
 } from 'firebase/auth';
 import { getClientServices } from '@/lib/firebase';
 
@@ -27,19 +26,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [auth, setAuth] = useState<Auth | null>(null);
+  const { auth } = getClientServices();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeUserRole, setActiveUserRole] = useState<ActiveUserRole | null>(null);
 
-  useEffect(() => {
-    // This ensures Firebase is only initialized on the client side.
-    const { auth: firebaseAuth } = getClientServices();
-    setAuth(firebaseAuth);
-  }, []);
 
   useEffect(() => {
-    if (!auth) return;
+    if (!auth) {
+        // Firebase might not be initialized on the first server render.
+        // It will be available on the client.
+        setLoading(false);
+        return;
+    };
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
         setUser(user);

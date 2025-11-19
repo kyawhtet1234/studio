@@ -92,7 +92,7 @@ const DataContext = createContext<DataContextProps | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
     const { user, activeUserRole } = useAuth();
-    const [db, setDb] = useState<Firestore | null>(null);
+    const { db } = getClientServices();
     
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -114,11 +114,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [leaveRecords, setLeaveRecords] = useState<LeaveRecord[]>([]);
     const [settings, setSettings] = useState<BusinessSettings>({});
     const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const { db: firestoreDb } = getClientServices();
-        setDb(firestoreDb);
-    }, []);
 
     const fetchData = useCallback(async (db: Firestore, uid: string) => {
         setLoading(true);
@@ -188,7 +183,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setSalaryAdvances([]);
             setLeaveRecords([]);
             setSettings({});
-            setLoading(false);
+            if (!user) {
+                setLoading(false);
+            }
         }
     }, [user, db, fetchData]);
 
@@ -274,7 +271,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             }
         });
     
-        await fetchData(user.uid);
+        await fetchData(db, user.uid);
     };
 
     const deleteProduct = async (productId: string) => {

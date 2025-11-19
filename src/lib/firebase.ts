@@ -12,21 +12,22 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-// This function is the single source of truth for Firebase services.
-export function getClientServices() {
-  if (typeof window === 'undefined') {
-    return { app: null, db: null, auth: null };
-  }
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
 
-  if (getApps().length === 0) {
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-    return { app, db, auth };
-  } 
-  
-  const app = getApp();
-  const db = getFirestore(app);
-  const auth = getAuth(app);
-  return { app, db, auth };
+// This function ensures Firebase is initialized only once.
+export function getClientServices() {
+  if (typeof window !== 'undefined') {
+    if (!getApps().length) {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+    } else {
+      app = getApp();
+      auth = getAuth(app);
+      db = getFirestore(app);
+    }
+  }
+  return { app, auth, db };
 }
