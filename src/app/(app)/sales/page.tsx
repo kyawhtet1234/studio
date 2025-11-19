@@ -31,10 +31,14 @@ export default function SalesPage() {
   const lastSale = allSales.find(s => s.id === lastSaleId);
   
   useEffect(() => {
-    if (lastSaleId) {
+    if (lastSaleId && lastSale) {
       setIsReceiptDialogOpen(true);
+      // Automatically trigger print after a short delay to allow the dialog to render
+      setTimeout(() => {
+        receiptRef.current?.handlePrint();
+      }, 100);
     }
-  }, [lastSaleId]);
+  }, [lastSaleId, lastSale]);
 
   const handleDialogChange = (open: boolean) => {
     setIsReceiptDialogOpen(open);
