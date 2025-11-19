@@ -7,17 +7,18 @@ import { DocumentForm } from "@/components/app/sales/document-form";
 import type { SaleTransaction } from '@/lib/types';
 import { useData } from "@/lib/data-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Receipt } from "@/components/app/sales/receipt";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Receipt, type ReceiptHandle } from "@/components/app/sales/receipt";
 
 
 export default function SalesPage() {
   const { addSale, stores, customers, addCustomer, sales: allSales } = useData();
   const [lastSaleId, setLastSaleId] = useState<string | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
+  const receiptRef = useRef<ReceiptHandle>(null);
 
   const handleSaveDocument = async (docData: Omit<SaleTransaction, 'id'>) => {
     const newId = await addSale(docData);
@@ -38,12 +39,13 @@ export default function SalesPage() {
   const handleDialogChange = (open: boolean) => {
     setIsReceiptDialogOpen(open);
     if (!open) {
-        // Reset lastSaleId when dialog is closed to allow re-opening for the same sale if needed
-        // Or to ensure the effect triggers for a new sale with the same ID (highly unlikely but good practice)
         setLastSaleId(null);
     }
   }
 
+  const handlePrint = () => {
+    receiptRef.current?.handlePrint();
+  };
 
   return (
     <div>
@@ -84,14 +86,19 @@ export default function SalesPage() {
           </DialogHeader>
           {lastSale && (
             <Receipt
+                ref={receiptRef}
                 sale={lastSale}
                 store={stores.find((s) => s.id === lastSale.storeId)}
             />
           )}
+          <DialogFooter>
+              <Button onClick={handlePrint}>
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print Receipt
+              </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
-
-    

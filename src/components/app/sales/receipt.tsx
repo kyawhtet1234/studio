@@ -1,14 +1,16 @@
 
 'use client';
 
-import React from 'react';
+import React, { useImperativeHandle } from 'react';
 import Image from 'next/image';
-import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import type { SaleTransaction, Store } from '@/lib/types';
 import { format } from 'date-fns';
-import { Printer } from 'lucide-react';
 import { useData } from '@/lib/data-context';
+
+export interface ReceiptHandle {
+  handlePrint: () => void;
+}
 
 interface ReceiptProps {
   sale: SaleTransaction;
@@ -71,12 +73,14 @@ const ReceiptContent: React.FC<ReceiptProps & { logo: string | null }> = React.f
 ReceiptContent.displayName = 'ReceiptContent';
 
 
-export const Receipt: React.FC<ReceiptProps> = ({ sale, store }) => {
+export const Receipt = React.forwardRef<ReceiptHandle, ReceiptProps>(({ sale, store }, ref) => {
     const { settings } = useData();
     const logo = settings.receipt?.companyLogo || null;
+    const contentRef = React.useRef<HTMLDivElement>(null);
 
-    const handlePrint = () => {
-        const printContent = document.getElementById('receipt-content')?.innerHTML;
+    useImperativeHandle(ref, () => ({
+      handlePrint() {
+        const printContent = contentRef.current?.innerHTML;
         if (printContent) {
             const printWindow = window.open('', '', 'height=800,width=400');
             if (printWindow) {
@@ -89,7 +93,6 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, store }) => {
                                 -webkit-print-color-adjust: exact; /* Chrome, Safari */
                                 color-adjust: exact; /* Firefox */
                             }
-                            #print-button { display: none; }
                         }
                         body { 
                             font-family: monospace; 
@@ -134,19 +137,15 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, store }) => {
                 }, 250);
             }
         }
-    };
+      }
+    }));
 
     return (
         <div className="w-full">
             <div className="overflow-y-auto max-h-[60vh] border rounded-lg bg-gray-100 p-4">
-               <ReceiptContent sale={sale} store={store} logo={logo} />
-            </div>
-            <div className="mt-4 flex justify-end">
-                <Button onClick={handlePrint} id="print-button">
-                    <Printer className="mr-2 h-4 w-4" />
-                    Print Receipt
-                </Button>
+               <ReceiptContent ref={contentRef} sale={sale} store={store} logo={logo} />
             </div>
         </div>
     );
-}
+});
+Receipt.displayName = 'Receipt';
