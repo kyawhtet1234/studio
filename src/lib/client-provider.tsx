@@ -25,7 +25,7 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
     }, []);
 
     if (!services) {
-        // The loader in AppContent will be shown while services are initializing.
+        // A simple loader until the firebase services are initialized.
         return (
             <div className="flex min-h-screen w-full items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin" />
@@ -43,5 +43,3 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
         </FirebaseProvider>
     );
 }
-
-    

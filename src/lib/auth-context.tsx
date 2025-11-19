@@ -8,9 +8,8 @@ import {
   signInWithEmailAndPassword,
   signOut,
   User,
-  Auth,
 } from 'firebase/auth';
-import { useAuth as useFirebaseAuth } from '@/lib/provider';
+import { useAuth as useFirebaseCoreAuth } from '@/lib/provider'; // Use the core provider
 
 export type ActiveUserRole = 'admin' | 'salesperson';
 
@@ -30,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeUserRole, setActiveUserRole] = useState<ActiveUserRole | null>(null);
-  const auth = useFirebaseAuth();
+  const auth = useFirebaseCoreAuth(); // Get auth from the central provider
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
