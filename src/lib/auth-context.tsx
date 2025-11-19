@@ -8,16 +8,14 @@ import {
   signInWithEmailAndPassword,
   signOut,
   User,
-  Auth,
 } from 'firebase/auth';
-import { getClientServices } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 
 export type ActiveUserRole = 'admin' | 'salesperson';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  auth: Auth | null;
   activeUserRole: ActiveUserRole | null;
   setActiveUserRole: (role: ActiveUserRole | null) => void;
   signUp: (email: string, password: string) => Promise<any>;
@@ -30,13 +28,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [auth, setAuth] = useState<Auth | null>(null);
   const [activeUserRole, setActiveUserRole] = useState<ActiveUserRole | null>(null);
 
   useEffect(() => {
-    const { auth: clientAuth } = getClientServices();
-    setAuth(clientAuth);
-    const unsubscribe = onAuthStateChanged(clientAuth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
         setUser(user);
         if (!user) {
           setActiveUserRole(null);
@@ -47,22 +42,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = (email: string, password: string) => {
-    if (!auth) return Promise.reject("Auth not initialized");
     return createUserWithEmailAndPassword(auth, email, password);
   };
 
   const signIn = (email: string, password: string) => {
-    if (!auth) return Promise.reject("Auth not initialized");
     return signInWithEmailAndPassword(auth, email, password);
   };
 
   const logOut = () => {
-    if (!auth) return Promise.reject("Auth not initialized");
     setActiveUserRole(null);
     return signOut(auth);
   };
 
-  const value = { user, loading, auth, signUp, signIn, logOut, activeUserRole, setActiveUserRole };
+  const value = { user, loading, signUp, signIn, logOut, activeUserRole, setActiveUserRole };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

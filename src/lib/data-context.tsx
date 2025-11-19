@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useAuth as useAuthContext, type ActiveUserRole } from '@/lib/auth-context';
-import { getClientServices } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup, setDoc, Firestore } from 'firebase/firestore';
 
 import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability, BusinessSettings, DocumentSettings, Employee, SalaryAdvance, LeaveRecord, GoalsSettings, BrandingSettings, UserManagementSettings } from '@/lib/types';
@@ -92,8 +92,7 @@ const DataContext = createContext<DataContextProps | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
     const { user, activeUserRole } = useAuthContext();
-    const [db, setDb] = useState<Firestore | null>(null);
-
+    
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -115,13 +114,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [settings, setSettings] = useState<BusinessSettings>({});
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        // This ensures Firebase is initialized on the client side.
-        const { db: clientDb } = getClientServices();
-        setDb(clientDb);
-    }, []);
-
-    const fetchData = useCallback(async (db: Firestore, uid: string) => {
+    const fetchData = useCallback(async (uid: string) => {
+        if (!db) {
+            console.error("Firestore not initialized yet.");
+            return;
+        }
         setLoading(true);
         try {
             const collectionsToFetch = [
@@ -167,7 +164,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         if (user && db) {
-            fetchData(db, user.uid);
+            fetchData(user.uid);
         } else if (!user) {
             // Clear all data on logout
             setProducts([]);
@@ -219,7 +216,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             }
         }
         await batch.commit();
-        await fetchData(db, user.uid);
+        await fetchData(user.uid);
     };
 
     const updateProduct = async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {
@@ -282,7 +279,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             }
         });
     
-        await fetchData(db, user.uid);
+        await fetchData(user.uid);
     };
 
     const deleteProduct = async (productId: string) => {
@@ -366,7 +363,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             }
         }
         await batch.commit();
-        await fetchData(db, user.uid);
+        await fetchData(user.uid);
     };
 
     const updateStore = async (storeId: string, storeData: Partial<Omit<Store, 'id'>>) => {
@@ -496,7 +493,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     }
                 }
             });
-            await fetchData(db, user.uid);
+            await fetchData(user.uid);
             return newSaleId;
         } catch (e) {
             console.error("Sale transaction failed: ", e);
@@ -550,7 +547,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 
                 transaction.delete(saleRef);
             });
-            await fetchData(db, user.uid);
+            await fetchData(user.uid);
         } catch(e) {
             console.error("Delete sale transaction failed: ", e);
             throw e;
@@ -586,7 +583,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
                 transaction.update(saleRef, { status: 'paid' });
             });
-            await fetchData(db, user.uid);
+            await fetchData(user.uid);
         } catch (e) {
             console.error("Mark as paid transaction failed: ", e);
             throw e;
@@ -611,7 +608,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     status: newStatus
                 });
             });
-            await fetchData(db, user.uid);
+            await fetchData(user.uid);
         } catch (e) {
             console.error("Record payment failed: ", e);
             throw e;
@@ -648,7 +645,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 
                 transaction.update(saleRef, { status: 'voided', balance: saleData.total, paidAmount: 0 });
             });
-            await fetchData(db, user.uid);
+            await fetchData(user.uid);
         } catch(e) {
             console.error("Void sale transaction failed: ", e);
             throw e;
@@ -701,7 +698,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     }
                 }
             });
-            await fetchData(db, user.uid);
+            await fetchData(user.uid);
         } catch (e) {
             console.error("Purchase transaction failed: ", e);
             throw e;
@@ -731,7 +728,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     }
                 }
             });
-            await fetchData(db, user.uid);
+            await fetchData(user.uid);
         } catch (e) {
             console.error("Delete purchase transaction failed: ", e);
             throw e;
@@ -805,7 +802,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 const newTxRef = doc(collection(db, 'users', user.uid, 'cashTransactions'));
                 transaction.set(newTxRef, { ...tx, date: Timestamp.now() });
             });
-            await fetchData(db, user.uid);
+            await fetchData(user.uid);
         } catch (e) {
             console.error("Cash transaction failed: ", e);
             throw e;
@@ -922,7 +919,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         });
 
         await batch.commit();
-        await fetchData(db, user.uid);
+        await fetchData(user.uid);
     };
 
     const deleteInventoryItem = async (itemId: string) => {
