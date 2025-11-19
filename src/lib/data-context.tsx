@@ -429,13 +429,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (!user || !db) return Promise.reject("User not logged in.");
         const isInventoryDeducted = saleData.status === 'paid' || saleData.status === 'partially-paid' || saleData.status === 'completed';
 
-        let newSaleId = '';
+        const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
+        const newSaleId = newSaleRef.id;
 
         try {
             await runTransaction(db, async (transaction) => {
                 const inventoryLookups = [];
                 
-                // --- READS FIRST ---
                 if (isInventoryDeducted) {
                     for (const item of saleData.items) {
                         const inStockQuantity = item.quantity - (item.sourcedQuantity || 0);
@@ -449,7 +449,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
                 const inventorySnaps = await Promise.all(inventoryLookups.map(lookup => transaction.get(lookup.ref)));
 
-                // --- VALIDATION ---
                 for (let i = 0; i < inventorySnaps.length; i++) {
                     const invSnap = inventorySnaps[i];
                     const { item, inStockQuantity } = inventoryLookups[i];
@@ -462,10 +461,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
                         throw new Error(`Not enough stock for ${item.name}. Available: ${currentStock}, Requested from stock: ${inStockQuantity}`);
                     }
                 }
-
-                // --- WRITES SECOND ---
-                const newSaleRef = doc(collection(db, 'users', user.uid, 'sales'));
-                newSaleId = newSaleRef.id;
 
                 const cleanedItems = saleData.items.map(item => ({
                     ...item,
@@ -480,7 +475,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     date: Timestamp.fromDate(toDate(saleData.date)),
                     customerId: saleData.customerId || null,
                 };
-
 
                 transaction.set(newSaleRef, finalSaleData);
 
@@ -1002,15 +996,3 @@ export function useData() {
     }
     return context;
 }
-
-    
-
-    
-
-
-
-
-
-
-
-
