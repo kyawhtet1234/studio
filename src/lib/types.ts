@@ -187,6 +187,13 @@ export interface DocumentSettings {
   paymentInfo?: string;
 }
 
+export interface ReceiptSettings {
+    shopName?: string;
+    shopAddress?: string;
+    thankYouNote?: string;
+    companyLogo?: string | null;
+}
+
 export interface GoalsSettings {
     dailySalesGoal?: number;
     monthlySalesGoalForIncentive?: number;
@@ -202,9 +209,7 @@ export interface BusinessSettings {
   branding?: BrandingSettings;
   invoice?: DocumentSettings;
   quotation?: DocumentSettings;
-  receipt?: {
-    companyLogo?: string | null;
-  };
+  receipt?: ReceiptSettings;
   goals?: GoalsSettings;
   users?: UserManagementSettings;
 }

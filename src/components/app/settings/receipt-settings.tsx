@@ -10,16 +10,24 @@ import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Upload, X } from 'lucide-react';
 import { useData } from '@/lib/data-context';
+import type { ReceiptSettings as ReceiptSettingsType } from '@/lib/types';
+import { Textarea } from '@/components/ui/textarea';
 
 
 export function ReceiptSettings() {
   const { toast } = useToast();
   const { settings, updateReceiptSettings } = useData();
   
+  const [shopName, setShopName] = useState('');
+  const [shopAddress, setShopAddress] = useState('');
+  const [thankYouNote, setThankYouNote] = useState('');
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
 
   useEffect(() => {
     if (settings.receipt) {
+      setShopName(settings.receipt.shopName || '');
+      setShopAddress(settings.receipt.shopAddress || '');
+      setThankYouNote(settings.receipt.thankYouNote || '');
       setCompanyLogo(settings.receipt.companyLogo || null);
     }
   }, [settings.receipt]);
@@ -43,11 +51,17 @@ export function ReceiptSettings() {
     }
   };
 
-  const handleSaveLogo = async () => {
-    await updateReceiptSettings({ companyLogo: companyLogo });
+  const handleSave = async () => {
+    const newSettings: ReceiptSettingsType = {
+        shopName,
+        shopAddress,
+        thankYouNote,
+        companyLogo
+    };
+    await updateReceiptSettings(newSettings);
     toast({
-      title: 'Logo saved',
-      description: 'Your new logo will now appear on receipts.',
+      title: 'Settings Saved',
+      description: 'Your receipt settings have been updated.',
     });
   };
 
@@ -63,9 +77,21 @@ export function ReceiptSettings() {
     <Card>
       <CardHeader>
         <CardTitle>Receipt Customization</CardTitle>
-        <CardDescription>Customize the look of your sales receipts by adding a company logo.</CardDescription>
+        <CardDescription>Customize the look of your sales receipts.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="shop-name">Shop Name</Label>
+          <Input id="shop-name" value={shopName} onChange={(e) => setShopName(e.target.value)} placeholder="e.g., The Craft Shop" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="shop-address">Shop Address</Label>
+          <Textarea id="shop-address" value={shopAddress} onChange={(e) => setShopAddress(e.target.value)} placeholder="123 Main St, Anytown" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="thank-you-note">Thank You Note</Label>
+          <Input id="thank-you-note" value={thankYouNote} onChange={(e) => setThankYouNote(e.target.value)} placeholder="Thank you for your purchase!" />
+        </div>
         <div className="space-y-2">
           <Label htmlFor="logo-upload">Company Logo</Label>
           <div className="flex items-center gap-4">
@@ -93,10 +119,8 @@ export function ReceiptSettings() {
         </div>
       </CardContent>
       <CardFooter>
-        <Button onClick={handleSaveLogo}>Save Logo</Button>
+        <Button onClick={handleSave}>Save Settings</Button>
       </CardFooter>
     </Card>
   );
 }
-
-    

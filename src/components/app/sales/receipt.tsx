@@ -4,7 +4,7 @@
 import React, { useImperativeHandle } from 'react';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
-import type { SaleTransaction, Store } from '@/lib/types';
+import type { SaleTransaction, Store, ReceiptSettings } from '@/lib/types';
 import { format } from 'date-fns';
 import { useData } from '@/lib/data-context';
 import { renderToString } from 'react-dom/server';
@@ -20,7 +20,12 @@ interface ReceiptProps {
   store: Store | undefined;
 }
 
-export const ReceiptContent: React.FC<{ sale: SaleTransaction; store: Store | undefined; logo: string | null }> = ({ sale, store, logo }) => {
+export const ReceiptContent: React.FC<{ sale: SaleTransaction; store: Store | undefined; settings: ReceiptSettings | undefined }> = ({ sale, store, settings }) => {
+    const logo = settings?.companyLogo;
+    const shopName = settings?.shopName || store?.name || 'CloudPOS';
+    const shopAddress = settings?.shopAddress || store?.location;
+    const thankYouNote = settings?.thankYouNote || 'Thank you for your purchase!';
+
     return (
       <div id="receipt-content" className="p-4 bg-white text-black font-mono text-xs w-full max-w-[300px] mx-auto">
         <div className="text-center">
@@ -29,8 +34,8 @@ export const ReceiptContent: React.FC<{ sale: SaleTransaction; store: Store | un
               <img src={logo} alt="Company Logo" style={{ maxHeight: '60px', width: 'auto'}}/>
             </div>
           )}
-          <h2 className="text-sm font-bold">{store?.name || 'CloudPOS'}</h2>
-          <p className="text-[10px]">{store?.location}</p>
+          <h2 className="text-sm font-bold">{shopName}</h2>
+          <p className="text-[10px]">{shopAddress}</p>
           <p className="text-[10px]">{format(new Date(sale.date as Date), 'PPpp')}</p>
         </div>
         <Separator className="my-2 bg-black border-dashed" />
@@ -69,7 +74,7 @@ export const ReceiptContent: React.FC<{ sale: SaleTransaction; store: Store | un
           </div>
         </div>
         <Separator className="my-2 bg-black border-dashed" />
-        <p className="text-center mt-4 text-[10px]">Thank you for your purchase!</p>
+        <p className="text-center mt-4 text-[10px]">{thankYouNote}</p>
       </div>
     );
 };
@@ -78,7 +83,6 @@ ReceiptContent.displayName = 'ReceiptContent';
 
 export const Receipt = React.forwardRef<ReceiptHandle, ReceiptProps>(({ sale, store }, ref) => {
     const { settings } = useData();
-    const logo = settings.receipt?.companyLogo || null;
     const contentRef = React.useRef<HTMLDivElement>(null);
 
     useImperativeHandle(ref, () => ({
@@ -146,14 +150,14 @@ export const Receipt = React.forwardRef<ReceiptHandle, ReceiptProps>(({ sale, st
     return (
         <div className="w-full">
             <div ref={contentRef} className="overflow-y-auto max-h-[60vh] border rounded-lg bg-gray-100 p-4">
-               <ReceiptContent sale={sale} store={store} logo={logo} />
+               <ReceiptContent sale={sale} store={store} settings={settings.receipt} />
             </div>
         </div>
     );
 });
 Receipt.displayName = 'Receipt';
 
-export const generateReceiptPdf = async (sale: SaleTransaction, store: Store | undefined, logo: string | null) => {
+export const generateReceiptPdf = async (sale: SaleTransaction, store: Store | undefined, receiptSettings: ReceiptSettings | undefined) => {
     const receiptElement = document.createElement('div');
     receiptElement.style.position = 'absolute';
     receiptElement.style.left = '-9999px';
@@ -167,7 +171,7 @@ export const generateReceiptPdf = async (sale: SaleTransaction, store: Store | u
     
     // A simplified render approach that doesn't rely on ReactDOM.createRoot
     // which is better for this kind of one-off rendering.
-    const saleSlip = <ReceiptContent sale={sale} store={store} logo={logo} />;
+    const saleSlip = <ReceiptContent sale={sale} store={store} settings={receiptSettings} />;
     tempContainer.innerHTML = renderToString(saleSlip);
 
 

@@ -301,8 +301,7 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer, setLastSal
       if (newSaleId) {
         const fullSaleData = { ...saleData, id: newSaleId as string, date: new Date() };
         const store = stores.find(s => s.id === fullSaleData.storeId);
-        const logo = settings.receipt?.companyLogo || null;
-        await generateReceiptPdf(fullSaleData as SaleTransaction, store, logo);
+        await generateReceiptPdf(fullSaleData as SaleTransaction, store, settings.receipt);
       }
       
       form.reset();
