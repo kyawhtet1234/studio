@@ -2,9 +2,11 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { useAuth, type ActiveUserRole } from '@/lib/auth-context';
-import { useFirestore } from '@/firebase/provider';
-import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, documentId, getDoc, updateDoc, runTransaction, collectionGroup, setDoc, Firestore } from 'firebase/firestore';
+import { AuthProvider, useAuth, type ActiveUserRole } from '@/lib/auth-context';
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { getFirestore, collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, getDoc, updateDoc, runTransaction, setDoc, Firestore, collectionGroup } from 'firebase/firestore';
+import { getAuth, Auth } from 'firebase/auth';
+import { firebaseConfig } from '@/firebase/config';
 
 import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability, BusinessSettings, DocumentSettings, Employee, SalaryAdvance, LeaveRecord, GoalsSettings, BrandingSettings, UserManagementSettings } from '@/lib/types';
 import { toDate } from './utils';
@@ -29,7 +31,7 @@ interface DataContextProps {
     salaryAdvances: SalaryAdvance[];
     leaveRecords: LeaveRecord[];
     settings: BusinessSettings;
-    activeUserRole: ActiveUserRole | null; // Add this
+    activeUserRole: ActiveUserRole | null;
     addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<void>;
     updateProduct: (productId: string, product: Partial<Omit<Product, 'id'>>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
@@ -90,10 +92,9 @@ interface DataContextProps {
 
 const DataContext = createContext<DataContextProps | undefined>(undefined);
 
-export function DataProvider({ children }: { children: ReactNode }) {
-    const { user, activeUserRole } = useAuth();
-    const db = useFirestore();
-    
+function DataProviderContent({ children }: { children: ReactNode }) {
+    const { user } = useAuth();
+    const [db, setDb] = useState<Firestore | null>(null);
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -114,6 +115,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [leaveRecords, setLeaveRecords] = useState<LeaveRecord[]>([]);
     const [settings, setSettings] = useState<BusinessSettings>({});
     const [loading, setLoading] = useState(true);
+    const { activeUserRole } = useAuth();
+
+     useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+            setDb(getFirestore(app));
+        }
+    }, []);
 
     const fetchData = useCallback(async (db: Firestore, uid: string) => {
         setLoading(true);
@@ -183,9 +192,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setSalaryAdvances([]);
             setLeaveRecords([]);
             setSettings({});
-            if (!db) { // if db is also not available, we are truly in a logged out state
-                setLoading(false);
-            }
+            setLoading(false);
         }
     }, [user, db, fetchData]);
 
@@ -946,39 +953,58 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await updateSettings({ users: userManagementSettings });
     };
 
+    const contextValue = { 
+        products, addProduct, updateProduct, deleteProduct,
+        categories, addCategory, updateCategory, deleteCategory,
+        suppliers, addSupplier, updateSupplier, deleteSupplier,
+        stores, addStore, updateStore, deleteStore,
+        customers, addCustomer, updateCustomer, deleteCustomer,
+        paymentTypes, addPaymentType, updatePaymentType, deletePaymentType,
+        inventory, updateInventory, deleteInventoryItem,
+        sales, addSale, updateSale, voidSale, deleteSale, markInvoiceAsPaid, recordPayment,
+        purchases, addPurchase, deletePurchase,
+        expenses, addExpense, deleteExpense,
+        expenseCategories, addExpenseCategory, updateExpenseCategory, deleteExpenseCategory,
+        cashAccounts, addCashAccount, deleteCashAccount,
+        cashTransactions, addCashTransaction,
+        cashAllocations, addCashAllocation, updateCashAllocation, deleteCashAllocation,
+        liabilities, addLiability, updateLiability, deleteLiability,
+        employees, addEmployee, updateEmployee, deleteEmployee,
+        salaryAdvances, addSalaryAdvance, deleteSalaryAdvance,
+        leaveRecords, addLeaveRecord, deleteLeaveRecord,
+        settings,
+        activeUserRole,
+        updateInvoiceSettings,
+        updateQuotationSettings,
+        updateReceiptSettings,
+        updateGoalsSettings,
+        updateBrandingSettings,
+        updateUserManagementSettings,
+        loading
+    };
+
     return (
-        <DataContext.Provider value={{ 
-            products, addProduct, updateProduct, deleteProduct,
-            categories, addCategory, updateCategory, deleteCategory,
-            suppliers, addSupplier, updateSupplier, deleteSupplier,
-            stores, addStore, updateStore, deleteStore,
-            customers, addCustomer, updateCustomer, deleteCustomer,
-            paymentTypes, addPaymentType, updatePaymentType, deletePaymentType,
-            inventory, updateInventory, deleteInventoryItem,
-            sales, addSale, updateSale, voidSale, deleteSale, markInvoiceAsPaid, recordPayment,
-            purchases, addPurchase, deletePurchase,
-            expenses, addExpense, deleteExpense,
-            expenseCategories, addExpenseCategory, updateExpenseCategory, deleteExpenseCategory,
-            cashAccounts, addCashAccount, deleteCashAccount,
-            cashTransactions, addCashTransaction,
-            cashAllocations, addCashAllocation, updateCashAllocation, deleteCashAllocation,
-            liabilities, addLiability, updateLiability, deleteLiability,
-            employees, addEmployee, updateEmployee, deleteEmployee,
-            salaryAdvances, addSalaryAdvance, deleteSalaryAdvance,
-            leaveRecords, addLeaveRecord, deleteLeaveRecord,
-            settings,
-            activeUserRole,
-            updateInvoiceSettings,
-            updateQuotationSettings,
-            updateReceiptSettings,
-            updateGoalsSettings,
-            updateBrandingSettings,
-            updateUserManagementSettings,
-            loading
-        }}>
+        <DataContext.Provider value={contextValue}>
             {children}
         </DataContext.Provider>
     );
+}
+
+export function DataProvider({ children }: { children: ReactNode }) {
+    const [auth, setAuth] = useState<Auth | null>(null);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+            setAuth(getAuth(app));
+        }
+    }, []);
+
+    return (
+        <AuthProvider auth={auth}>
+            <DataProviderContent>{children}</DataProviderContent>
+        </AuthProvider>
+    )
 }
 
 export function useData() {
