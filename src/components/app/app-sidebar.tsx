@@ -88,9 +88,9 @@ export function AppSidebar() {
       <SidebarHeader className="p-4 flex flex-col gap-2">
         <div className="flex items-center justify-center p-2">
             {appLogo ? (
-                <Image src={appLogo} alt="App Logo" width={120} height={120} className="w-30 h-30 object-contain drop-shadow-lg" />
+                <Image src={appLogo} alt="App Logo" width={160} height={160} className="w-40 h-40 object-contain drop-shadow-lg" />
             ) : (
-                <Building2 className="w-30 h-30 text-foreground drop-shadow-lg" />
+                <Building2 className="w-40 h-40 text-foreground drop-shadow-lg" />
             )}
         </div>
         <div className={cn("p-2 rounded-xl shadow-[0_8px_16px_rgba(234,179,8,0.4)] border-2 border-black", "bg-shiny-yellow dark:bg-shiny-yellow-dark")}>
