@@ -2,12 +2,9 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { AuthProvider, useAuth, type ActiveUserRole } from '@/lib/auth-context';
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getFirestore, collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, getDoc, updateDoc, runTransaction, setDoc, Firestore, collectionGroup } from 'firebase/firestore';
-import { getAuth, Auth } from 'firebase/auth';
-import { firebaseConfig } from '@/firebase/config';
-
+import { useAuth, type ActiveUserRole } from '@/lib/auth-context';
+import { collection, doc, getDocs, writeBatch, Timestamp, deleteDoc, addDoc, query, where, getDoc, updateDoc, runTransaction, setDoc, Firestore, collectionGroup } from 'firebase/firestore';
+import { useFirebase } from './firebase-provider';
 import type { Product, Category, Supplier, Store, InventoryItem, SaleTransaction, PurchaseTransaction, Customer, Expense, ExpenseCategory, CashAccount, CashTransaction, CashAllocation, PaymentType, Liability, BusinessSettings, DocumentSettings, Employee, SalaryAdvance, LeaveRecord, GoalsSettings, BrandingSettings, UserManagementSettings } from '@/lib/types';
 import { toDate } from './utils';
 
@@ -92,9 +89,9 @@ interface DataContextProps {
 
 const DataContext = createContext<DataContextProps | undefined>(undefined);
 
-function DataProviderContent({ children }: { children: ReactNode }) {
+export function DataProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
-    const [db, setDb] = useState<Firestore | null>(null);
+    const { db } = useFirebase();
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -116,13 +113,6 @@ function DataProviderContent({ children }: { children: ReactNode }) {
     const [settings, setSettings] = useState<BusinessSettings>({});
     const [loading, setLoading] = useState(true);
     const { activeUserRole } = useAuth();
-
-     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-            setDb(getFirestore(app));
-        }
-    }, []);
 
     const fetchData = useCallback(async (db: Firestore, uid: string) => {
         setLoading(true);
@@ -990,22 +980,6 @@ function DataProviderContent({ children }: { children: ReactNode }) {
     );
 }
 
-export function DataProvider({ children }: { children: ReactNode }) {
-    const [auth, setAuth] = useState<Auth | null>(null);
-
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-            setAuth(getAuth(app));
-        }
-    }, []);
-
-    return (
-        <AuthProvider auth={auth}>
-            <DataProviderContent>{children}</DataProviderContent>
-        </AuthProvider>
-    )
-}
 
 export function useData() {
     const context = useContext(DataContext);

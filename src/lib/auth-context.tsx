@@ -8,8 +8,8 @@ import {
   signInWithEmailAndPassword,
   signOut,
   User,
-  Auth,
 } from 'firebase/auth';
+import { useFirebase } from './firebase-provider';
 
 export type ActiveUserRole = 'admin' | 'salesperson';
 
@@ -25,7 +25,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children, auth }: { children: ReactNode; auth: Auth | null }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const { auth } = useFirebase();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeUserRole, setActiveUserRole] = useState<ActiveUserRole | null>(null);
