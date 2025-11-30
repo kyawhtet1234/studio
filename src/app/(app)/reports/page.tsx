@@ -18,7 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { cn, toDate } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Receipt } from "@/components/app/sales/receipt";
+import { Receipt, generateReceiptPdf } from "@/components/app/sales/receipt";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -204,7 +204,7 @@ const PurchaseHistoryTable = ({ data, products, stores, suppliers, onDelete, onV
     )
 };
 
-const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, onDelete, onExportPDF }: { data: SaleTransaction[], stores: Store[], customers: Customer[], onVoid: (id: string) => void, onPrintReceipt: (sale: SaleTransaction) => void, onDelete: (id: string) => void, onExportPDF: () => void }) => {
+const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, onDelete, onExportPDF, onExportSalePDF }: { data: SaleTransaction[], stores: Store[], customers: Customer[], onVoid: (id: string) => void, onPrintReceipt: (sale: SaleTransaction) => void, onDelete: (id: string) => void, onExportPDF: () => void, onExportSalePDF: (sale: SaleTransaction) => void }) => {
     const [voidCandidate, setVoidCandidate] = useState<string | null>(null);
     const [deleteCandidate, setDeleteCandidate] = useState<string | null>(null);
     const { toast } = useToast();
@@ -283,6 +283,10 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
                                             <Printer className="mr-2 h-4 w-4" />
                                             Print Receipt
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => onExportSalePDF(sale)} disabled={isVoided}>
+                                            <FileDown className="mr-2 h-4 w-4" />
+                                            Print to PDF
+                                        </DropdownMenuItem>
                                         {canVoidSales && (
                                             <DropdownMenuItem onClick={() => setVoidCandidate(sale.id)} disabled={isVoided}>
                                                 <Undo2 className="mr-2 h-4 w-4" />
@@ -350,7 +354,7 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
 
 
 export default function ReportsPage() {
-  const { sales, products, purchases, stores, suppliers, customers, voidSale, deletePurchase, deleteSale, updateSale, addCustomer, markInvoiceAsPaid, recordPayment } = useData();
+  const { sales, products, purchases, stores, suppliers, customers, voidSale, deletePurchase, deleteSale, updateSale, addCustomer, markInvoiceAsPaid, recordPayment, settings } = useData();
   const [documentToPrint, setDocumentToPrint] = useState<{ type: 'receipt' | 'invoice' | 'quotation' | 'cash-receipt', sale: SaleTransaction } | null>(null);
   const [editingDocument, setEditingDocument] = useState<SaleTransaction | null>(null);
   const [paymentDocument, setPaymentDocument] = useState<SaleTransaction | null>(null);
@@ -609,6 +613,11 @@ export default function ReportsPage() {
   const handlePrint = (sale: SaleTransaction, type: 'receipt' | 'invoice' | 'quotation' | 'cash-receipt') => {
     setDocumentToPrint({ type, sale });
   };
+  
+  const handleExportSaleToPdf = (sale: SaleTransaction) => {
+    const store = stores.find(s => s.id === sale.storeId);
+    generateReceiptPdf(sale, store, settings.receipt, 'save');
+  };
 
   const renderPrintDialog = () => {
     if (!documentToPrint) return null;
@@ -719,7 +728,16 @@ export default function ReportsPage() {
             <SalesByCustomerTable data={salesByCustomer} />
         </TabsContent>
           <TabsContent value="sales" className="mt-4">
-            <SalesHistoryTable data={salesHistory} stores={stores} customers={customers} onVoid={voidSale} onPrintReceipt={(sale) => setDocumentToPrint({ type: 'receipt', sale })} onDelete={deleteSale} onExportPDF={() => handleExport('pdf')} />
+            <SalesHistoryTable 
+                data={salesHistory} 
+                stores={stores} 
+                customers={customers} 
+                onVoid={voidSale} 
+                onPrintReceipt={(sale) => setDocumentToPrint({ type: 'receipt', sale })} 
+                onDelete={deleteSale} 
+                onExportPDF={() => handleExport('pdf')}
+                onExportSalePDF={handleExportSaleToPdf}
+             />
         </TabsContent>
         <TabsContent value="purchase" className="mt-4">
             <PurchaseHistoryTable data={purchaseHistory} products={products} stores={stores} suppliers={suppliers} onDelete={deletePurchase} onViewDetails={setViewingPurchase} />

@@ -157,20 +157,15 @@ export const Receipt = React.forwardRef<ReceiptHandle, ReceiptProps>(({ sale, st
 });
 Receipt.displayName = 'Receipt';
 
-export const generateReceiptPdf = async (sale: SaleTransaction, store: Store | undefined, receiptSettings: ReceiptSettings | undefined) => {
+export const generateReceiptPdf = async (sale: SaleTransaction, store: Store | undefined, receiptSettings: ReceiptSettings | undefined, action: 'print' | 'save' = 'print') => {
     const receiptElement = document.createElement('div');
     receiptElement.style.position = 'absolute';
     receiptElement.style.left = '-9999px';
-    // This is a temporary container that will be removed after rendering.
-    // It's necessary for html2canvas to calculate layout.
     document.body.appendChild(receiptElement);
     
-    // We use a temporary div to render our component for canvas conversion
     const tempContainer = document.createElement('div');
     receiptElement.appendChild(tempContainer);
     
-    // A simplified render approach that doesn't rely on ReactDOM.createRoot
-    // which is better for this kind of one-off rendering.
     const saleSlip = <ReceiptContent sale={sale} store={store} settings={receiptSettings} />;
     tempContainer.innerHTML = renderToString(saleSlip);
 
@@ -184,11 +179,10 @@ export const generateReceiptPdf = async (sale: SaleTransaction, store: Store | u
 
     const imgData = canvas.toDataURL('image/png');
     
-    // Standard receipt paper is often 80mm wide. Let's use that.
     const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: [80, 297] // 80mm width, standard A4 height for long receipts
+        format: [80, 297]
     });
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -207,6 +201,10 @@ export const generateReceiptPdf = async (sale: SaleTransaction, store: Store | u
         heightLeft -= pdf.internal.pageSize.getHeight();
     }
     
-    pdf.autoPrint();
-    window.open(pdf.output('bloburl'), '_blank');
+    if (action === 'print') {
+        pdf.autoPrint();
+        window.open(pdf.output('bloburl'), '_blank');
+    } else {
+        pdf.save(`receipt_${sale.id.slice(-6)}.pdf`);
+    }
 };
