@@ -35,14 +35,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AddEmployeeForm, RecordAdvanceForm, RecordLeaveForm } from '@/components/app/employees/forms';
 import type { Employee, SalaryAdvance, LeaveRecord, SaleTransaction } from '@/lib/types';
-import { MoreHorizontal, Calendar as CalendarIcon, DollarSign, Trash2, FileCheck, ChevronLeft, ChevronRight, Gift, TrendingUp, CheckCircle2, XCircle } from 'lucide-react';
+import { MoreHorizontal, Calendar as CalendarIcon, DollarSign, Trash2, FileCheck, ChevronLeft, ChevronRight, Gift, TrendingUp, CheckCircle2, XCircle, TrendingDown } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, lastDayOfMonth, subMonths, addMonths, isSameMonth } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
-const LEAVE_BONUS = 20000;
 const PAYROLL_CATEGORY_NAME = 'Employee Wages';
 
 export default function EmployeesPage() {
@@ -118,17 +117,21 @@ export default function EmployeesPage() {
         const advances = monthAdvances.filter(a => a.employeeId === employee.id);
         const totalAdvance = advances.reduce((sum, a) => sum + a.amount, 0);
         const leaves = monthLeaves.filter(l => l.employeeId === employee.id);
-        const hasTakenLeave = leaves.length > 0;
-        const bonus = hasTakenLeave ? 0 : LEAVE_BONUS;
+        const leaveDays = leaves.length;
+        
+        const dailySalary = employee.baseSalary / 30;
+        const leaveDeduction = dailySalary * leaveDays;
+        
         const monthlyIncentive = isGoalMet ? incentiveAmount : 0;
-        const finalSalary = employee.baseSalary - totalAdvance + bonus + monthlyIncentive;
+        const finalSalary = employee.baseSalary - totalAdvance - leaveDeduction + monthlyIncentive;
+        
         return {
             ...employee,
             advances,
             totalAdvance,
             leaves,
-            hasTakenLeave,
-            bonus,
+            leaveDays,
+            leaveDeduction,
             monthlyIncentive,
             finalSalary
         };
@@ -308,8 +311,8 @@ export default function EmployeesPage() {
                   <span className="font-medium text-destructive">- MMK {employee.totalAdvance.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">No-Leave Bonus</span>
-                  <span className={`font-medium ${employee.hasTakenLeave ? 'text-muted-foreground' : 'text-green-600'}`}>{employee.hasTakenLeave ? 'N/A' : `+ MMK ${employee.bonus.toLocaleString()}`}</span>
+                  <span className="text-muted-foreground">Leave Deduction ({employee.leaveDays} days)</span>
+                  <span className="font-medium text-destructive">- MMK {employee.leaveDeduction.toLocaleString()}</span>
                 </div>
                  <div className="flex justify-between">
                   <span className="text-muted-foreground">Monthly Incentive</span>
@@ -426,3 +429,5 @@ export default function EmployeesPage() {
   );
 }
 
+
+    
