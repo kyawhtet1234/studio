@@ -204,7 +204,7 @@ const PurchaseHistoryTable = ({ data, products, stores, suppliers, onDelete, onV
     )
 };
 
-const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, onDelete }: { data: SaleTransaction[], stores: Store[], customers: Customer[], onVoid: (id: string) => void, onPrintReceipt: (sale: SaleTransaction) => void, onDelete: (id: string) => void }) => {
+const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, onDelete, onExportPDF }: { data: SaleTransaction[], stores: Store[], customers: Customer[], onVoid: (id: string) => void, onPrintReceipt: (sale: SaleTransaction) => void, onDelete: (id: string) => void, onExportPDF: () => void }) => {
     const [voidCandidate, setVoidCandidate] = useState<string | null>(null);
     const [deleteCandidate, setDeleteCandidate] = useState<string | null>(null);
     const { toast } = useToast();
@@ -231,6 +231,12 @@ const SalesHistoryTable = ({ data, stores, customers, onVoid, onPrintReceipt, on
     
     return (
     <>
+        <div className="flex justify-end mb-4">
+            <Button variant="outline" onClick={onExportPDF}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Export to PDF
+            </Button>
+        </div>
         <Card className="bg-shiny-blue rounded-xl shadow-lg">
           <CardContent className="p-0 overflow-x-auto">
             <Table>
@@ -664,18 +670,20 @@ export default function ReportsPage() {
                     ))}
                 </SelectContent>
             </Select>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleExport('pdf')}>Export as PDF</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport('excel')}>Export as Excel</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {activeTab !== 'sales' && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                      <FileDown className="mr-2 h-4 w-4" />
+                      Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => handleExport('pdf')}>Export as PDF</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('excel')}>Export as Excel</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
         </div>
       </PageHeader>
       <Tabs defaultValue="daily" onValueChange={setActiveTab}>
@@ -711,7 +719,7 @@ export default function ReportsPage() {
             <SalesByCustomerTable data={salesByCustomer} />
         </TabsContent>
           <TabsContent value="sales" className="mt-4">
-            <SalesHistoryTable data={salesHistory} stores={stores} customers={customers} onVoid={voidSale} onPrintReceipt={(sale) => setDocumentToPrint({ type: 'receipt', sale })} onDelete={deleteSale} />
+            <SalesHistoryTable data={salesHistory} stores={stores} customers={customers} onVoid={voidSale} onPrintReceipt={(sale) => setDocumentToPrint({ type: 'receipt', sale })} onDelete={deleteSale} onExportPDF={() => handleExport('pdf')} />
         </TabsContent>
         <TabsContent value="purchase" className="mt-4">
             <PurchaseHistoryTable data={purchaseHistory} products={products} stores={stores} suppliers={suppliers} onDelete={deletePurchase} onViewDetails={setViewingPurchase} />
