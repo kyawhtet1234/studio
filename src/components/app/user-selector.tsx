@@ -62,7 +62,7 @@ export function UserSelector() {
       </div>
       <Card className="w-full max-w-md text-center shadow-lg">
         <CardHeader>
-          {appLogo && <Image src={appLogo} alt="Logo" width={80} height={80} className="mx-auto mb-4" />}
+          {appLogo && <Image src={appLogo} alt="Logo" width={120} height={120} className="mx-auto mb-4" />}
           <CardTitle className="text-2xl font-bold">Welcome to {appName}</CardTitle>
           <CardDescription>Please select your role to continue.</CardDescription>
         </CardHeader>
