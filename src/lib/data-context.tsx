@@ -161,31 +161,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (user && db) {
             fetchData(db, user.uid);
-        } else if (!user) {
-            // Clear all data on logout
-            setProducts([]);
-            setCategories([]);
-            setSuppliers([]);
-            setStores([]);
-            setCustomers([]);
-            setPaymentTypes([]);
-            setInventory([]);
-            setSales([]);
-            setPurchases([]);
-            setExpenses([]);
-            setExpenseCategories([]);
-            setCashAccounts([]);
-            setCashTransactions([]);
-            setCashAllocations([]);
-            setLiabilities([]);
-            setEmployees([]);
-            setSalaryAdvances([]);
-            setLeaveRecords([]);
-            setSettings({});
-            if (!db) {
-                setLoading(true);
-            } else {
-                setLoading(false);
+        } else {
+            setLoading(!db);
+            if (!user) {
+                 setProducts([]);
+                setCategories([]);
+                setSuppliers([]);
+                setStores([]);
+                setCustomers([]);
+                setPaymentTypes([]);
+                setInventory([]);
+                setSales([]);
+                setPurchases([]);
+                setExpenses([]);
+                setExpenseCategories([]);
+                setCashAccounts([]);
+                setCashTransactions([]);
+                setCashAllocations([]);
+                setLiabilities([]);
+                setEmployees([]);
+                setSalaryAdvances([]);
+                setLeaveRecords([]);
+                setSettings({});
             }
         }
     }, [user, db, fetchData]);
