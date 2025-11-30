@@ -182,7 +182,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setSalaryAdvances([]);
             setLeaveRecords([]);
             setSettings({});
-            setLoading(false);
+            if (!db) {
+                setLoading(true);
+            } else {
+                setLoading(false);
+            }
         }
     }, [user, db, fetchData]);
 
