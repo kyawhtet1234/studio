@@ -437,10 +437,10 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
                             </FormItem>
                             )}/>
                             <FormField control={form.control} name="buyPrice" render={({ field }) => (
-                                <FormItem><FormLabel>Buy Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Buy Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? 0} /></FormControl><FormMessage /></FormItem>
                             )}/>
                             <FormField control={form.control} name="sellPrice" render={({ field }) => (
-                                <FormItem><FormLabel>Sell Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Sell Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? 0} /></FormControl><FormMessage /></FormItem>
                             )}/>
                         </div>
                         
@@ -499,25 +499,25 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
                                     <FormField control={form.control} name="avgDailyDemand" render={({ field }) => (
-                                        <FormItem><FormLabel>Avg Daily Demand</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>Avg Daily Demand</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? 0} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                     <FormField control={form.control} name="maxDailyDemand" render={({ field }) => (
-                                        <FormItem><FormLabel>Max Daily Demand</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>Max Daily Demand</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? 0} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                     <FormField control={form.control} name="annualDemand" render={({ field }) => (
-                                        <FormItem><FormLabel>Annual Demand</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>Annual Demand</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? 0} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                     <FormField control={form.control} name="orderCost" render={({ field }) => (
-                                        <FormItem><FormLabel>Cost per Order</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>Cost per Order</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? 0} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                     <FormField control={form.control} name="holdingCost" render={({ field }) => (
-                                        <FormItem><FormLabel>Annual Holding Cost per Unit</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>Annual Holding Cost per Unit</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? 0} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                     <FormField control={form.control} name="avgLeadTime" render={({ field }) => (
-                                        <FormItem><FormLabel>Avg Lead Time (Days)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>Avg Lead Time (Days)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? 0} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                     <FormField control={form.control} name="maxLeadTime" render={({ field }) => (
-                                        <FormItem><FormLabel>Max Lead Time (Days)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>Max Lead Time (Days)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? 0} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                 </div>
                               </div>
