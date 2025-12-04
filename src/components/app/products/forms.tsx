@@ -26,6 +26,7 @@ import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Trash2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const baseSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -41,6 +42,14 @@ const productSchema = z.object({
   reorderPoint: z.coerce.number().min(0).optional(),
   variant_track_enabled: z.boolean().default(false),
   available_variants: z.array(z.string()).optional(),
+  // Inventory calculation fields
+  avgDailyDemand: z.coerce.number().min(0).optional(),
+  maxDailyDemand: z.coerce.number().min(0).optional(),
+  annualDemand: z.coerce.number().min(0).optional(),
+  orderCost: z.coerce.number().min(0).optional(),
+  holdingCost: z.coerce.number().min(0).optional(),
+  avgLeadTime: z.coerce.number().min(0).optional(),
+  maxLeadTime: z.coerce.number().min(0).optional(),
 }).refine(data => data.sellPrice >= data.buyPrice, {
     message: "Sell price cannot be less than buy price.",
     path: ["sellPrice"],
@@ -263,15 +272,15 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
         resolver: zodResolver(productSchema),
         defaultValues: product ? {
             ...product,
-            sellPrice: product.sellPrice ?? 0,
-            buyPrice: product.buyPrice ?? 0,
             reorderPoint: product.reorderPoint ?? 0,
             variant_track_enabled: product.variant_track_enabled ?? false,
             available_variants: product.available_variants ?? [],
         } : { 
             name: "", sku: "", categoryId: "", supplierId: "", 
             sellPrice: 0, buyPrice: 0, reorderPoint: 0,
-            variant_track_enabled: false, available_variants: [] 
+            variant_track_enabled: false, available_variants: [],
+            avgDailyDemand: 0, maxDailyDemand: 0, annualDemand: 0,
+            orderCost: 0, holdingCost: 0, avgLeadTime: 0, maxLeadTime: 0,
         },
     });
     const { toast } = useToast();
@@ -305,7 +314,7 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
     };
 
     async function onSubmit(data: z.infer<typeof productSchema>) {
-        if (isLoading) return; // Prevent submission if already loading
+        if (isLoading) return;
         setIsLoading(true);
 
         if (!isEditMode) {
@@ -371,9 +380,7 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
                                 <FormItem><FormLabel>Sell Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
                             )}/>
                         </div>
-                        <FormField control={form.control} name="reorderPoint" render={({ field }) => (
-                            <FormItem><FormLabel>Reorder Point</FormLabel><FormControl><Input type="number" step="1" {...field} placeholder="e.g. 3" /></FormControl><FormMessage /></FormItem>
-                        )}/>
+                        
                         <FormField
                             control={form.control}
                             name="variant_track_enabled"
@@ -415,6 +422,37 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
                                 </div>
                             </div>
                         )}
+                        
+                        <Accordion type="single" collapsible className="w-full">
+                          <AccordionItem value="inventory-params">
+                            <AccordionTrigger>Advanced Inventory Parameters</AccordionTrigger>
+                            <AccordionContent>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                                  <FormField control={form.control} name="avgDailyDemand" render={({ field }) => (
+                                      <FormItem><FormLabel>Avg Daily Demand</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )}/>
+                                  <FormField control={form.control} name="maxDailyDemand" render={({ field }) => (
+                                      <FormItem><FormLabel>Max Daily Demand</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )}/>
+                                  <FormField control={form.control} name="annualDemand" render={({ field }) => (
+                                      <FormItem><FormLabel>Annual Demand</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )}/>
+                                  <FormField control={form.control} name="orderCost" render={({ field }) => (
+                                      <FormItem><FormLabel>Cost per Order</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )}/>
+                                  <FormField control={form.control} name="holdingCost" render={({ field }) => (
+                                      <FormItem><FormLabel>Annual Holding Cost per Unit</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )}/>
+                                   <FormField control={form.control} name="avgLeadTime" render={({ field }) => (
+                                      <FormItem><FormLabel>Avg Lead Time (Days)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )}/>
+                                   <FormField control={form.control} name="maxLeadTime" render={({ field }) => (
+                                      <FormItem><FormLabel>Max Lead Time (Days)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )}/>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
                     </div>
                 </ScrollArea>
                 <div className="pt-6 mt-auto">
@@ -427,4 +465,3 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
         </Form>
     );
 }
-

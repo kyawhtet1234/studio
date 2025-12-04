@@ -40,6 +40,14 @@ export type Product = {
   variant_track_enabled: boolean;
   available_variants: string[];
   reorderPoint?: number;
+  // Fields for advanced inventory calculations
+  avgDailyDemand?: number;
+  maxDailyDemand?: number;
+  annualDemand?: number;
+  orderCost?: number;
+  holdingCost?: number;
+  avgLeadTime?: number; // in days
+  maxLeadTime?: number; // in days
 };
 
 export type InventoryItem = {

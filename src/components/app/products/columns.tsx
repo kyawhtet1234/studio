@@ -119,7 +119,16 @@ export const productColumns = ({ onEdit, onDelete }: { onEdit: (item: Product) =
   },
   { accessorKey: "sellPrice", header: "Sell Price", cell: ({ row }) => `MMK ${row.original.sellPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
   { accessorKey: "buyPrice", header: "Buy Price", cell: ({ row }) => `MMK ${row.original.buyPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
-  { accessorKey: "reorderPoint", header: "Reorder Point" },
+  { 
+    accessorKey: "reorderLevel", 
+    header: "Reorder Level",
+    cell: ({ row }) => {
+        const { avgDailyDemand = 0, maxDailyDemand = 0, avgLeadTime = 0, maxLeadTime = 0 } = row.original;
+        const safetyStock = (maxDailyDemand * maxLeadTime) - (avgDailyDemand * avgLeadTime);
+        const reorderLevel = (avgDailyDemand * avgLeadTime) + safetyStock;
+        return reorderLevel > 0 ? Math.round(reorderLevel) : "-";
+    }
+  },
   {
     id: "actions",
     cell: ({ row }) => (

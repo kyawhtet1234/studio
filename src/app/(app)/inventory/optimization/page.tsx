@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -5,8 +6,9 @@ import { useData } from '@/lib/data-context';
 import { PageHeader } from '@/components/app/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertTriangle } from 'lucide-react';
-import type { InventoryItem, Product, Store } from '@/lib/types';
+import { AlertTriangle, HelpCircle } from 'lucide-react';
+import type { Product } from '@/lib/types';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function InventoryOptimizationPage() {
   const { inventory, products, stores } = useData();
@@ -19,23 +21,44 @@ export default function InventoryOptimizationPage() {
         if (!product || !store) return null;
         
         const productName = item.variant_name ? `${product.name} (${item.variant_name})` : product.name;
-        const reorderPoint = product.reorderPoint ?? 0;
 
-        if (reorderPoint > 0 && item.stock <= reorderPoint) {
+        // --- Calculations ---
+        const {
+          avgDailyDemand = 0, maxDailyDemand = 0, annualDemand = 0,
+          orderCost = 0, holdingCost = 0, avgLeadTime = 0, maxLeadTime = 0
+        } = product;
+
+        const hasRequiredData = annualDemand > 0 && orderCost > 0 && holdingCost > 0 && maxLeadTime > 0;
+        
+        let safetyStock = 0;
+        let reorderLevel = 0;
+        let eoq = 0;
+        
+        if (hasRequiredData) {
+            safetyStock = (maxDailyDemand * maxLeadTime) - (avgDailyDemand * avgLeadTime);
+            reorderLevel = (avgDailyDemand * avgLeadTime) + safetyStock;
+            eoq = Math.sqrt((2 * annualDemand * orderCost) / holdingCost);
+        }
+        
+        const needsReorder = item.stock <= reorderLevel;
+
+        if (needsReorder && hasRequiredData) {
            return {
             id: item.id,
             productName,
             storeName: store.name,
             sku: product.sku,
             currentStock: item.stock,
-            reorderPoint: reorderPoint,
-            suggestedOrderQty: reorderPoint - item.stock > 0 ? reorderPoint - item.stock + 1 : 1,
+            reorderLevel: Math.round(reorderLevel),
+            safetyStock: Math.round(safetyStock),
+            eoq: Math.round(eoq),
+            urgency: item.stock / reorderLevel
           };
         }
         return null;
       })
       .filter((item): item is NonNullable<typeof item> => item !== null)
-      .sort((a, b) => a.productName.localeCompare(b.productName));
+      .sort((a, b) => a.urgency - b.urgency); // Sort by lowest stock ratio first
   }, [inventory, products, stores]);
 
   return (
@@ -48,43 +71,70 @@ export default function InventoryOptimizationPage() {
             Order Suggestions
           </CardTitle>
           <CardDescription>
-            This report shows items that are at or below their reorder point and need to be restocked.
+            This report shows items that are at or below their calculated reorder level and need to be restocked.
+            Calculations require advanced inventory parameters to be set for each product.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
+            <TooltipProvider>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>SKU</TableHead>
                   <TableHead>Product</TableHead>
                   <TableHead>Store</TableHead>
                   <TableHead className="text-right">Current Stock</TableHead>
-                  <TableHead className="text-right">Reorder Point</TableHead>
-                  <TableHead className="text-right font-bold text-primary">Suggested Order Qty</TableHead>
+                  <TableHead className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      Safety Stock
+                      <Tooltip>
+                        <TooltipTrigger><HelpCircle className="h-4 w-4" /></TooltipTrigger>
+                        <TooltipContent>Buffer stock to prevent stockouts.</TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </TableHead>
+                  <TableHead className="text-right">
+                     <div className="flex items-center justify-end gap-1">
+                      Reorder Level
+                      <Tooltip>
+                        <TooltipTrigger><HelpCircle className="h-4 w-4" /></TooltipTrigger>
+                        <TooltipContent>The stock level that triggers a new order.</TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </TableHead>
+                  <TableHead className="text-right font-bold text-primary">
+                    <div className="flex items-center justify-end gap-1">
+                        EOQ
+                        <Tooltip>
+                            <TooltipTrigger><HelpCircle className="h-4 w-4" /></TooltipTrigger>
+                            <TooltipContent>Economic Order Quantity: The optimal order size to minimize costs.</TooltipContent>
+                        </Tooltip>
+                    </div>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {orderSuggestions.length > 0 ? (
                   orderSuggestions.map(item => (
                     <TableRow key={item.id} className="hover:bg-muted/50">
-                      <TableCell>{item.sku}</TableCell>
                       <TableCell className="font-medium">{item.productName}</TableCell>
                       <TableCell>{item.storeName}</TableCell>
                       <TableCell className="text-right font-bold text-destructive">{item.currentStock}</TableCell>
-                      <TableCell className="text-right">{item.reorderPoint}</TableCell>
-                      <TableCell className="text-right font-bold text-primary">{item.suggestedOrderQty}</TableCell>
+                      <TableCell className="text-right">{item.safetyStock}</TableCell>
+                      <TableCell className="text-right">{item.reorderLevel}</TableCell>
+                      <TableCell className="text-right font-bold text-primary">{item.eoq}</TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center">
-                      No items need restocking at the moment. Well done!
+                      No items need restocking at the moment, or required inventory parameters have not been set for products.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+            </TooltipProvider>
           </div>
         </CardContent>
       </Card>
