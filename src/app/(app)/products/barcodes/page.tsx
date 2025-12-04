@@ -113,6 +113,7 @@ export default function BarcodesPage() {
             height: 15mm;
             border: 0.1mm solid #000;
             padding: 1mm;
+            margin: 1mm;
             text-align: center;
             font-size: 5pt;
             overflow: hidden;
