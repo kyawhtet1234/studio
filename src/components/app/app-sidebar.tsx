@@ -25,6 +25,7 @@ import {
   Users,
   Building2,
   TrendingUp,
+  BrainCircuit,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
@@ -39,6 +40,7 @@ const allMenuItems = [
   { href: '/products', label: 'Products', icon: Package, color: 'bg-yellow-500' },
   { href: '/purchase', label: 'Purchase', icon: Truck, color: 'bg-sky-500' },
   { href: '/inventory', label: 'Inventory', icon: Boxes, color: 'bg-red-500' },
+  { href: '/inventory/optimization', label: 'Optimization', icon: BrainCircuit, color: 'bg-orange-500' },
   { href: '/transfer', label: 'Transfer', icon: ArrowRightLeft, color: 'bg-orange-500' },
   { href: '/reports', label: 'Reports', icon: BarChart3, color: 'bg-rose-500' },
   { href: '/finance', label: 'Finance', icon: Landmark, color: 'bg-purple-500' },
@@ -63,7 +65,10 @@ export function AppSidebar() {
     }
     // Make inventory link active for adjustment page as well
     if (href === '/inventory') {
-        return pathname.startsWith('/inventory');
+        return pathname.startsWith('/inventory') && !pathname.includes('optimization');
+    }
+     if (href === '/inventory/optimization') {
+        return pathname === '/inventory/optimization';
     }
     if (href === '/products') {
         return pathname.startsWith('/products');
