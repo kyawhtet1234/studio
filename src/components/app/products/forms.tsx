@@ -278,6 +278,13 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
             reorderPoint: product.reorderPoint ?? 0,
             variant_track_enabled: product.variant_track_enabled ?? false,
             available_variants: product.available_variants ?? [],
+            avgDailyDemand: product.avgDailyDemand ?? 0,
+            maxDailyDemand: product.maxDailyDemand ?? 0,
+            annualDemand: product.annualDemand ?? 0,
+            orderCost: product.orderCost ?? 0,
+            holdingCost: product.holdingCost ?? 0,
+            avgLeadTime: product.avgLeadTime ?? 0,
+            maxLeadTime: product.maxLeadTime ?? 0,
         } : { 
             name: "", sku: "", categoryId: "", supplierId: "", 
             sellPrice: 0, buyPrice: 0, reorderPoint: 0,
@@ -305,6 +312,13 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
                 reorderPoint: product.reorderPoint ?? 0,
                 variant_track_enabled: product.variant_track_enabled ?? false,
                 available_variants: product.available_variants ?? [],
+                avgDailyDemand: product.avgDailyDemand ?? 0,
+                maxDailyDemand: product.maxDailyDemand ?? 0,
+                annualDemand: product.annualDemand ?? 0,
+                orderCost: product.orderCost ?? 0,
+                holdingCost: product.holdingCost ?? 0,
+                avgLeadTime: product.avgLeadTime ?? 0,
+                maxLeadTime: product.maxLeadTime ?? 0,
             });
         }
     }, [product, form]);
