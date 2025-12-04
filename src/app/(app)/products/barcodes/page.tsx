@@ -96,39 +96,98 @@ export default function BarcodesPage() {
       printWindow.document.write('<html><head><title>Print Barcodes</title>');
       printWindow.document.write(`
         <style>
-          @media print { @page { size: A4; margin: 10mm; } }
-          body { font-family: sans-serif; margin: 0; padding: 0; }
-          .label-grid { display: grid; grid-template-columns: repeat(5, 1fr); grid-gap: 10px; page-break-inside: avoid; }
-          .label { border: 1px solid #ccc; padding: 5px; text-align: center; font-size: 10px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; page-break-inside: avoid; height: 70px; }
-          .product-name { font-weight: bold; word-wrap: break-word; max-height: 2.5em; overflow: hidden; line-height: 1.2; margin-bottom: 2px; }
-          .product-sku { color: #555; font-size: 9px; }
-          .product-price { font-weight: bold; font-size: 11px; margin-top: 2px; }
-          .barcode-container svg { height: 30px !important; width: 100% !important; }
+          @page {
+            size: A4;
+            margin: 5mm;
+          }
+          body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+          }
+          .label {
+            width: 25mm;
+            height: 15mm;
+            border: 0.1mm solid #000;
+            padding: 1mm;
+            text-align: center;
+            font-size: 5pt;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            page-break-inside: avoid;
+            float: left; /* Fallback for older browsers */
+          }
+          .product-name {
+            font-weight: bold;
+            word-wrap: break-word;
+            line-height: 1;
+            margin-bottom: 0.5mm;
+            max-height: 2.2mm;
+            overflow: hidden;
+          }
+          .product-sku {
+            font-size: 4.5pt;
+            line-height: 1;
+          }
+          .product-price {
+            font-weight: bold;
+            font-size: 5pt;
+            margin-top: 0.5mm;
+            line-height: 1;
+          }
+          .barcode-container {
+            width: 100%;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+          }
+          .barcode-container svg {
+            max-height: 6mm;
+            width: 100%;
+            object-fit: contain;
+          }
         </style>
       `);
-      printWindow.document.write('</head><body><div class="label-grid">');
+      printWindow.document.write('</head><body>');
       
       productsToPrint.forEach(({ product, quantity }) => {
         for (let i = 0; i < quantity; i++) {
           let labelContent = '';
           if (showName) labelContent += `<div class="product-name">${product.name}</div>`;
-          if (showSku) labelContent += `<div class="product-sku">${product.sku}</div>`;
           
+          let barcodeHtml = '';
           try {
             const svgNode = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            JsBarcode(svgNode, product.sku, { format: "CODE128", width: 1.2, height: 25, fontSize: 10, margin: 2, displayValue: false });
-            labelContent += `<div class="barcode-container">${svgNode.outerHTML}</div>`;
+            JsBarcode(svgNode, product.sku, {
+                format: "CODE128",
+                width: 1, 
+                height: 20, 
+                fontSize: 0,
+                margin: 0,
+                displayValue: false
+            });
+            barcodeHtml = `<div class="barcode-container">${svgNode.outerHTML}</div>`;
           } catch (e) {
             console.error(`Failed to generate barcode for SKU ${product.sku}:`, e);
-            labelContent += `<div class="barcode-container" style="color: red;">Barcode Error</div>`;
+            barcodeHtml = `<div class="barcode-container" style="color: red;">Error</div>`;
           }
-          
+          labelContent += barcodeHtml;
+
+          if (showSku) labelContent += `<div class="product-sku">${product.sku}</div>`;
           if (showPrice) labelContent += `<div class="product-price">MMK ${product.sellPrice.toLocaleString()}</div>`;
+
           printWindow.document.write(`<div class="label">${labelContent}</div>`);
         }
       });
 
-      printWindow.document.write('</div></body></html>');
+      printWindow.document.write('</body></html>');
       printWindow.document.close();
 
       setTimeout(() => {
