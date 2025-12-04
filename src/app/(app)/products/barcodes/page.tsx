@@ -1,17 +1,24 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '@/lib/data-context';
 import { PageHeader } from '@/components/app/page-header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Printer, Loader2 } from 'lucide-react';
-import Barcode from 'react-barcode';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Printer, Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import JsBarcode from 'jsbarcode';
+import type { Product } from '@/lib/types';
+
+interface ProductToPrint {
+  product: Product;
+  quantity: number;
+}
 
 export default function BarcodesPage() {
   const { products } = useData();
@@ -20,13 +27,58 @@ export default function BarcodesPage() {
   const [showName, setShowName] = useState(true);
   const [showSku, setShowSku] = useState(true);
   const [showPrice, setShowPrice] = useState(true);
+  
+  const [productsToPrint, setProductsToPrint] = useState<ProductToPrint[]>([]);
+  const [searchSku, setSearchSku] = useState('');
+  const [foundProduct, setFoundProduct] = useState<Product | null>(null);
+  const [quantityToAdd, setQuantityToAdd] = useState<number | string>(1);
+
+  useEffect(() => {
+    if (searchSku) {
+      const product = products.find(p => p.sku.toLowerCase().startsWith(searchSku.toLowerCase()));
+      setFoundProduct(product || null);
+    } else {
+      setFoundProduct(null);
+    }
+  }, [searchSku, products]);
+
+  const handleAddItem = () => {
+    if (!foundProduct) {
+      toast({ variant: 'destructive', title: 'Product not found' });
+      return;
+    }
+    if (productsToPrint.some(p => p.product.id === foundProduct.id)) {
+      toast({ variant: 'destructive', title: 'Product already in list' });
+      return;
+    }
+    const qty = Number(quantityToAdd);
+    if (qty <= 0) {
+      toast({ variant: 'destructive', title: 'Invalid quantity' });
+      return;
+    }
+    setProductsToPrint(prev => [...prev, { product: foundProduct, quantity: qty }]);
+    setSearchSku('');
+    setQuantityToAdd(1);
+    setFoundProduct(null);
+  };
+
+  const handleRemoveItem = (productId: string) => {
+    setProductsToPrint(prev => prev.filter(p => p.product.id !== productId));
+  };
+  
+  const handleQuantityChange = (productId: string, newQuantity: number) => {
+    if (newQuantity < 0) return;
+    setProductsToPrint(prev => 
+        prev.map(p => p.product.id === productId ? { ...p, quantity: newQuantity } : p)
+    );
+  };
 
   const handlePrint = () => {
-    if (products.length === 0) {
+    if (productsToPrint.length === 0) {
       toast({
         variant: 'destructive',
-        title: 'No Products',
-        description: 'There are no products to generate barcodes for.',
+        title: 'No Products Selected',
+        description: 'Please add products to the print list.',
       });
       return;
     }
@@ -44,87 +96,36 @@ export default function BarcodesPage() {
       printWindow.document.write('<html><head><title>Print Barcodes</title>');
       printWindow.document.write(`
         <style>
-          @media print {
-            @page {
-              size: A4;
-              margin: 10mm;
-            }
-          }
-          body {
-            font-family: sans-serif;
-            margin: 0;
-            padding: 0;
-          }
-          .label-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            grid-gap: 10px;
-            page-break-inside: avoid;
-          }
-          .label {
-            border: 1px solid #ccc;
-            padding: 5px;
-            text-align: center;
-            font-size: 10px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            box-sizing: border-box;
-            page-break-inside: avoid;
-            height: 70px;
-          }
-          .product-name {
-            font-weight: bold;
-            word-wrap: break-word;
-            max-height: 2.5em; 
-            overflow: hidden;
-            line-height: 1.2;
-            margin-bottom: 2px;
-          }
-          .product-sku {
-            color: #555;
-            font-size: 9px;
-          }
-          .product-price {
-            font-weight: bold;
-            font-size: 11px;
-            margin-top: 2px;
-          }
-          .barcode-container svg {
-             height: 30px !important;
-             width: 100% !important;
-          }
+          @media print { @page { size: A4; margin: 10mm; } }
+          body { font-family: sans-serif; margin: 0; padding: 0; }
+          .label-grid { display: grid; grid-template-columns: repeat(5, 1fr); grid-gap: 10px; page-break-inside: avoid; }
+          .label { border: 1px solid #ccc; padding: 5px; text-align: center; font-size: 10px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; page-break-inside: avoid; height: 70px; }
+          .product-name { font-weight: bold; word-wrap: break-word; max-height: 2.5em; overflow: hidden; line-height: 1.2; margin-bottom: 2px; }
+          .product-sku { color: #555; font-size: 9px; }
+          .product-price { font-weight: bold; font-size: 11px; margin-top: 2px; }
+          .barcode-container svg { height: 30px !important; width: 100% !important; }
         </style>
       `);
       printWindow.document.write('</head><body><div class="label-grid">');
       
-      products.forEach(product => {
-        let labelContent = '';
-        if (showName) labelContent += `<div class="product-name">${product.name}</div>`;
-        if (showSku) labelContent += `<div class="product-sku">${product.sku}</div>`;
-        
-        try {
+      productsToPrint.forEach(({ product, quantity }) => {
+        for (let i = 0; i < quantity; i++) {
+          let labelContent = '';
+          if (showName) labelContent += `<div class="product-name">${product.name}</div>`;
+          if (showSku) labelContent += `<div class="product-sku">${product.sku}</div>`;
+          
+          try {
             const svgNode = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            JsBarcode(svgNode, product.sku, {
-                format: "CODE128",
-                width: 1.2,
-                height: 25,
-                fontSize: 10,
-                margin: 2,
-                displayValue: false
-            });
-            const svgString = svgNode.outerHTML;
-            labelContent += `<div class="barcode-container">${svgString}</div>`;
-        } catch (e) {
+            JsBarcode(svgNode, product.sku, { format: "CODE128", width: 1.2, height: 25, fontSize: 10, margin: 2, displayValue: false });
+            labelContent += `<div class="barcode-container">${svgNode.outerHTML}</div>`;
+          } catch (e) {
             console.error(`Failed to generate barcode for SKU ${product.sku}:`, e);
             labelContent += `<div class="barcode-container" style="color: red;">Barcode Error</div>`;
+          }
+          
+          if (showPrice) labelContent += `<div class="product-price">MMK ${product.sellPrice.toLocaleString()}</div>`;
+          printWindow.document.write(`<div class="label">${labelContent}</div>`);
         }
-        
-        if (showPrice) labelContent += `<div class="product-price">MMK ${product.sellPrice.toLocaleString()}</div>`;
-
-        printWindow.document.write(`<div class="label">${labelContent}</div>`);
       });
 
       printWindow.document.write('</div></body></html>');
@@ -136,25 +137,15 @@ export default function BarcodesPage() {
           printWindow.print();
         } catch (e) {
           console.error('Print failed:', e);
-          toast({
-            variant: 'destructive',
-            title: 'Print Failed',
-            description: 'Could not open the print dialog.',
-          });
+          toast({ variant: 'destructive', title: 'Print Failed', description: 'Could not open the print dialog.' });
         } finally {
-            if (!printWindow.closed) {
-              printWindow.close();
-            }
+            if (!printWindow.closed) { printWindow.close(); }
         }
       }, 500); 
 
     } catch (error) {
       console.error('Failed to generate print page:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Export Failed',
-        description: 'An unexpected error occurred while preparing the print page.',
-      });
+      toast({ variant: 'destructive', title: 'Export Failed', description: 'An unexpected error occurred.' });
     } finally {
         setIsLoading(false);
     }
@@ -162,7 +153,7 @@ export default function BarcodesPage() {
 
   return (
     <div>
-      <PageHeader title="Product Barcodes">
+      <PageHeader title="Generate Barcodes">
         <div className="flex items-center gap-4">
           <div className="flex items-center space-x-2">
             <Checkbox id="showName" checked={showName} onCheckedChange={(c) => setShowName(!!c)} />
@@ -177,42 +168,82 @@ export default function BarcodesPage() {
             <Label htmlFor="showPrice">Price</Label>
           </div>
           <Button onClick={handlePrint} disabled={isLoading}>
-            {isLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Printer className="mr-2 h-4 w-4" />
-            )}
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
             {isLoading ? 'Generating...' : 'Export to PDF'}
           </Button>
         </div>
       </PageHeader>
-
-      <Card>
-        <CardContent className="p-4">
-          <p className="mb-4 text-sm text-muted-foreground">
-            A preview of your product barcodes is shown below. Use the "Export to PDF" button to open a print-friendly page. From there, you can print directly or save as a PDF.
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-8">
-            {products.slice(0, 12).map((product) => (
-              <div
-                key={product.id}
-                className="barcode-item flex flex-col items-center justify-center p-2 border rounded-lg break-inside-avoid text-center"
-                style={{height: '90px'}}
-              >
-                {showName && <p className="text-xs font-semibold break-words w-full">{product.name}</p>}
-                {showSku && <p className="text-[10px] text-muted-foreground">{product.sku}</p>}
-                <Barcode value={product.sku} width={1.5} height={30} fontSize={10} margin={2} />
-                {showPrice && <p className="text-xs font-bold">MMK {product.sellPrice.toLocaleString()}</p>}
-              </div>
-            ))}
-          </div>
-          {products.length === 0 && (
-            <div className="text-center text-muted-foreground py-16">
-              No products found to generate barcodes.
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+            <CardHeader>
+                <CardTitle>Add Products to Print List</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex flex-wrap items-end gap-2">
+                    <div className="flex-grow space-y-2">
+                        <Label htmlFor="search-sku">Search by SKU</Label>
+                        <Input id="search-sku" value={searchSku} onChange={(e) => setSearchSku(e.target.value)} placeholder="Enter SKU..." />
+                    </div>
+                    <div className="flex-grow space-y-2 min-w-[150px]">
+                        <Label>Product Name</Label>
+                        <Input value={foundProduct?.name || ''} readOnly />
+                    </div>
+                    <div className="w-24 space-y-2">
+                        <Label htmlFor="quantity-to-add">Quantity</Label>
+                        <Input id="quantity-to-add" type="number" value={quantityToAdd} onChange={(e) => setQuantityToAdd(e.target.value)} />
+                    </div>
+                    <Button onClick={handleAddItem}><PlusCircle className="mr-2 h-4 w-4"/> Add to List</Button>
+                </div>
+            </CardContent>
+        </Card>
+        
+        <Card>
+            <CardHeader>
+                <CardTitle>Print List</CardTitle>
+                <CardDescription>Review items and quantities before printing.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="max-h-96 overflow-y-auto border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>SKU</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead className="w-24">Quantity</TableHead>
+                                <TableHead className="w-12"></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {productsToPrint.length > 0 ? productsToPrint.map(({ product, quantity }) => (
+                                <TableRow key={product.id}>
+                                    <TableCell>{product.sku}</TableCell>
+                                    <TableCell>{product.name}</TableCell>
+                                    <TableCell>
+                                        <Input
+                                            type="number"
+                                            value={quantity}
+                                            onChange={(e) => handleQuantityChange(product.id, Number(e.target.value))}
+                                            className="w-20 text-right"
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(product.id)}>
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center h-24">No products added yet.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+            </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
