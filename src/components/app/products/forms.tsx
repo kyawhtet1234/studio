@@ -21,12 +21,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import type { Product, Category, Supplier, Store, Customer, PaymentType } from "@/lib/types";
+import type { Product, Category, Supplier, Store, Customer, PaymentType, SaleTransaction } from "@/lib/types";
 import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Calculator } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useData } from "@/lib/data-context";
+import { subDays, eachDayOfInterval, isSameDay, toDate } from 'date-fns';
 
 const baseSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -268,6 +270,7 @@ interface AddProductFormProps extends FormProps<Omit<Product, 'id' | 'createdAt'
 }
 
 export function AddProductForm({ onSave, categories, suppliers, allProducts, onSuccess, product }: AddProductFormProps) {
+    const { sales } = useData();
     const form = useForm<z.infer<typeof productSchema>>({
         resolver: zodResolver(productSchema),
         defaultValues: product ? {
@@ -311,6 +314,52 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
             append(newVariant.trim());
             setNewVariant('');
         }
+    };
+    
+    const handleCalculateDemand = () => {
+        if (!product) {
+            toast({ variant: "destructive", title: "Cannot Calculate", description: "Save the product first before calculating demand."});
+            return;
+        }
+
+        const ninetyDaysAgo = subDays(new Date(), 90);
+        const relevantSales = sales.filter(s => toDate(s.date) >= ninetyDaysAgo && s.status === 'completed');
+        
+        const dailySales: { [date: string]: number } = {};
+        const dateInterval = eachDayOfInterval({ start: ninetyDaysAgo, end: new Date() });
+        dateInterval.forEach(day => {
+            dailySales[day.toISOString().split('T')[0]] = 0;
+        });
+
+        let totalSold = 0;
+        relevantSales.forEach(sale => {
+            const saleDateStr = toDate(sale.date).toISOString().split('T')[0];
+            sale.items.forEach(item => {
+                if (item.productId === product.id) {
+                    dailySales[saleDateStr] += item.quantity;
+                    totalSold += item.quantity;
+                }
+            });
+        });
+        
+        if(totalSold === 0) {
+            toast({ title: "No Sales Data", description: "No sales found for this product in the last 90 days." });
+            form.setValue('avgDailyDemand', 0);
+            form.setValue('maxDailyDemand', 0);
+            form.setValue('annualDemand', 0);
+            return;
+        }
+        
+        const salesPerDay = Object.values(dailySales);
+        const avgDailyDemand = totalSold / 90;
+        const maxDailyDemand = Math.max(...salesPerDay);
+        const annualDemand = avgDailyDemand * 365;
+
+        form.setValue('avgDailyDemand', parseFloat(avgDailyDemand.toFixed(2)));
+        form.setValue('maxDailyDemand', maxDailyDemand);
+        form.setValue('annualDemand', Math.ceil(annualDemand));
+
+        toast({ title: "Demand Calculated", description: "Demand metrics have been updated based on the last 90 days of sales."});
     };
 
     async function onSubmit(data: z.infer<typeof productSchema>) {
@@ -427,28 +476,36 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
                           <AccordionItem value="inventory-params">
                             <AccordionTrigger>Advanced Inventory Parameters</AccordionTrigger>
                             <AccordionContent>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                                  <FormField control={form.control} name="avgDailyDemand" render={({ field }) => (
-                                      <FormItem><FormLabel>Avg Daily Demand</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                  )}/>
-                                  <FormField control={form.control} name="maxDailyDemand" render={({ field }) => (
-                                      <FormItem><FormLabel>Max Daily Demand</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                  )}/>
-                                  <FormField control={form.control} name="annualDemand" render={({ field }) => (
-                                      <FormItem><FormLabel>Annual Demand</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                  )}/>
-                                  <FormField control={form.control} name="orderCost" render={({ field }) => (
-                                      <FormItem><FormLabel>Cost per Order</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                                  )}/>
-                                  <FormField control={form.control} name="holdingCost" render={({ field }) => (
-                                      <FormItem><FormLabel>Annual Holding Cost per Unit</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                                  )}/>
-                                   <FormField control={form.control} name="avgLeadTime" render={({ field }) => (
-                                      <FormItem><FormLabel>Avg Lead Time (Days)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                  )}/>
-                                   <FormField control={form.control} name="maxLeadTime" render={({ field }) => (
-                                      <FormItem><FormLabel>Max Lead Time (Days)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                  )}/>
+                              <div className="space-y-4">
+                                <div className="flex justify-end">
+                                    <Button type="button" variant="outline" size="sm" onClick={handleCalculateDemand} disabled={!isEditMode}>
+                                        <Calculator className="mr-2 h-4 w-4"/>
+                                        Calculate Demand
+                                    </Button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                                    <FormField control={form.control} name="avgDailyDemand" render={({ field }) => (
+                                        <FormItem><FormLabel>Avg Daily Demand</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name="maxDailyDemand" render={({ field }) => (
+                                        <FormItem><FormLabel>Max Daily Demand</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name="annualDemand" render={({ field }) => (
+                                        <FormItem><FormLabel>Annual Demand</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name="orderCost" render={({ field }) => (
+                                        <FormItem><FormLabel>Cost per Order</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name="holdingCost" render={({ field }) => (
+                                        <FormItem><FormLabel>Annual Holding Cost per Unit</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name="avgLeadTime" render={({ field }) => (
+                                        <FormItem><FormLabel>Avg Lead Time (Days)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name="maxLeadTime" render={({ field }) => (
+                                        <FormItem><FormLabel>Max Lead Time (Days)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                </div>
                               </div>
                             </AccordionContent>
                           </AccordionItem>

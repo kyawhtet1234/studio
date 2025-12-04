@@ -66,7 +66,7 @@ export type CartItem = {
   sellPrice: number;
   quantity: number;
   total: number;
-  cogs: number | null;
+  cogs?: number | null;
   sourcedQuantity?: number | null;
   sourceCost?: number | null;
 };
