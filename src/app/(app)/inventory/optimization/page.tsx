@@ -33,11 +33,15 @@ export default function InventoryOptimizationPage() {
         let safetyStock = 0;
         let reorderLevel = 0;
         let eoq = 0;
+        let orderFrequency = 0;
         
         if (hasRequiredData) {
             safetyStock = (maxDailyDemand * maxLeadTime) - (avgDailyDemand * avgLeadTime);
             reorderLevel = (avgDailyDemand * avgLeadTime) + safetyStock;
             eoq = Math.sqrt((2 * annualDemand * orderCost) / holdingCost);
+            if (eoq > 0) {
+              orderFrequency = annualDemand / eoq;
+            }
         }
         
         const needsReorder = item.stock <= reorderLevel;
@@ -52,6 +56,7 @@ export default function InventoryOptimizationPage() {
             reorderLevel: Math.round(reorderLevel),
             safetyStock: Math.round(safetyStock),
             eoq: Math.round(eoq),
+            orderFrequency,
             urgency: item.stock / reorderLevel
           };
         }
@@ -111,6 +116,15 @@ export default function InventoryOptimizationPage() {
                         </Tooltip>
                     </div>
                   </TableHead>
+                  <TableHead className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      Order Frequency
+                      <Tooltip>
+                          <TooltipTrigger><HelpCircle className="h-4 w-4" /></TooltipTrigger>
+                          <TooltipContent>How many times per year to order this item.</TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -123,11 +137,12 @@ export default function InventoryOptimizationPage() {
                       <TableCell className="text-right">{item.safetyStock}</TableCell>
                       <TableCell className="text-right">{item.reorderLevel}</TableCell>
                       <TableCell className="text-right font-bold text-primary">{item.eoq}</TableCell>
+                       <TableCell className="text-right">{item.orderFrequency.toFixed(1)} / year</TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
                       No items need restocking at the moment, or required inventory parameters have not been set for products.
                     </TableCell>
                   </TableRow>
