@@ -104,10 +104,10 @@ export default function InventoryOptimizationPage() {
                   </TableHead>
                   <TableHead className="text-right font-bold text-primary">
                     <div className="flex items-center justify-end gap-1">
-                        EOQ
+                        Optimal Order Qty (EOQ)
                         <Tooltip>
                             <TooltipTrigger><HelpCircle className="h-4 w-4" /></TooltipTrigger>
-                            <TooltipContent>Economic Order Quantity: The optimal order size to minimize costs.</TooltipContent>
+                            <TooltipContent>The ideal quantity to order each time to minimize costs.</TooltipContent>
                         </Tooltip>
                     </div>
                   </TableHead>
