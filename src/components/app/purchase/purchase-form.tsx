@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -314,7 +315,7 @@ export function PurchaseForm({ stores, suppliers, onSavePurchase }: PurchaseForm
                 <Label htmlFor="itemName-input">Item Name</Label>
                 <Input id="itemName-input" placeholder="Item name" value={itemName} readOnly />
               </div>
-               <div className="flex-auto space-y-2 w-full sm:w-[150px] min-h-[68px]">
+               <div className="flex-auto space-y-2 w-full sm:w-[150px] min-h-[70px]">
                   {foundProduct?.variant_track_enabled && (
                       <>
                           <Label>Variant</Label>
