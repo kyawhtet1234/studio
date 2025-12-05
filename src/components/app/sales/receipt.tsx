@@ -171,7 +171,7 @@ export const generateReceiptPdf = async (sale: SaleTransaction, store: Store | u
 
 
     const canvas = await html2canvas(tempContainer, {
-        scale: 2,
+        scale: 4, // Increased scale for better quality
         useCORS: true, 
     });
     
