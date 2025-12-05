@@ -28,7 +28,8 @@ import { Loader2, Trash2, Calculator } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useData } from "@/lib/data-context";
-import { subDays, eachDayOfInterval, isSameDay, toDate } from 'date-fns';
+import { subDays, eachDayOfInterval, isSameDay } from 'date-fns';
+import { toDate } from "@/lib/utils";
 
 const baseSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
