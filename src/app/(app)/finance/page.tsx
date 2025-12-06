@@ -12,11 +12,9 @@ import { DataTable } from "@/components/app/products/data-table";
 import { expenseColumns, cashAllocationColumns, liabilityColumns } from "@/components/app/finance/columns";
 import { AddEntitySheet } from "@/components/app/products/add-entity-sheet";
 import { EditEntitySheet } from "@/components/app/products/edit-entity-sheet";
-import { AddExpenseForm, AddCashAllocationForm, AddLiabilityForm } from "@/components/app/finance/forms";
+import { AddExpenseForm, AddLiabilityForm } from "@/components/app/finance/forms";
 import type { Expense, CashAllocation, Liability, SaleTransaction } from '@/lib/types';
 import { CashFlowReport } from '@/components/app/finance/cash-flow-report';
-import { FinancialForecast } from '@/components/app/finance/financial-forecast';
-import { AffordabilityChecker } from '@/components/app/finance/affordability-checker';
 import { ExpenseBreakdownChart } from '@/components/app/finance/expense-breakdown-chart';
 import { BalanceSheet } from '@/components/app/finance/balance-sheet';
 import { NetProfitReport } from '@/components/app/finance/net-profit-report';
@@ -40,10 +38,6 @@ export default function FinancePage() {
     addExpense, 
     deleteExpense, 
     expenseCategories,
-    cashAllocations,
-    addCashAllocation,
-    updateCashAllocation,
-    deleteCashAllocation,
     cashAccounts,
     liabilities,
     addLiability,
@@ -53,7 +47,6 @@ export default function FinancePage() {
     loading 
   } = useData();
   const [activeTab, setActiveTab] = useState("overview");
-  const [editingAllocation, setEditingAllocation] = useState<CashAllocation | null>(null);
   const [editingLiability, setEditingLiability] = useState<Liability | null>(null);
 
   const getFinancialMetrics = () => {
@@ -97,10 +90,6 @@ export default function FinancePage() {
 
   const { monthSales, monthExpenses, netProfit } = getFinancialMetrics();
   const expenseCols = expenseColumns({ onDelete: deleteExpense, categories: expenseCategories, stores });
-  const allocationCols = cashAllocationColumns({
-    onEdit: (data) => setEditingAllocation(data),
-    onDelete: deleteCashAllocation,
-  });
   const liabilityCols = liabilityColumns({
     onEdit: (data) => setEditingLiability(data),
     onDelete: deleteLiability,
@@ -119,12 +108,6 @@ export default function FinancePage() {
         return (
           <AddEntitySheet buttonText="Add Expense" title="Add a new expense" description="Enter the details for the new expense.">
             {(onSuccess) => <AddExpenseForm onSave={addExpense} onSuccess={onSuccess} categories={expenseCategories} stores={stores} />}
-          </AddEntitySheet>
-        );
-       case 'allocations':
-        return (
-          <AddEntitySheet buttonText="New Allocation" title="Create a new cash allocation" description="Define a name and a target amount for your goal.">
-            {(onSuccess) => <AddCashAllocationForm onSave={addCashAllocation} onSuccess={onSuccess} />}
           </AddEntitySheet>
         );
       case 'liabilities':
@@ -151,11 +134,9 @@ export default function FinancePage() {
                 <TabsTrigger value="cashFlow">Cash Flow</TabsTrigger>
                 <TabsTrigger value="netProfit">Net Profit</TabsTrigger>
                 <TabsTrigger value="expenses">Expenses</TabsTrigger>
-                <TabsTrigger value="forecast">Forecast</TabsTrigger>
-                <TabsTrigger value="allocations">Cash Allocations</TabsTrigger>
                 <TabsTrigger value="liabilities">Liabilities</TabsTrigger>
             </TabsList>
-             {['expenses', 'allocations', 'liabilities'].includes(activeTab) && (
+             {['expenses', 'liabilities'].includes(activeTab) && (
                 <div>
                   {renderAddButton()}
                 </div>
@@ -212,36 +193,10 @@ export default function FinancePage() {
         <TabsContent value="expenses">
             <DataTable columns={expenseCols} data={sortedExpenses} filterColumnId="description" filterPlaceholder="Filter expenses by description..."/>
         </TabsContent>
-        <TabsContent value="forecast">
-             <FinancialForecast 
-                sales={sales.filter(s => s.status === 'completed') as SaleTransaction[]} 
-                expenses={expenses} 
-                products={products}
-                saleItems={allSaleItems}
-             />
-        </TabsContent>
-        <TabsContent value="allocations">
-            <div className="space-y-6">
-              <AffordabilityChecker sales={sales} expenses={expenses} cashAccounts={cashAccounts} />
-              <DataTable columns={allocationCols} data={cashAllocations} filterColumnId="name" filterPlaceholder="Filter allocations by name..."/>
-            </div>
-        </TabsContent>
         <TabsContent value="liabilities">
             <DataTable columns={liabilityCols} data={liabilities} filterColumnId="name" filterPlaceholder="Filter liabilities by name..."/>
         </TabsContent>
       </Tabs>
-      <EditEntitySheet
-        title="Edit Cash Allocation"
-        description="Update the details for this allocation."
-        isOpen={!!editingAllocation}
-        onClose={() => setEditingAllocation(null)}
-      >
-        {(onSuccess) => <AddCashAllocationForm
-            onSave={(data) => updateCashAllocation(editingAllocation!.id, data)}
-            onSuccess={onSuccess}
-            allocation={editingAllocation!}
-            />}
-      </EditEntitySheet>
       <EditEntitySheet
         title="Edit Liability"
         description="Update the details for this liability."
