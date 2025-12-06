@@ -331,6 +331,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const addStore = async (storeData: Omit<Store, 'id'>) => {
         if (!user || !db) return;
+
+        // Check if "Head Office" exists
+        const headOfficeExists = stores.some(s => s.name === 'Head Office');
+        if (!headOfficeExists && storeData.name !== 'Head Office') {
+            await addDoc(collection(db, 'users', user.uid, 'stores'), { name: 'Head Office', location: 'Main' });
+        }
+
         const batch = writeBatch(db);
         
         const newStoreRef = doc(collection(db, 'users', user.uid, 'stores'));

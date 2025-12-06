@@ -60,6 +60,7 @@ export default function EmployeesPage() {
     addExpense,
     expenseCategories,
     addExpenseCategory,
+    stores,
     sales,
     settings,
   } = useData();
@@ -215,6 +216,12 @@ export default function EmployeesPage() {
       payrollCategory = foundCategory;
     }
 
+    const headOfficeStore = stores.find(s => s.name === 'Head Office');
+    if (!headOfficeStore) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Head Office store not found. Please create it in settings.' });
+        return;
+    }
+
 
     const totalPayroll = employeeCalculations.reduce((sum, emp) => sum + emp.finalSalary, 0);
 
@@ -225,6 +232,7 @@ export default function EmployeesPage() {
 
     const payrollExpense = {
         date: lastDayOfMonth(payrollMonth),
+        storeId: headOfficeStore.id,
         categoryId: payrollCategory.id,
         description: `Monthly Payroll for ${format(payrollMonth, 'MMMM yyyy')}`,
         amount: totalPayroll,
@@ -428,6 +436,3 @@ export default function EmployeesPage() {
     </div>
   );
 }
-
-
-    
