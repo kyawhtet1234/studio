@@ -197,6 +197,9 @@ export default function EmployeesPage() {
 
     if (!payrollCategory) {
         await addExpenseCategory({ name: PAYROLL_CATEGORY_NAME });
+        // After adding, we need to get the latest categories list to find the new ID.
+        // This assumes the data context will be updated. A more robust solution might
+        // involve getting the new ID back from the add function.
         const updatedCategories = await expenseCategories;
         const newCategory = updatedCategories.find(c => c.name === PAYROLL_CATEGORY_NAME);
         if(!newCategory) {
@@ -206,7 +209,9 @@ export default function EmployeesPage() {
         payrollCategory = newCategory;
     }
     
+    // Final check for the category
     if (!payrollCategory) {
+      // Re-fetch or check from the data context state again as a fallback.
       const allCategories = expenseCategories;
       const foundCategory = allCategories.find(c => c.name === PAYROLL_CATEGORY_NAME);
       if(!foundCategory){

@@ -331,20 +331,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const addStore = async (storeData: Omit<Store, 'id'>) => {
         if (!user || !db) return;
-
-        // Check if "Head Office" exists
-        const headOfficeExists = stores.some(s => s.name === 'Head Office');
-        if (!headOfficeExists && storeData.name !== 'Head Office') {
-            await addDoc(collection(db, 'users', user.uid, 'stores'), { name: 'Head Office', location: 'Main' });
+    
+        const storesCollectionRef = collection(db, 'users', user.uid, 'stores');
+        
+        // Ensure "Head Office" store exists
+        const headOfficeQuery = query(storesCollectionRef, where("name", "==", "Head Office"));
+        const headOfficeSnap = await getDocs(headOfficeQuery);
+        if (headOfficeSnap.empty) {
+            await addDoc(storesCollectionRef, { name: 'Head Office', location: 'Main' });
         }
-
+    
         const batch = writeBatch(db);
         
-        const newStoreRef = doc(collection(db, 'users', user.uid, 'stores'));
+        const newStoreRef = doc(storesCollectionRef);
         batch.set(newStoreRef, storeData);
         const storeId = newStoreRef.id;
-
-        for (const product of products) {
+    
+        // Add inventory items for the new store
+        const currentProducts = products;
+        for (const product of currentProducts) {
             const variants = product.variant_track_enabled && product.available_variants ? product.available_variants : [""];
             for (const variant of variants) {
                 const variantName = variant || "";
@@ -359,6 +364,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 });
             }
         }
+    
         await batch.commit();
         await fetchData(db, user.uid);
     };
