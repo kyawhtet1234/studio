@@ -69,7 +69,7 @@ export default function InventoryOptimizationPage() {
   return (
     <div>
       <PageHeader title="Inventory Optimization" />
-      <Card>
+      <Card className="bg-green-100 dark:bg-green-900/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-6 w-6 text-destructive" />
