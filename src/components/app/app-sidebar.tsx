@@ -1,5 +1,4 @@
 
-
 'use client';
 import { usePathname } from 'next/navigation';
 import {
@@ -93,7 +92,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-4 flex flex-col gap-2">
         <div className="flex items-center justify-center p-2">
             {appLogo ? (
-                <Image src={appLogo} alt="App Logo" width={160} height={160} className="w-40 h-40 object-contain drop-shadow-lg" />
+                <Image src={appLogo} alt="App Logo" width={320} height={320} className="w-40 h-40 object-contain drop-shadow-lg" />
             ) : (
                 <Building2 className="w-40 h-40 text-foreground drop-shadow-lg" />
             )}
