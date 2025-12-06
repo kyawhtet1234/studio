@@ -82,7 +82,7 @@ interface SpecialOrderState {
 interface SalesFormProps {
     stores: Store[];
     customers: Customer[];
-    onSave: (sale: Omit<SaleTransaction, 'id' | 'status'>) => Promise<string | void>;
+    onSave: (sale: Omit<SaleTransaction, 'id'>) => Promise<string | void>;
     onAddCustomer: (customer: Omit<Customer, 'id'>) => Promise<void>;
     setLastSaleId: (id: string | null) => void;
 }

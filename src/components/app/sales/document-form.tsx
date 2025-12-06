@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -72,7 +73,7 @@ interface DocumentFormProps {
     type: 'invoice' | 'quotation';
     stores: Store[];
     customers: Customer[];
-    onSave: (sale: Omit<SaleTransaction, 'id'>) => Promise<void>;
+    onSave: (sale: Omit<SaleTransaction, 'id'>) => Promise<string | void>;
     onAddCustomer: (customer: Omit<Customer, 'id'>) => Promise<void>;
     sale?: SaleTransaction;
     onSuccess: () => void;
