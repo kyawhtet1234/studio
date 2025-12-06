@@ -44,7 +44,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { BarcodeScanner } from "./barcode-scanner";
 import { generateReceiptPdf } from "./receipt";
 
 
@@ -91,7 +90,6 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer, setLastSal
   const { products, inventory, paymentTypes, settings } = useData();
   const { toast, dismiss } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [specialOrderState, setSpecialOrderState] = useState<SpecialOrderState | null>(null);
 
@@ -317,11 +315,6 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer, setLastSal
         setIsLoading(false);
     }
   }
-
-  const handleBarcodeScan = (scannedSku: string) => {
-    setSku(scannedSku);
-    setIsScannerOpen(false);
-  }
   
   return (
     <>
@@ -456,10 +449,6 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer, setLastSal
                         value={sku} 
                         onChange={(e) => setSku(e.target.value)} 
                     />
-                    <Button type="button" variant="outline" size="icon" onClick={() => setIsScannerOpen(true)}>
-                        <ScanBarcode className="h-4 w-4" />
-                        <span className="sr-only">Scan Barcode</span>
-                    </Button>
                   </div>
               </div>
               <div className="flex-auto space-y-2 min-w-[150px]">
@@ -613,18 +602,6 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer, setLastSal
             </DialogHeader>
             <AddCustomerForm onSave={onAddCustomer} onSuccess={() => setIsAddCustomerOpen(false)} />
         </DialogContent>
-    </Dialog>
-
-    <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Scan Barcode</DialogTitle>
-          <DialogDescription>
-            Point your camera at a barcode to add the item to the cart.
-          </DialogDescription>
-        </DialogHeader>
-        <BarcodeScanner onScan={handleBarcodeScan} />
-      </DialogContent>
     </Dialog>
 
     <Dialog open={!!specialOrderState} onOpenChange={() => setSpecialOrderState(null)}>
