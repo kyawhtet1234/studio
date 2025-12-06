@@ -1,6 +1,6 @@
 
 import type {Metadata} from 'next';
-import { Inter } from "next/font/google";
+import { Poppins } from "next/font/google";
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/app/settings/theme-provider';
@@ -8,7 +8,11 @@ import { DataProvider } from '@/lib/data-context';
 import { AuthProvider } from '@/lib/auth-context';
 import { FirebaseProvider } from '@/lib/firebase-provider';
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const poppins = Poppins({ 
+  subsets: ["latin"], 
+  variable: "--font-sans",
+  weight: ['400', '500', '600', '700']
+});
 
 export const metadata: Metadata = {
   title: 'CloudPOS',
@@ -23,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${poppins.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
