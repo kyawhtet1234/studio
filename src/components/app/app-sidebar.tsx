@@ -108,8 +108,9 @@ export function AppSidebar() {
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href} className="mb-2">
+              <Link href={item.href} passHref legacyBehavior>
                 <SidebarMenuButton
-                  onClick={() => router.push(item.href)}
+                  asChild
                   isActive={isItemActive(item.href)}
                   tooltip={item.label}
                   className={cn(
@@ -119,9 +120,12 @@ export function AppSidebar() {
                     isItemActive(item.href) && "ring-4 ring-offset-2 ring-primary"
                   )}
                 >
-                  <item.icon className="h-5 w-5" />
-                  <span className="text-base font-medium">{item.label}</span>
+                  <a>
+                    <item.icon className="h-5 w-5" />
+                    <span className="text-base font-medium">{item.label}</span>
+                  </a>
                 </SidebarMenuButton>
+              </Link>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
@@ -130,8 +134,9 @@ export function AppSidebar() {
          <SidebarMenu>
           {activeUserRole !== 'salesperson' && (
             <SidebarMenuItem className="mb-2">
+              <Link href="/settings" passHref legacyBehavior>
                 <SidebarMenuButton 
-                    onClick={() => router.push('/settings')}
+                    asChild
                     tooltip="Settings" 
                     isActive={pathname === '/settings'}
                     className={cn(
@@ -141,9 +146,12 @@ export function AppSidebar() {
                       pathname === '/settings' && "ring-4 ring-offset-2 ring-primary"
                     )}
                   >
+                    <a>
                       <Settings className="h-5 w-5" />
                       <span className="text-base">Settings</span>
+                    </a>
                   </SidebarMenuButton>
+                </Link>
             </SidebarMenuItem>
           )}
         </SidebarMenu>
