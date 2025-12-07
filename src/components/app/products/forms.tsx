@@ -326,7 +326,7 @@ export function AddProductForm({ onSave, categories, suppliers, allProducts, onS
 
     const handleAddVariant = () => {
         if (newVariant.trim() !== '') {
-            append(newVariant.trim());
+            append(newVariant.trim() as never);
             setNewVariant('');
         }
     };
