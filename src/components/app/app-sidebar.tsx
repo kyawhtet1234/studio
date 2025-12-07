@@ -108,9 +108,8 @@ export function AppSidebar() {
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href} className="mb-2">
-              <Link href={item.href} passHref>
                 <SidebarMenuButton
-                  asChild
+                  onClick={() => router.push(item.href)}
                   isActive={isItemActive(item.href)}
                   tooltip={item.label}
                   className={cn(
@@ -123,7 +122,6 @@ export function AppSidebar() {
                   <item.icon className="h-5 w-5" />
                   <span className="text-base font-medium">{item.label}</span>
                 </SidebarMenuButton>
-              </Link>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
@@ -132,9 +130,8 @@ export function AppSidebar() {
          <SidebarMenu>
           {activeUserRole !== 'salesperson' && (
             <SidebarMenuItem className="mb-2">
-              <Link href="/settings" passHref>
-                  <SidebarMenuButton 
-                    asChild
+                <SidebarMenuButton 
+                    onClick={() => router.push('/settings')}
                     tooltip="Settings" 
                     isActive={pathname === '/settings'}
                     className={cn(
@@ -147,7 +144,6 @@ export function AppSidebar() {
                       <Settings className="h-5 w-5" />
                       <span className="text-base">Settings</span>
                   </SidebarMenuButton>
-                </Link>
             </SidebarMenuItem>
           )}
         </SidebarMenu>
