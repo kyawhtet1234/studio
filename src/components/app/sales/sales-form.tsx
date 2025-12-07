@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -35,7 +34,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogDescription } from "@/components/ui/dialog";
-import { Trash2, PlusCircle, UserPlus, CalendarIcon, ScanBarcode, Loader2, AlertTriangle, Printer } from "lucide-react";
+import { Trash2, PlusCircle, UserPlus, CalendarIcon, Loader2, AlertTriangle, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { CartItem, SaleTransaction, Store, Product, Customer, PaymentType } from '@/lib/types';
 import { useData } from "@/lib/data-context";
@@ -640,5 +639,3 @@ export function SalesForm({ stores, customers, onSave, onAddCustomer, setLastSal
     </>
   );
 }
-
-    
