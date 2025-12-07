@@ -110,7 +110,7 @@ export function AppSidebar() {
             <SidebarMenuItem key={item.href} className="mb-2">
               <Link href={item.href} passHref>
                 <SidebarMenuButton
-                  as="a"
+                  asChild
                   isActive={isItemActive(item.href)}
                   tooltip={item.label}
                   className={cn(
@@ -134,7 +134,7 @@ export function AppSidebar() {
             <SidebarMenuItem className="mb-2">
               <Link href="/settings" passHref>
                   <SidebarMenuButton 
-                    as="a" 
+                    asChild
                     tooltip="Settings" 
                     isActive={pathname === '/settings'}
                     className={cn(
